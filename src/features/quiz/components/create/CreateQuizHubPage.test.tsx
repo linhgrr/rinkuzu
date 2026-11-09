@@ -22,8 +22,9 @@ vi.mock('next/image', () => ({
 }));
 
 const translate = (key: string) => key;
+const intlLocale = vi.hoisted(() => ({ current: 'vi' }));
 vi.mock('next-intl', () => ({
-  useLocale: () => 'vi',
+  useLocale: () => intlLocale.current,
   useTranslations: () => translate,
 }));
 
@@ -57,6 +58,13 @@ vi.mock('@/components/ui/ConfirmModal', () => ({
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn() },
+}));
+
+// Copy and Terms link are tested with real messages in PublicQuizNotice.test.tsx.
+vi.mock('@/features/quiz/components/PublicQuizNotice', () => ({
+  PublicQuizNotice: ({ variant }: { variant: string }) => (
+    <p data-testid="public-quiz-notice" data-variant={variant} />
+  ),
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -170,6 +178,52 @@ describe('CreateQuizHubPage', () => {
       expect(await screen.findByRole('dialog', { name: 'deleteDraftTitle' })).toBeInTheDocument();
     } finally {
       swrDrafts.current = previous;
+    }
+  });
+
+  // RIN-1339 (spec RIN-1336 Part 1, AC 3): one short line under the method cards.
+  it('shows the short public-quiz notice right under the creation choices', () => {
+    render(<CreateQuizHubPage />);
+
+    const notices = screen.getAllByTestId('public-quiz-notice');
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toHaveAttribute('data-variant', 'short');
+    expect(notices[0]?.previousElementSibling).toBe(
+      screen.getByRole('region', { name: 'chooseMethod' }),
+    );
+  });
+
+  // RIN-1272: the list was pinned to Asia/Ho_Chi_Minh, so a learner abroad saw Vietnam time.
+  it.each([
+    ['UTC', 'Nov 8, 2026, 8:06 PM'],
+    ['Asia/Ho_Chi_Minh', 'Nov 9, 2026, 3:06 AM'],
+    ['America/New_York', 'Nov 8, 2026, 3:06 PM'],
+  ])('shows the draft update time in the viewer zone %s', (zone, label) => {
+    const previous = {
+      drafts: swrDrafts.current,
+      locale: intlLocale.current,
+      tz: process.env['TZ'],
+    };
+    swrDrafts.current = [
+      {
+        ...LONG_DRAFT_BASE,
+        id: 'draft-tz',
+        title: 'Timed draft',
+        status: 'drafting',
+        updatedAt: '2026-11-08T20:06:00Z',
+      },
+    ];
+    intlLocale.current = 'en';
+    process.env['TZ'] = zone;
+    try {
+      render(<CreateQuizHubPage />);
+
+      expect(screen.getByText(label)).toBeInTheDocument();
+    } finally {
+      swrDrafts.current = previous.drafts;
+      intlLocale.current = previous.locale;
+      if (previous.tz === undefined) delete process.env['TZ'];
+      else process.env['TZ'] = previous.tz;
     }
   });
 });

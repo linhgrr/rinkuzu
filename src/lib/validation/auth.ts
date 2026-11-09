@@ -1,5 +1,10 @@
 import { z } from 'zod';
+import { locales } from '@/i18n/config';
 import { canonicalizeEmail, EMAIL_MAX_LENGTH } from '@/shared/email/canonical-email';
+import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
+
+/** The browser keeps at most 10 guest claims (features/quiz/lib/guest-claims). */
+const REGISTER_GUEST_CLAIM_MAX_TOKENS = 10;
 
 export const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 72;
@@ -48,6 +53,10 @@ export const registerSchema = z.object({
   displayName: displayNameSchema.optional(),
   // Where to return after sign-in; sanitised again where the email link is built.
   callbackUrl: z.string().max(512).optional(),
+  // Guest results to attach when the email is verified, in any browser (RIN-1310).
+  guestClaimTokens: z.array(guestClaimTokenSchema).max(REGISTER_GUEST_CLAIM_MAX_TOKENS).optional(),
+  // UI locale of the signup page (RIN-1263). An unknown value is dropped, never a 400.
+  locale: z.enum(locales).optional().catch(undefined),
 });
 
 export const forgotPasswordSchema = z.object({

@@ -1,4 +1,4 @@
-import type { Quiz, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
+import type { Quiz, QuizContentFlags, QuizQuestionContent, QuizVisibility } from '@/entities/Quiz';
 import type {
   CountBuckets,
   CountBucketThresholds,
@@ -18,6 +18,8 @@ export interface QuizFindFilter {
   author?: string;
   excludeAuthor?: string;
   folder?: string | null;
+  /** Only quizzes whose personal-data flag is set and not cleared (RIN-1342). */
+  personalDataFlagged?: true;
   $or?: QuizTextSearchCondition[];
 }
 
@@ -47,10 +49,16 @@ export interface QuizOwnerIndexingRecord {
 export interface QuizMetadataRecord {
   quiz: Quiz;
   owner: QuizOwnerIndexingRecord | null;
+  /** Texts of the first (up to 3) questions, for the content locale (RIN-1241). */
+  leadQuestionTexts?: readonly string[];
 }
 
 export interface PublicQuizSitemapRecord {
   slug: string;
+  title: string;
+  questionCount: number;
+  /** Texts of the first (up to 3) questions, for the content locale (RIN-1241). */
+  leadQuestionTexts: readonly string[];
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -72,12 +80,20 @@ export interface CreateQuizData {
   pdfUrl?: string;
   tags?: string[];
   sourceDraftId?: string;
+  contentFlags?: QuizContentFlags;
 }
 
 export type UpdateQuizData = Partial<
   Pick<
     CreateQuizData,
-    'title' | 'description' | 'folder' | 'questions' | 'visibility' | 'pdfUrl' | 'tags'
+    | 'title'
+    | 'description'
+    | 'folder'
+    | 'questions'
+    | 'visibility'
+    | 'pdfUrl'
+    | 'tags'
+    | 'contentFlags'
   >
 >;
 
@@ -100,7 +116,10 @@ export interface IQuizRepository {
    */
   findNonIndexableOwnerCandidates(): Promise<QuizOwnerIndexingRecord[]>;
 
-  /** Newest public quizzes, slug and dates only, minus the excluded owners. */
+  /**
+   * Newest public quizzes with at least 5 questions, minus the excluded owners:
+   * slug, dates, title, question count and the first question texts only.
+   */
   findPublicSitemapEntries(query: PublicQuizSitemapQuery): Promise<PublicQuizSitemapRecord[]>;
 
   findIdBySlug(slug: string): Promise<string | null>;

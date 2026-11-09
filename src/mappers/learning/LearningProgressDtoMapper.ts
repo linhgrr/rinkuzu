@@ -62,7 +62,8 @@ export class LearningProgressDtoMapper {
       folder: quiz.folder,
       questions: [],
       visibility: quiz.visibility,
-      ...(quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
+      // The library lists other learners' public quizzes: only the owner gets the source PDF link.
+      ...(quiz.ownedByMe && quiz.pdfUrl !== undefined && { pdfUrl: quiz.pdfUrl }),
       questionCount: quiz.questionCount,
       ownedByMe: quiz.ownedByMe,
       createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),

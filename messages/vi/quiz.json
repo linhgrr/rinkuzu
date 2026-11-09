@@ -150,15 +150,17 @@
     "another": "{count} câu khác",
     "fullQuiz": "Làm toàn bộ bài"
   },
+  "reviewPrompt": {
+    "question": "Bạn muốn ôn lại {count} câu đã sai sau 2 ngày không?",
+    "remind": "Nhắc tôi sau 2 ngày",
+    "decline": "Không, cảm ơn",
+    "scheduled": "Chúng tôi sẽ gửi bài ôn tập vào {weekday}.",
+    "capped": "Bạn đã có một email ôn tập trong tuần này.",
+    "saveError": "Không lưu được, thử lại nhé."
+  },
   "resultActions": {
     "retryMissed": "Làm lại {count} câu bạn sai",
     "tryAnother": "Thử một đề khác",
-    "reviewEmail": "Gửi email ôn tập 2 phút cho tôi sau 2 ngày",
-    "saving": "Đang lưu…",
-    "savedOn": "Đã bật. Bạn có thể tắt bất cứ lúc nào.",
-    "savedOff": "Đã tắt email nhắc.",
-    "saveError": "Không lưu được. Thử lại nhé.",
-    "tryAgain": "Thử lại",
     "retryOfMissed": "Làm lại câu sai",
     "retryPill": "Làm lại câu sai · {count} câu",
     "share": "Gửi cho bạn cùng lớp",
@@ -172,5 +174,26 @@
   "guestSaveWithGoogle": "Lưu kết quả với Google",
   "guestSaveSignInEmail": "Đăng nhập bằng email",
   "guestSaveCreateAccount": "Tạo tài khoản",
-  "guestReviewUnavailable": "Chúng tôi không mở được phần xem lại trên thiết bị này. Điểm của bạn vẫn được giữ ở trên."
+  "guestReviewUnavailable": "Chúng tôi không mở được phần xem lại trên thiết bị này. Điểm của bạn vẫn được giữ ở trên.",
+  "landing": {
+    "cta": "Chơi ngay – không cần tài khoản",
+    "ctaSignedIn": "Chơi ngay",
+    "quickHint": "10 câu, khoảng 3 phút",
+    "previewTitle": "Xem trước {count} câu đầu",
+    "previewMore": "Còn {count} câu nữa",
+    "previewCta": "Xem đáp án và làm tiếp – không cần tài khoản",
+    "previewCtaSignedIn": "Xem đáp án và làm tiếp",
+    "questionNumber": "Câu {number}",
+    "relatedTitle": "Quiz khác trên RinKuzu",
+    "relatedTopicTitle": "Quiz cùng chủ đề",
+    "topicHubLink": "Xem tất cả quiz {topic}",
+    "relatedCount": "{count} câu hỏi"
+  },
+  "pdfViewer": {
+    "title": "Tài liệu PDF",
+    "openInNewTab": "Mở tab mới",
+    "close": "Đóng PDF",
+    "loading": "Đang tải PDF",
+    "frameTitle": "Trình xem PDF"
+  }
 }

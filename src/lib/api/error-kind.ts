@@ -69,6 +69,8 @@ export const CODE_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   campaign_test_expired: 'errors.api.codes.campaignTestExpired',
   campaign_not_prepared: 'errors.api.codes.campaignNotPrepared',
   last_active_admin: 'errors.api.codes.lastActiveAdmin',
+  premium_published: 'errors.api.codes.premiumPublished',
+  premium_submission_failed: 'errors.api.codes.premiumSubmissionFailed',
   admin_invariant_unavailable: 'errors.api.codes.adminInvariantUnavailable',
   ocr_key_decrypt_failed: 'errors.api.codes.ocrKeyDecryptFailed',
   ocr_request_error: 'errors.api.codes.ocrRequestError',
@@ -107,6 +109,7 @@ const CODES_BY_KIND: Partial<Record<ApiErrorKind, readonly string[]>> = {
     'ask_rin_request_in_progress',
     'ask_rin_context_stale',
     'llm_config_revision_conflict',
+    'premium_published',
   ],
   rate_limited: ['rate_limit_exceeded', 'llm_probe_rate_limited', 'feedback_frequency_limit'],
   validation: [
@@ -140,6 +143,7 @@ const CODES_BY_KIND: Partial<Record<ApiErrorKind, readonly string[]>> = {
     'llm_call_failed',
     'llm_route_exhausted',
     'ask_rin_run_failed',
+    'premium_submission_failed',
   ],
   aborted: ['request_aborted'],
 };

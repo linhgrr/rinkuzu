@@ -22,3 +22,10 @@ pnpm-lock.yaml
 .playwright-mcp/
 .gstack/
 .windsurf/
+
+# Blog posts: prose is rendered as authored; Prettier rewrites markdown
+# (tables, emphasis, spacing) and would change published pages (RIN-404).
+content/blog/**/*.mdx
+# Blog body fixtures pin exact Markdown (tilde fences, unpadded tables) that the
+# content-safety scanner must accept; formatting them would change what they test (RIN-1329).
+src/lib/blog/__fixtures__/**/*.mdx

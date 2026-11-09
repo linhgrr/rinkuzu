@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => ({
   webhookEvent: { countDocuments: vi.fn() },
   preference: { updateOne: vi.fn() },
   nudge: { sweep: vi.fn(), prepare: vi.fn(), record: vi.fn() },
+  review: { prepare: vi.fn() },
 }));
 
 /** Minimal thenable stand-in for a chained Mongoose query. */
@@ -78,6 +79,10 @@ vi.mock('./resend', () => ({
   marketingTopicId: vi.fn(),
   scheduleBroadcast: vi.fn(),
   syncMarketingContact: vi.fn(),
+}));
+vi.mock('./review-reminder', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./review-reminder')>()),
+  prepareReviewReminder: mocks.review.prepare,
 }));
 vi.mock('./activation-nudge', () => ({
   sweepActivationNudges: mocks.nudge.sweep,
@@ -122,7 +127,7 @@ function outboxItem(overrides: Record<string, unknown> = {}) {
     kind: 'feedback_invitation',
     entityType: 'feedback_conversation',
     entityId: { toString: () => CONVERSATION_ID },
-    to: 'hantram3012@gmail.com',
+    to: 'learner@example.com',
     from: ENVIRONMENT['FEEDBACK_MAIL_FROM'],
     replyTo: LEGACY_REPLY_TO,
     subject: 'Bạn thấy trải nghiệm RinKuzu thế nào?',
@@ -249,7 +254,7 @@ describe('communication outbox delivery', () => {
     }
   });
 
-  it('claims review emails unless the kill switch is off (RIN-915)', async () => {
+  it('claims review emails unless the kill switch is off, for both touches (RIN-915, RIN-1304)', async () => {
     await runCommunicationWorker(5);
     expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).not.toHaveProperty('kind');
 
@@ -258,11 +263,39 @@ describe('communication outbox delivery', () => {
       mocks.outbox.findOneAndUpdate.mockClear();
       await runCommunicationWorker(5);
       expect(mocks.outbox.findOneAndUpdate.mock.calls[0]?.[0]).toMatchObject({
-        kind: { $nin: ['review_reminder'] },
+        kind: { $nin: ['review_reminder', 'review_reminder_d5'] },
       });
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it.each([
+    ['retry', { decision: 'retry', availableAt: new Date('2026-11-05T10:10:00.000Z') }],
+    ['wait', { decision: 'wait' }],
+  ])('releases a review email on %s without sending (RIN-1364)', async (label, prepared) => {
+    queueOne(
+      outboxItem({
+        kind: 'review_reminder',
+        entityType: 'adaptive_completion',
+        replyTo: null,
+        attempts: 1,
+      }),
+    );
+    mocks.review.prepare.mockResolvedValue(prepared);
+
+    const result = await runCommunicationWorker();
+
+    expect(mocks.sendCommunicationEmail).not.toHaveBeenCalled();
+    const release = outboxUpdateFor((update) => update['$set']?.['status'] === 'pending');
+    expect(release?.[1]).toEqual({
+      $set:
+        label === 'retry'
+          ? { status: 'pending', availableAt: new Date('2026-11-05T10:10:00.000Z') }
+          : { status: 'pending' },
+      $unset: { leaseToken: '', leaseUntil: '' },
+    });
+    expect(result.outbox).toMatchObject({ completed: 0, canceled: 0 });
   });
 
   it('repairs a legacy over-long Reply-To in place and sends exactly one email', async () => {
@@ -451,14 +484,14 @@ describe('communication outbox delivery', () => {
   it('redacts recipient addresses and token-shaped strings from the stored error', async () => {
     queueOne(outboxItem());
     mocks.sendCommunicationEmail.mockRejectedValue(
-      new Error(`Invalid reply_to hantram3012@gmail.com token ${COMPACT_TOKEN}`),
+      new Error(`Invalid reply_to learner@example.com token ${COMPACT_TOKEN}`),
     );
 
     await runCommunicationWorker();
 
     const failure = outboxUpdateFor((update) => update['$set']?.['status'] === 'pending');
     const lastError = String(failure?.[1]['$set']['lastError']);
-    expect(lastError).not.toContain('hantram3012');
+    expect(lastError).not.toContain('learner');
     expect(lastError).not.toContain(COMPACT_TOKEN);
     expect(lastError).toContain('[email]');
   });

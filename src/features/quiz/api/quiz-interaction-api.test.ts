@@ -13,6 +13,7 @@ import {
   deleteSavedQuizProgress,
   fetchQuizDiscussionViewModels,
   loadSavedQuizProgress,
+  reportQuizPage,
   reportQuizViewModel,
   saveQuizProgress,
   submitQuizAttemptViewModel,
@@ -89,6 +90,28 @@ describe('quiz-interaction-api', () => {
       answers: [1],
       idempotencyKey: 'idem-3',
       guestClaimToken: 'fake-token',
+    });
+  });
+
+  it('sends entry and post when present (RIN-1242)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+      attemptId: 'attempt-4',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1],
+      idempotencyKey: 'idem-4',
+      entry: 'blog',
+      post: 'on-thi-jlpt',
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1],
+      idempotencyKey: 'idem-4',
+      entry: 'blog',
+      post: 'on-thi-jlpt',
     });
   });
 
@@ -265,6 +288,16 @@ describe('quiz-interaction-api', () => {
         questionId: '507f1f77bcf86cd799439011',
         content: 'broken',
       }),
+    });
+  });
+
+  it('sends the quiz-page report without a question id (RIN-1344)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({ reportId: 'report-1' });
+    await reportQuizPage('quiz c', { reason: 'copyright', details: 'Copied' });
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/quiz/quiz%20c/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'copyright', details: 'Copied' }),
     });
   });
 });

@@ -25,6 +25,8 @@ import type {
 } from '@/dtos/admin-user';
 import type { DeleteResultDto } from '@/dtos/common';
 import type { QuizQuestion } from '@/entities/Quiz';
+import type { Report } from '@/entities/Report';
+import type { ReportStatus } from '@/shared/constants/report-status';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
@@ -34,6 +36,7 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import type { IAdminStatsRepository } from '@/interfaces/repositories/IAdminStatsRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
@@ -65,6 +68,12 @@ type ReportedQuestionContextResult =
     }
   | { success: false; error: string; statusCode: number };
 
+/** Index-hold upkeep for quiz-level reports (RIN-1343); see AdminReportModerationService. */
+interface AdminReportModerationPort {
+  countPendingIndexHold(): Promise<number>;
+  syncIndexHold(report: Report, status: ReportStatus): Promise<void>;
+}
+
 export class AdminService implements IAdminService {
   constructor(
     private userRepository: IUserRepository & IRecentUserRepository,
@@ -72,6 +81,7 @@ export class AdminService implements IAdminService {
     private quizRepository: IQuizRepository & IDashboardQuizRepository,
     private attemptRepository: IAttemptRepository,
     private adminStatsRepository?: IAdminStatsRepository,
+    private reportModeration?: AdminReportModerationPort,
   ) {}
 
   private mapListStatusFilter(
@@ -228,15 +238,24 @@ export class AdminService implements IAdminService {
   ): Promise<ServiceResult<AdminReportListDto>> {
     try {
       const status = searchParams.status === 'all' ? undefined : searchParams.status;
-      const result = await this.reportRepository.findAll({
-        page: searchParams.page,
-        limit: searchParams.limit,
-        ...(status !== undefined && { status }),
-      });
+      const reason = searchParams.reason === 'all' ? undefined : searchParams.reason;
+      const [result, pendingIndexHoldCount] = await Promise.all([
+        this.reportRepository.findAll({
+          page: searchParams.page,
+          limit: searchParams.limit,
+          ...(status !== undefined && { status }),
+          ...(reason !== undefined && { reason }),
+        }),
+        this.reportModeration?.countPendingIndexHold() ?? Promise.resolve(0),
+      ]);
 
       return {
         success: true,
-        data: AdminReportDtoMapper.toListDto(result.items, result.pagination),
+        data: AdminReportDtoMapper.toListDto(
+          result.items,
+          result.pagination,
+          pendingIndexHoldCount,
+        ),
       };
     } catch (error) {
       logger.error({ error }, 'Get reports error');
@@ -277,6 +296,7 @@ export class AdminService implements IAdminService {
           statusCode: 404,
         };
       }
+      await this.reportModeration?.syncIndexHold(updated, input.status);
 
       return {
         success: true,
@@ -309,6 +329,18 @@ export class AdminService implements IAdminService {
         statusCode: 500,
       };
     }
+  }
+
+  /**
+   * RIN-1341: an admin edit of one question re-runs the personal-data check,
+   * as an owner edit does; an admin clear in force stays (`previous`). A
+   * failure here fails the request, and retrying the edit is idempotent.
+   */
+  private async recheckQuizContentFlags(quizId: string): Promise<void> {
+    const quiz = await this.quizRepository.findById(quizId);
+    if (!quiz) return;
+    const contentFlags = resolveQuizContentFlags(quiz, quiz.contentFlags, new Date());
+    await this.quizRepository.update(quizId, { contentFlags });
   }
 
   async updateReportedQuestion(
@@ -360,6 +392,7 @@ export class AdminService implements IAdminService {
           statusCode: 409,
         };
       }
+      await this.recheckQuizContentFlags(context.quizId);
 
       return {
         success: true,

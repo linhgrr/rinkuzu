@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Input, Textarea } from '@/components/ui/Input';
 import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Link } from '@/i18n/navigation';
@@ -42,6 +43,8 @@ type QuizMetaFormProps = {
   aiPrompt?: string;
   onAiPromptChange?: (value: string) => void;
   aiPromptMaxLength?: number;
+  /** Help text shown right above the Premium choice (RIN-1339 public-quiz notice). */
+  notice?: ReactNode;
 };
 
 export default function QuizMetaForm({
@@ -66,6 +69,7 @@ export default function QuizMetaForm({
   aiPrompt,
   onAiPromptChange,
   aiPromptMaxLength = 2000,
+  notice,
 }: QuizMetaFormProps) {
   const showPremium = typeof submitToPremium === 'boolean' && typeof onPremiumChange === 'function';
   const showPrompt = typeof aiPrompt === 'string' && typeof onAiPromptChange === 'function';
@@ -128,6 +132,8 @@ export default function QuizMetaForm({
           disabled={disabled}
         />
       </div>
+
+      {notice}
 
       {showPremium && (
         <div className="bg-gradient-to-r from-green-50 to-green-50/50 p-4 rounded-xl border border-green-100">

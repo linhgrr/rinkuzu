@@ -1,0 +1,156 @@
+import { describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createTranslator } from 'next-intl';
+import viQuiz from '../../../../../messages/vi/quiz.json';
+import type { QuizLandingViewModel } from '@/features/quiz/types/quiz-landing-view-model';
+
+vi.mock('next-intl/server', () => ({
+  getTranslations: ({ namespace }: { namespace: string }) =>
+    Promise.resolve(
+      createTranslator({
+        locale: 'vi',
+        messages: { quiz: viQuiz },
+        namespace: namespace as 'quiz',
+      }),
+    ),
+}));
+
+vi.mock('@/features/quiz/components/ReportQuizPageLink', () => ({
+  ReportQuizPageLink: (props: {
+    slug: string;
+    viewerEmail: string | null;
+    ownedByViewer: boolean;
+  }) => <span data-report-link={JSON.stringify(props)} />,
+}));
+
+import { QuizLanding } from './QuizLanding';
+
+function landingWith(overrides: Partial<QuizLandingViewModel> = {}): QuizLandingViewModel {
+  return {
+    slug: 'sinh-hoc-10',
+    title: 'Sinh học 10',
+    description: 'Đề trắc nghiệm Sinh học 10.',
+    authorName: 'Cô Lan',
+    questionCount: 20,
+    quickRoundEligible: true,
+    previewQuestions: Array.from({ length: 5 }, (_, index) => ({
+      id: `q${index}`,
+      text: `Câu hỏi số ${index + 1}`,
+      options: [
+        { letter: 'A', text: 'Ti thể' },
+        { letter: 'B', text: 'Lục lạp' },
+      ],
+    })),
+    related: [{ slug: 'hoa-hoc', title: 'Hóa học 10', questionCount: 12 }],
+    relatedSameTopic: false,
+    topic: null,
+    ...overrides,
+  };
+}
+
+async function render(landing: QuizLandingViewModel, signedIn = false): Promise<string> {
+  return renderToStaticMarkup(await QuizLanding({ locale: 'vi', landing, signedIn }));
+}
+
+describe('QuizLanding (RIN-1247)', () => {
+  it('starts a quick round and offers the full quiz, both as plain tracked links', async () => {
+    const html = await render(landingWith());
+
+    expect(html).toContain('href="/vi/quiz/sinh-hoc-10?mode=quick&amp;entry=quiz_landing"');
+    expect(html).toContain('href="/vi/quiz/sinh-hoc-10?mode=full&amp;entry=quiz_landing"');
+    expect(html).toContain('Chơi ngay – không cần tài khoản');
+    expect(html).toContain('Làm toàn bộ bài (20 câu)');
+    expect(html).toContain('10 câu, khoảng 3 phút');
+    expect(html).toContain('Còn 15 câu nữa');
+    expect(html).toContain('Xem đáp án và làm tiếp – không cần tài khoản');
+    expect(html).not.toContain('Chơi nhanh');
+  });
+
+  it('renders one h1, then the preview and related h2s, with an ol of questions', async () => {
+    const html = await render(landingWith());
+
+    expect(html.match(/<h1\b/gu)).toHaveLength(1);
+    expect(html.match(/<h[1-6]\b/gu)).toEqual(['<h1', '<h2', '<h2']);
+    expect(html).toContain('Xem trước 5 câu đầu');
+    expect(html.match(/<ol\b/gu)).toHaveLength(1);
+    expect(html).toContain('Câu hỏi số 1');
+    expect(html).toContain('Lục lạp');
+    expect(html).not.toMatch(/type="radio"|type="checkbox"/u);
+  });
+
+  it('links related quizzes without an entry, so they open on their landing', async () => {
+    const html = await render(landingWith());
+
+    expect(html).toContain('Quiz khác trên RinKuzu');
+    expect(html).toContain('href="/vi/quiz/hoa-hoc"');
+  });
+
+  it('hides the related block when there is nothing to link', async () => {
+    const html = await render(landingWith({ related: [] }));
+
+    expect(html).not.toContain('Quiz khác trên RinKuzu');
+  });
+
+  // RIN-1249 (spec C12): same-topic heading and the link back to the hub.
+  it('titles same-topic quizzes "Quiz cùng chủ đề" and links back to the hub', async () => {
+    const html = await render(
+      landingWith({
+        relatedSameTopic: true,
+        topic: { name: 'Sinh học', href: '/vi/explore/sinh-hoc' },
+      }),
+    );
+
+    expect(html).toContain('Quiz cùng chủ đề');
+    expect(html).not.toContain('Quiz khác trên RinKuzu');
+    expect(html).toContain('href="/vi/explore/sinh-hoc"');
+    expect(html).toContain('Xem tất cả quiz Sinh học');
+  });
+
+  it('keeps the hub link when there are no related quizzes', async () => {
+    const html = await render(
+      landingWith({ related: [], topic: { name: 'Sinh học', href: '/vi/explore/sinh-hoc' } }),
+    );
+
+    expect(html).toContain('href="/vi/explore/sinh-hoc"');
+    expect(html).not.toContain('<ul class="grid');
+  });
+
+  it('starts the full quiz from a short quiz, with no quick hint or second button', async () => {
+    const html = await render(
+      landingWith({
+        questionCount: 5,
+        quickRoundEligible: false,
+      }),
+    );
+
+    expect(html).not.toContain('mode=quick');
+    expect(html).not.toContain('Làm toàn bộ bài');
+    expect(html).not.toContain('Còn ');
+    expect(html.match(/mode=full&amp;entry=quiz_landing/gu)).toHaveLength(2);
+  });
+
+  it('drops "no account needed" for a signed-in viewer', async () => {
+    const html = await render(landingWith(), true);
+
+    expect(html).not.toContain('không cần tài khoản');
+    expect(html).toContain('Chơi ngay');
+    expect(html).toContain('Xem đáp án và làm tiếp');
+  });
+
+  it('ends with the quiz-level report link for the viewer (RIN-1344)', async () => {
+    const html = renderToStaticMarkup(
+      await QuizLanding({
+        locale: 'vi',
+        landing: landingWith(),
+        signedIn: true,
+        viewerEmail: 'learner@example.com',
+        ownedByViewer: false,
+      }),
+    );
+
+    expect(html).toContain('<footer');
+    expect(html).toContain(
+      'data-report-link="{&quot;slug&quot;:&quot;sinh-hoc-10&quot;,&quot;viewerEmail&quot;:&quot;learner@example.com&quot;,&quot;ownedByViewer&quot;:false}"',
+    );
+  });
+});

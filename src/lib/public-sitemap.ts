@@ -1,32 +1,34 @@
 import type { MetadataRoute } from 'next';
 import { defaultLocale, locales } from '@/i18n/config';
+import { getBlogSitemapRoutes } from '@/lib/blog/posts';
 import { serializeDate } from '@/lib/date-serialization';
 import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
-import { canonicalFor } from '@/lib/seo';
+import { canonicalFor, languageAlternates } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
-
-function buildLanguageAlternates(path: string): Record<string, string> {
-  const languages = Object.fromEntries(
-    locales.map((locale) => [locale, canonicalFor(locale, path)]),
-  );
-  return {
-    ...languages,
-    'x-default': canonicalFor(defaultLocale, path),
-  };
-}
+import { loadIndexableTopicHubs, topicHubPath } from '@/lib/seo/topic-hub';
 
 function toEntry(
   locale: string,
   path: string,
   lastModified = new Date(),
+  pageLocales: readonly string[] = locales,
 ): MetadataRoute.Sitemap[number] {
   return {
     url: canonicalFor(locale, path),
     lastModified,
     alternates: {
-      languages: buildLanguageAlternates(path),
+      languages: languageAlternates(path, pageLocales),
     },
   };
+}
+
+/** A quiz or a topic hub exists in one language: one URL, no hreflang pair (RIN-1241 D14). */
+function toSingleLocaleEntry(
+  locale: string,
+  path: string,
+  lastModified: Date,
+): MetadataRoute.Sitemap[number] {
+  return { url: canonicalFor(locale, path), lastModified };
 }
 
 function toRequiredSitemapDate(value: Date | string, fieldName: string): Date {
@@ -53,13 +55,36 @@ export async function buildPublicSitemapEntries(
     }
   }
 
+  for (const route of getBlogSitemapRoutes()) {
+    const lastModified = new Date(`${route.lastModified}T00:00:00.000Z`);
+    // An article is listed only in the locales it renders in (RIN-1312).
+    const routeLocales = route.locales ?? locales;
+    for (const locale of routeLocales) {
+      pushEntry(toEntry(locale, route.path, lastModified, routeLocales));
+    }
+  }
+
   const publicQuizzes = await loadPublicQuizSitemapEntries(errorMessage);
   for (const quiz of publicQuizzes) {
-    for (const locale of locales) {
-      pushEntry(
-        toEntry(locale, quiz.path, toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt')),
-      );
-    }
+    pushEntry(
+      toSingleLocaleEntry(
+        quiz.locale,
+        quiz.path,
+        toRequiredSitemapDate(quiz.lastModified, 'quiz.updatedAt'),
+      ),
+    );
+  }
+
+  // Hubs that pass `isTopicIndexable` only (RIN-1249, spec B5/D15).
+  const hubs = await loadIndexableTopicHubs(errorMessage);
+  for (const hub of hubs) {
+    pushEntry(
+      toSingleLocaleEntry(
+        hub.locale,
+        topicHubPath(hub.slug),
+        toRequiredSitemapDate(hub.lastModified, 'topic.lastModified'),
+      ),
+    );
   }
 
   entries.sort((a, b) => {

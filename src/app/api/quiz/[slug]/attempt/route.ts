@@ -5,6 +5,7 @@ import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { parseParamsAndBody } from '@/lib/api/validated';
 import { quizSlugRouteParamsSchema, submitQuizAttemptRequestSchema } from '@/dtos/quiz';
+import { resolveQuizEntryAttribution } from '@/shared/constants/starter-quiz';
 
 // Public + authenticated dual path. Anonymous attempts pass a `guestClaimToken`
 // (RIN-912; only its hash is stored); a body email identifies no one (RIN-921).
@@ -22,6 +23,12 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
     }
 
     const quizService = getQuizService();
+    // RIN-1256: an untracked entry or a malformed post or topic is dropped, never a 400.
+    const attribution = resolveQuizEntryAttribution(
+      parsed.body.entry,
+      parsed.body.post,
+      parsed.body.topic,
+    );
 
     const result = await quizService.submitQuizAttempt(
       parsed.params.slug,
@@ -31,6 +38,7 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
       parsed.body.retryOfAttemptId,
       guestClaimToken,
       parsed.body.mode === 'quick' ? parsed.body.questionIndices : undefined,
+      attribution.entry === undefined ? undefined : attribution,
     );
 
     if (!result.success) {

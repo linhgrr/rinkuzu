@@ -42,7 +42,7 @@ function GuestHeroCtas({ locale }: { locale: string }) {
             cta="play_first"
             position="hero"
             locale={locale}
-            className={`${PILL_BASE} bg-[#ff541b] hover:bg-[#fd761a] shadow-lg shadow-[#ff541b]/20`}
+            className={`${PILL_BASE} bg-brand-action-strong hover:bg-brand-action-strong-hover shadow-lg shadow-[#ff541b]/20`}
           >
             <span className="text-balance text-center font-unbounded text-[16px] font-bold leading-[1.35] text-white sm:text-[19px]">
               {isVi
@@ -96,7 +96,7 @@ function MemberHeroCtas({ locale }: { locale: string }) {
       <Magnetic className="w-full sm:w-auto">
         <Link
           href="/adaptive/upload"
-          className="bg-[#ff541b] flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto shadow-lg shadow-[#ff541b]/20"
+          className="bg-brand-action-strong flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-brand-action-strong-hover transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto shadow-lg shadow-[#ff541b]/20"
         >
           <UploadIcon />
           <span className="whitespace-nowrap font-unbounded text-[19px] font-bold text-white">
@@ -115,10 +115,14 @@ export default function Hero({ isAuthenticated = false, locale }: HeroProps) {
     <div className="relative w-full max-w-[1920px] mx-auto min-h-[90vh] xl:h-[1080px] flex flex-col xl:flex-row items-center xl:items-start justify-between mt-4 xl:mt-0">
       {/* Left Content */}
       <div className="z-10 flex w-full flex-none flex-col px-4 xl:px-0 min-[1800px]:w-auto">
-        {/* Main Title - Responsive text sizing */}
-        <div className="mt-24 w-full xl:mt-[254px] min-[1800px]:w-[1090px]">
+        {/* Main Title - Responsive text sizing. The fonts use display: optional, so a
+            slow Vina Sans leaves the h1 in its wider fallback (3 lines, not 2). On short
+            desktop viewports (1280x720, 1366x768) the top gap and the h1 shrink so the
+            hero CTAs land in the first screen in either font (RIN-1283); from about
+            870px tall the layout is the design's 254px gap and 144px title. */}
+        <div className="mt-24 w-full xl:mt-[clamp(104px,calc(100vh_-_616px),254px)] min-[1800px]:w-[1090px]">
           <h1
-            className="font-system text-left text-[70px] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[144px] min-[1800px]:text-[164px]"
+            className="font-system text-left text-[length:clamp(32px,calc(16vw_-_10px),70px)] leading-[0.9] text-[#e9d8d6] sm:text-[90px] md:text-[120px] xl:font-vina-sans xl:text-[length:clamp(112px,calc(30vh_-_96px),144px)] min-[1800px]:text-[164px]"
             style={{ filter: 'drop-shadow(4px 4px 0px #542607)' }}
           >
             {isVi ? 'TẠO QUIZ AI TỪ PDF' : 'AI QUIZ GENERATOR FROM PDF'}

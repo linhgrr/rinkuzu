@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizWorkspacePageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { QuizEditorWorkspace } from '@/features/quiz/components/editor/QuizEditorWorkspace';
+import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
+import { PersonalDataNotice } from '@/features/quiz/components/edit/PersonalDataNotice';
 import { HiOutlineClipboardCopy, HiOutlineInformationCircle } from 'react-icons/hi';
 import { fetchQuizEditViewModel, updateQuizEditViewModel } from '@/features/quiz/api/quiz-edit-api';
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
@@ -96,12 +98,16 @@ function QuizLinkCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-x-4">
-          <code className="flex-1 rounded bg-neutral-100 px-3 py-2 text-sm">{shareUrl}</code>
+        {/* RIN-1322: the link is one long word; min-w-0 + break-all let it wrap inside the
+            card, and on phones the Copy button moves below it instead of off-screen. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-x-4">
+          <code className="min-w-0 flex-1 rounded bg-neutral-100 px-3 py-2 text-sm break-all">
+            {shareUrl}
+          </code>
           <Button
             size="sm"
             variant="secondary"
-            className="flex items-center gap-2"
+            className="flex shrink-0 items-center gap-2 self-start sm:self-auto"
             onClick={() => {
               void copyToClipboard(shareUrl).then((ok) => {
                 if (ok) toast.success(copiedLabel);
@@ -210,6 +216,16 @@ export function EditQuizPage() {
           canEdit={canEdit}
           showPremiumToggle={canEdit}
           premiumEligible={session?.user?.emailVerified === true}
+          metaNotice={
+            canEdit && quiz.personalDataKinds !== undefined ? (
+              <div className="space-y-2">
+                <PersonalDataNotice kinds={quiz.personalDataKinds} />
+                <PublicQuizNotice variant="short" />
+              </div>
+            ) : (
+              <PublicQuizNotice variant="short" />
+            )
+          }
           {...(canEdit
             ? {
                 premiumAttestation: {

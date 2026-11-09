@@ -17,6 +17,7 @@ import {
 } from '@react-email/components';
 import type { ReactNode } from 'react';
 import type { CampaignBlockInput } from '@/dtos/communication';
+import { ADAPTIVE_REVIEW_COPY } from './review-reminder-adaptive-copy';
 
 export interface RenderedCommunicationMail {
   html: string;
@@ -280,7 +281,7 @@ const REVIEW_REMINDER_COPY: Record<ReviewReminderLocale, ReviewReminderCopy> = {
     why: 'Ôn lại lúc này giúp bạn nhớ lâu hơn. Rinkuzu sẽ đưa bạn qua những câu đó trong một lượt ôn tập cá nhân hóa.',
     button: (missed) => (missed > 0 ? `Ôn lại ${missed} câu` : 'Ôn lại bài'),
     footer:
-      'Bạn nhận email này vì đã chọn nhận nhắc ôn tập trên trang kết quả. Mỗi tuần tối đa một email.',
+      'Bạn nhận email này vì đã chọn nhận nhắc ôn tập trên trang kết quả. Mỗi tuần tối đa hai email.',
     unsubscribe: 'Hủy nhận nhắc ôn tập',
   },
   en: {
@@ -298,19 +299,58 @@ const REVIEW_REMINDER_COPY: Record<ReviewReminderLocale, ReviewReminderCopy> = {
         ? `Review ${missed} ${missed === 1 ? 'question' : 'questions'}`
         : 'Review the quiz',
     footer:
-      'You get this email because you asked for a review reminder on your results page. At most one email a week.',
+      'You get this email because you asked for a review reminder on your results page. At most two emails a week.',
     unsubscribe: 'Unsubscribe from review reminders',
   },
 };
 
+const questions = (count: number) => `${count} ${count === 1 ? 'question' : 'questions'}`;
+
+/**
+ * Copy for the final day-5 touch (RIN-1304): "N questions are due for
+ * review", quiz title and count only, never answers. Footer and unsubscribe
+ * link are the d2 email's.
+ */
+const REVIEW_REMINDER_D5_COPY: Record<ReviewReminderLocale, ReviewReminderCopy> = {
+  vi: {
+    ...REVIEW_REMINDER_COPY.vi,
+    subject: (title, missed) =>
+      missed > 0 ? `${missed} câu trong “${title}” đã đến lúc ôn lại` : `Đến lúc ôn lại “${title}”`,
+    intro: (title, missed) =>
+      missed > 0
+        ? `${missed} câu bạn chưa đúng trong bài “${title}” đã đến lúc ôn lại.`
+        : `Bài “${title}” đã đến lúc ôn lại.`,
+    why: 'Ôn lại sau vài ngày là lúc giúp bạn nhớ lâu nhất. Đây là email nhắc cuối cùng cho lần làm bài này.',
+  },
+  en: {
+    ...REVIEW_REMINDER_COPY.en,
+    subject: (title, missed) =>
+      missed > 0
+        ? `${questions(missed)} in “${title}” ${missed === 1 ? 'is' : 'are'} due for review`
+        : `“${title}” is due for review`,
+    intro: (title, missed) =>
+      missed > 0
+        ? `The ${questions(missed)} you missed in “${title}” ${missed === 1 ? 'is' : 'are'} due for review.`
+        : `“${title}” is due for review.`,
+    why: 'A review a few days later is what makes it stick. This is the last reminder for this attempt.',
+  },
+};
+
 export async function renderReviewReminder(input: {
+  /** `d2` (default) or the final day-5 touch (RIN-1304). */
+  touch?: 'd2' | 'd5';
+  /** `adaptive`: Path B, the title is a document and the count is due concepts (RIN-1364). */
+  path?: 'quiz' | 'adaptive';
   locale: ReviewReminderLocale;
   quizTitle: string;
   missedCount: number;
   retryUrl: string;
   unsubscribeUrl: string;
 }): Promise<RenderedCommunicationMail & { subject: string }> {
-  const copy = REVIEW_REMINDER_COPY[input.locale];
+  const copy =
+    input.path === 'adaptive'
+      ? ADAPTIVE_REVIEW_COPY[input.touch ?? 'd2'][input.locale]
+      : (input.touch === 'd5' ? REVIEW_REMINDER_D5_COPY : REVIEW_REMINDER_COPY)[input.locale];
   const subject = copy.subject(input.quizTitle, input.missedCount).slice(0, 200);
   const mail = await renderElement(
     <MailFrame

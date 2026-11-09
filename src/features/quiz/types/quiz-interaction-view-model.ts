@@ -45,6 +45,12 @@ export interface SubmitQuizAttemptInput {
   retryOfAttemptId?: string;
   /** Quick round (RIN-933): `answers[i]` answers quiz question `questionIndices[i]`. */
   questionIndices?: number[];
+  /** Tracked entry point (RIN-1242); the API drops anything untracked (RIN-1256). */
+  entry?: string;
+  /** Blog post slug, only with `entry: 'blog'`. */
+  post?: string;
+  /** Hub topic slug, only with `entry: 'hub'` (RIN-1417). */
+  topic?: string;
 }
 
 export interface AddQuizDiscussionCommentInput {

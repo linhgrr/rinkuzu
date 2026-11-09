@@ -20,6 +20,7 @@ import type {
 } from '@/features/quiz/types/quiz-interaction-view-model';
 import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
+import type { ReportReason } from '@/shared/constants/report-reason';
 
 function quizProgressUrl(slug: string): string {
   return `/api/quiz/${routePathSegment(slug)}/progress`;
@@ -32,6 +33,8 @@ export async function submitQuizAttemptViewModel({
   retryOfAttemptId,
   guestClaimToken,
   questionIndices,
+  entry,
+  post,
 }: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
   const dto = await fetchApiData<QuizAttemptResultDto>(`/api/quiz/${encodedSlug}/attempt`, {
@@ -43,6 +46,8 @@ export async function submitQuizAttemptViewModel({
       ...(retryOfAttemptId ? { retryOfAttemptId } : {}),
       ...(guestClaimToken ? { guestClaimToken } : {}),
       ...(questionIndices ? { mode: 'quick', questionIndices } : {}),
+      ...(entry ? { entry } : {}),
+      ...(post ? { post } : {}),
     }),
   });
   return toQuizAttemptResultViewModel(dto);
@@ -114,5 +119,22 @@ export async function reportQuizViewModel(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questionId, content }),
+  });
+}
+
+export interface ReportQuizPageInput {
+  reason: ReportReason;
+  details?: string;
+  email?: string;
+  /** Honeypot: people never see it, so only a bot fills it in. */
+  website?: string;
+}
+
+/** "Report this quiz" from the quiz page (RIN-1344): open to signed-out visitors. */
+export async function reportQuizPage(slug: string, input: ReportQuizPageInput): Promise<void> {
+  await fetchApiData<unknown>(`/api/quiz/${routePathSegment(slug)}/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
   });
 }

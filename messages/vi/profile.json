@@ -72,6 +72,7 @@
   "premiumStatus_changes_requested": "Cần chỉnh sửa",
   "premiumStatus_rejected": "Không được duyệt",
   "premiumStatus_approved": "Đã duyệt vào Quiz Premium",
+  "premiumStatus_withdrawn": "Đã rút khỏi Premium",
   "noQuizzesYet": "Chưa có quiz",
   "noQuizzesMessage": "Tạo quiz đầu tiên để bắt đầu",
   "createFirstQuiz": "Tạo quiz đầu tiên",

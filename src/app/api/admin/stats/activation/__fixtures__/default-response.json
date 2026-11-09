@@ -1,0 +1,150 @@
+{
+  "success": true,
+  "data": {
+    "generatedAt": "2026-11-04T12:00:00.000Z",
+    "timezone": "UTC",
+    "definitions": {
+      "week": "ISO-8601 week in UTC, Monday 00:00:00.000 to Sunday 23:59:59.999. `end` is the last millisecond of the week.",
+      "exclusions": "Users with role admin, disabled users (disable = 1), users an admin marked as test accounts in /admin/users (isTestAccount = true), and test/QA accounts on reserved example/.test/.invalid/.localhost email domains or in a documented constant list of company-owned addresses are never counted.",
+      "signups": "Non-excluded users whose createdAt falls in the week.",
+      "signedIn": "Signups of the week with at least one successful sign-in (login_success audit event, Google sign-ins included) within 7 days of signup.",
+      "material": "Signups of the week who, within 7 days of signup, authored a quiz, submitted an attempt on a quiz they did not author, or had a succeeded upload (Path B). Every activated signup is material.",
+      "startedQuiz": "Signups of the week who, within 7 days of signup, submitted a quiz attempt or had an adaptive completion (every activated signup), or have an unsubmitted quiz with at least one answer saved after signup (in-progress quizzes keep only their last update time). activated <= startedQuiz <= signups.",
+      "activated": "Signups of the week with at least one completed (submitted) quiz attempt or adaptive completion within 7 days of signup. Each learner is counted once.",
+      "activatedBy": "Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated. claimedGuest is a subset of activated, not a fourth path: activated signups with a qualifying attempt made as a guest and claimed into the account (0 until guest claiming ships).",
+      "weeklyActivatedLearners": "Distinct non-excluded users whose first ever completion, the earlier of their first completed attempt and their first adaptive completion, fell in the week, whatever their signup week. North-star series.",
+      "weeklyActivatedBy": "Split of weeklyActivatedLearners by the path that gave the first ever completion: quiz, adaptive, or both when the first attempt and the first adaptive completion fall in the same week.",
+      "adaptiveCompletion": "Path B: every 5th answered adaptive exercise (an answer was recorded) on one uploaded document, timed at that exercise. A learner with fewer than 5 answers on every document has none.",
+      "succeededUpload": "Path B: an adaptive document-processing job that reached completed, timed at its completion. Failed, cancelled and in-flight jobs do not count.",
+      "w1Retained": "Activated signups of the week who also completed a quiz attempt or an adaptive completion on days 7-13 after signup. null until the youngest signup of the week is 14 days old.",
+      "w1RetentionRate": "w1Retained / activated, rounded to 4 decimals; null when either is null or 0.",
+      "returnedWeek1": "Signups of the week with a sign-in, quiz attempt or adaptive completion on a later calendar day in Asia/Ho_Chi_Minh than their signup day, and less than 7 days after signup. Activation is not required. null until 7 days after the end of the week. Weeks themselves stay UTC ISO weeks.",
+      "complete": "true once every number in the row is final: 14 days after the end of the week. The current week and the two before it are partial.",
+      "sources": "sources.adaptive is ok when the Path B events were read from the API, unavailable when that read failed or took over 2 s: every number is then quiz-only, and the response is not cached.",
+      "limitations": "Unsubmitted in-progress quiz attempts are not counted as material. A learner whose session is still live comes back without signing in again, so they count in returnedWeek1 only if they also attempt or complete. Adaptive learners with 1-4 answers and no completion are not visible to the web (Path B reports completions only), so they are missing from startedQuiz. Sign-in events are kept 180 days.",
+      "activationEmail": "One-time activation nudge emails (RIN-999), bucketed by the UTC ISO week they were sent in (the worker slot of the delivery the provider accepted), not by signup week. sent: delivered nudges of non-excluded learners. clicked: sends whose CTA click was recorded (0 until click tracking ships). activatedWithin7d: sends followed by a completed quiz attempt or adaptive completion in [send, send + 7 days); final 7 days after the week ends. byTrigger splits each count by what enqueued the email: 24h (the sweep 24 h after signup) or backfill; the totals are their sums.",
+      "activatedByEntry": "Split of activated by the entry point of the first qualifying attempt (the earliest completed quiz attempt within 7 days of signup), as the quiz link carried it (?entry=, stored on the attempt since RIN-1256): blog, landing (homepage play-first), post_signin_starter, activation_email, hub (a topic hub card, since RIN-1417; the topic slug of the hub is stored on the attempt as topic). none: no tracked entry, which covers attempts before RIN-1256, untracked links, and learners activated by an adaptive completion only. The six add up to activated. A claimed guest attempt keeps its entry.",
+      "blogPosts": "Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only."
+    },
+    "sources": {
+      "adaptive": "ok"
+    },
+    "weeks": [
+      {
+        "isoWeek": "2026-W44",
+        "start": "2026-10-26T00:00:00.000Z",
+        "end": "2026-11-01T23:59:59.999Z",
+        "signups": 10,
+        "signedIn": 9,
+        "material": 7,
+        "startedQuiz": 5,
+        "activated": 4,
+        "activatedBy": {
+          "quiz": 2,
+          "adaptive": 1,
+          "both": 1,
+          "claimedGuest": 0
+        },
+        "weeklyActivatedLearners": 0,
+        "weeklyActivatedBy": {
+          "quiz": 0,
+          "adaptive": 0,
+          "both": 0
+        },
+        "w1Retained": null,
+        "w1RetentionRate": null,
+        "returnedWeek1": null,
+        "complete": false,
+        "activatedByEntry": {
+          "blog": 1,
+          "landing": 1,
+          "post_signin_starter": 1,
+          "activation_email": 0,
+          "hub": 0,
+          "none": 1
+        },
+        "blogPosts": [
+          {
+            "post": "fake-post",
+            "activated": 1
+          }
+        ]
+      },
+      {
+        "isoWeek": "2026-W45",
+        "start": "2026-11-02T00:00:00.000Z",
+        "end": "2026-11-08T23:59:59.999Z",
+        "signups": 0,
+        "signedIn": 0,
+        "material": 0,
+        "startedQuiz": 0,
+        "activated": 0,
+        "activatedBy": {
+          "quiz": 0,
+          "adaptive": 0,
+          "both": 0,
+          "claimedGuest": 0
+        },
+        "weeklyActivatedLearners": 5,
+        "weeklyActivatedBy": {
+          "quiz": 3,
+          "adaptive": 2,
+          "both": 0
+        },
+        "w1Retained": null,
+        "w1RetentionRate": null,
+        "returnedWeek1": null,
+        "complete": false,
+        "activatedByEntry": {
+          "blog": 0,
+          "landing": 0,
+          "post_signin_starter": 0,
+          "activation_email": 0,
+          "hub": 0,
+          "none": 0
+        },
+        "blogPosts": []
+      }
+    ],
+    "activationEmail": {
+      "weeks": [
+        {
+          "sent": 0,
+          "clicked": 0,
+          "activatedWithin7d": 0,
+          "isoWeek": "2026-W44",
+          "byTrigger": {
+            "24h": {
+              "sent": 0,
+              "clicked": 0,
+              "activatedWithin7d": 0
+            },
+            "backfill": {
+              "sent": 0,
+              "clicked": 0,
+              "activatedWithin7d": 0
+            }
+          }
+        },
+        {
+          "sent": 0,
+          "clicked": 0,
+          "activatedWithin7d": 0,
+          "isoWeek": "2026-W45",
+          "byTrigger": {
+            "24h": {
+              "sent": 0,
+              "clicked": 0,
+              "activatedWithin7d": 0
+            },
+            "backfill": {
+              "sent": 0,
+              "clicked": 0,
+              "activatedWithin7d": 0
+            }
+          }
+        }
+      ]
+    }
+  }
+}

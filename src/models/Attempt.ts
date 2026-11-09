@@ -2,6 +2,8 @@ import mongoose, { Schema, Types } from 'mongoose';
 import type { SelectedAnswerPersistenceRecord } from '@/repositories/types/AnswerPersistence';
 import { SelectedAnswerSchema } from '@/models/schemas/SelectedAnswerSchema';
 import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
+import { QUIZ_TOPIC_SLUG_PATTERN } from '@/shared/constants/quiz-topic';
+import { BLOG_POST_SLUG_PATTERN, TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
 
 interface AttemptQuizSnapshotDocument {
   integrity: 'complete';
@@ -31,6 +33,12 @@ interface AttemptDocument {
   retryOfAttemptId?: Types.ObjectId;
   questionIndices?: number[];
   mode?: 'quick' | 'full';
+  /** RIN-1256: where the attempt started; absent on attempts before it (count as `none`). */
+  entry?: string;
+  /** RIN-1256: blog post slug, only with `entry: 'blog'`. */
+  post?: string;
+  /** RIN-1417: topic hub slug, only with `entry: 'hub'`. */
+  topic?: string;
 }
 
 const AttemptQuizSnapshotSchema = new Schema<AttemptQuizSnapshotDocument>(
@@ -190,6 +198,24 @@ const AttemptSchema = new Schema<AttemptDocument>({
   mode: {
     type: String,
     enum: ['quick', 'full'],
+    immutable: true,
+  },
+  // Attribution (RIN-1256): optional and additive, no backfill. A claim keeps both.
+  entry: {
+    type: String,
+    enum: [...TRACKED_QUIZ_ENTRIES],
+    immutable: true,
+  },
+  post: {
+    type: String,
+    match: BLOG_POST_SLUG_PATTERN,
+    immutable: true,
+  },
+  // RIN-1417: additive like `post`; a slug, never anything about the learner.
+  topic: {
+    type: String,
+    match: QUIZ_TOPIC_SLUG_PATTERN,
+    maxlength: 80,
     immutable: true,
   },
 });

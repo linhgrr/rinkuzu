@@ -137,7 +137,10 @@ describe('AuthAccountService mutation coverage', () => {
     notifier = new AuthNotifierStub();
     audit = new AuthAuditStub();
     scheduler = new DeferredTaskSchedulerStub();
-    service = new AuthAccountService(repository, notifier, audit, scheduler);
+    service = new AuthAccountService(repository, notifier, audit, scheduler, {
+      claim: vi.fn(async () => []),
+      claimHashed: vi.fn(async () => []),
+    });
     notifier.sendVerificationEmail.mockResolvedValue();
     notifier.sendPasswordResetEmail.mockResolvedValue();
     notifier.sendPasswordChangedEmail.mockResolvedValue();
@@ -194,6 +197,7 @@ describe('AuthAccountService mutation coverage', () => {
       expect(repository.createPending).toHaveBeenCalledWith({
         email: identity.email,
         passwordHash: 'hashed-password:password12',
+        signupOrigin: { signupLocale: 'vi', signupCountry: null },
         verificationTokenHash: 'token-hash',
         verificationExpires: new Date(now + VERIFICATION_TTL_MS),
       });

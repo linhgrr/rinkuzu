@@ -32,6 +32,7 @@ import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
 import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
+import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import {
   getPdfRejectionMessage,
   isPdfFile,
@@ -364,6 +365,9 @@ export function MobileCreateQuizPage() {
           <p className="mt-2 text-xs text-neutral-500">{t('aiPromptHelper')}</p>
         </div>
       )}
+
+      {/* RIN-1339: no Premium checkbox on mobile, so no Premium pointer either. */}
+      {state.file && <PublicQuizNotice variant="full" className="mt-6" />}
 
       {state.file && (
         <CreateQuizErrorAlert message={state.submitError} className="mt-6" focusOnShow />

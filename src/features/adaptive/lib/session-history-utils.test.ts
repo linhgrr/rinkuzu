@@ -14,15 +14,15 @@ import { formatSessionHistoryDate } from '@/features/adaptive/lib/session-histor
 
 describe('formatSessionHistoryDate', () => {
   it('returns an em dash for zero and other falsy timestamps without formatting', () => {
-    expect(formatSessionHistoryDate(0)).toBe('—');
-    expect(formatSessionHistoryDate(0, 'en-US')).toBe('—');
+    expect(formatSessionHistoryDate(0, 'en')).toBe('—');
+    expect(formatSessionHistoryDate(0, 'vi')).toBe('—');
     expect(formatDateTimeMock).not.toHaveBeenCalled();
   });
 
-  it('converts unix seconds to milliseconds and defaults locale to vi-VN', () => {
-    expect(formatSessionHistoryDate(1_700_000_000)).toBe('fmt:1700000000000:vi-VN:—');
+  it('converts unix seconds to milliseconds in the active locale', () => {
+    expect(formatSessionHistoryDate(1_700_000_000, 'vi')).toBe('fmt:1700000000000:vi:—');
     expect(formatDateTimeMock).toHaveBeenCalledWith(1_700_000_000 * 1000, {
-      locale: 'vi-VN',
+      locale: 'vi',
       emptyLabel: '—',
     });
   });

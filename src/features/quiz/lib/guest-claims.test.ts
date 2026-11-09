@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   GUEST_CLAIMS_STORAGE_KEY,
@@ -94,5 +96,28 @@ describe('guest claims (RIN-912)', () => {
     expect(window.localStorage.getItem(GUEST_CLAIMS_STORAGE_KEY)).toBeNull();
     expect(readGuestClaims(NOW)).toEqual([]);
     expect(document.cookie).not.toContain('rk_guest_claim_pending');
+  });
+  it('keeps only well-formed entries from storage', () => {
+    window.localStorage.setItem(
+      GUEST_CLAIMS_STORAGE_KEY,
+      JSON.stringify([
+        claim('attempt-ok'),
+        null,
+        'attempt-string',
+        ['attempt-array'],
+        { ...claim('attempt-number-id'), attemptId: 7 },
+        { ...claim('attempt-no-token'), token: undefined },
+        { ...claim('attempt-slug-null'), quizSlug: null },
+        { ...claim('attempt-string-time'), takenAt: String(NOW) },
+      ]),
+    );
+
+    expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['attempt-ok']);
+  });
+
+  it('keeps zod out of the app-layout client graph (RIN-1370)', () => {
+    const source = readFileSync(path.join(__dirname, 'guest-claims.ts'), 'utf8');
+
+    expect(source).not.toMatch(/from 'zod/);
   });
 });

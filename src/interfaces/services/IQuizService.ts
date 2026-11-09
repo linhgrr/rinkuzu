@@ -7,6 +7,8 @@ import type {
   QuizDetailDto,
   QuizListDto,
   PublicQuizSitemapEntryDto,
+  RelatedQuizDto,
+  RelatedQuizzesQueryDto,
   QuizListOptionsDto,
   QuizMetadataDto,
   QuizPlayDetailDto,
@@ -19,6 +21,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
+import type { QuizEntryAttribution } from '@/shared/constants/starter-quiz';
 
 export interface IQuizService {
   getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto>;
@@ -39,6 +42,9 @@ export interface IQuizService {
 
   /** Public quizzes for the sitemap, minus test/company-owned ones (RIN-840). */
   getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]>;
+
+  /** Newest indexable public quizzes in a language, for the quiz landing (RIN-1241 C12). */
+  getRelatedPublicQuizzes(query: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]>;
 
   /** Page metadata; `ownerIndexable` is server-only (RIN-840). */
   getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null>;
@@ -100,6 +106,8 @@ export interface IQuizService {
     guestClaimToken?: string,
     /** Quick round (RIN-936): the quiz question index of each answer, in play order. */
     quickQuestionIndices?: number[],
+    /** RIN-1256: the already-resolved entry point, stored on the attempt. */
+    attribution?: QuizEntryAttribution,
   ): Promise<ServiceResult<QuizAttemptResultDto>>;
 
   getQuizDiscussions(

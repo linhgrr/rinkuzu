@@ -114,7 +114,12 @@ describe('AdminService report and stats contracts', () => {
       createAttemptRepository(),
     );
 
-    const result = await service.getReports({ page: 1, limit: 20, status: 'pending' });
+    const result = await service.getReports({
+      page: 1,
+      limit: 20,
+      status: 'pending',
+      reason: 'all',
+    });
 
     expect(reportRepository.findAll).toHaveBeenCalledWith({
       page: 1,
@@ -122,6 +127,7 @@ describe('AdminService report and stats contracts', () => {
       status: 'pending',
     });
     expect(result.success).toBe(true);
+    if (result.success) expect(result.data.pendingIndexHoldCount).toBe(0);
     if (!result.success) return;
     expect(result.data.reports[0]).toMatchObject({
       id: '507f191e810c19729de860ea',
@@ -268,6 +274,131 @@ describe('AdminService report and stats contracts', () => {
       },
     });
     expect(updateQuestionById).toHaveBeenCalledWith(quizId, questionId, input);
+  });
+
+  // RIN-1341: an admin edit that adds personal data flags the quiz like an owner edit.
+  it('re-runs the personal-data check after an admin question edit', async () => {
+    const quizId = '507f191e810c19729de860eb';
+    const questionId = '507f191e810c19729de860ec';
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'report-phone',
+        quizId,
+        questionId,
+        quizTitle: 'Algebra',
+        quizSlug: 'algebra',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Typo',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    });
+    const storedQuiz = (question: string) => ({
+      id: quizId,
+      title: 'Algebra',
+      slug: 'algebra',
+      author: '507f191e810c19729de860ed',
+      questions: [
+        { id: questionId, question, options: ['3', '4'], type: 'single', correctIndex: 1 },
+      ],
+      visibility: 'public',
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    // Fake number: not anyone's phone.
+    const edited = 'Call 0912 345 678 for the answer: 2 + 2 = ?';
+    const update = vi.fn().mockResolvedValue(null);
+    const quizRepository = createQuizRepository({
+      findById: vi
+        .fn()
+        .mockResolvedValueOnce(storedQuiz('2 + 2 = ?'))
+        .mockResolvedValue(storedQuiz(edited)),
+      updateQuestionById: vi.fn().mockResolvedValue(true),
+      update,
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    const result = await service.updateReportedQuestion('report-phone', {
+      question: edited,
+      options: ['3', '4'],
+      type: 'single',
+      correctIndex: 1,
+    });
+
+    expect(result.success).toBe(true);
+    expect(update).toHaveBeenCalledWith(quizId, {
+      contentFlags: { personalData: true, kinds: ['phone'], checkedAt: expect.any(Date) },
+    });
+  });
+
+  // RIN-1341: a quiz deleted between the question edit and the re-check has nothing to flag.
+  it('skips the personal-data re-check when the quiz is gone after the edit', async () => {
+    const quizId = '507f191e810c19729de860fb';
+    const questionId = '507f191e810c19729de860fc';
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'report-gone',
+        quizId,
+        questionId,
+        quizTitle: 'Algebra',
+        quizSlug: 'algebra',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Typo',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    });
+    const update = vi.fn().mockResolvedValue(null);
+    const quizRepository = createQuizRepository({
+      findById: vi
+        .fn()
+        .mockResolvedValueOnce({
+          id: quizId,
+          title: 'Algebra',
+          slug: 'algebra',
+          author: '507f191e810c19729de860fd',
+          questions: [
+            {
+              id: questionId,
+              question: '2 + 2 = ?',
+              options: ['3', '4'],
+              type: 'single',
+              correctIndex: 1,
+            },
+          ],
+          visibility: 'public',
+          createdAt: new Date('2026-07-01T00:00:00Z'),
+          updatedAt: new Date('2026-07-01T00:00:00Z'),
+        })
+        .mockResolvedValue(null),
+      updateQuestionById: vi.fn().mockResolvedValue(true),
+      update,
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    const result = await service.updateReportedQuestion('report-gone', {
+      question: '2 + 2 = ?',
+      options: ['3', '4'],
+      type: 'single',
+      correctIndex: 1,
+    });
+
+    expect(result.success).toBe(true);
+    expect(update).not.toHaveBeenCalled();
   });
 
   it('blocks inline editing for legacy reports without a question id', async () => {

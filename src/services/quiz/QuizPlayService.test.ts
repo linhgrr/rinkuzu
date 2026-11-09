@@ -507,6 +507,78 @@ describe('QuizPlayService progress operations', () => {
     expect(JSON.stringify(recorded)).not.toContain(token);
   });
 
+  it('stores the entry point on guest and signed-in attempts, and nothing without one (RIN-1256)', async () => {
+    const { service, quizRepository, attemptProgressRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      visibility: 'public',
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(attemptProgressRepository.recordSubmittedAttempt).mockResolvedValue({
+      id: 'attempt-4',
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    });
+    const session = {
+      user: { id: userId, email: 'learner@example.com', role: 'user' as const },
+      expires: '2026-08-01T00:00:00.000Z',
+    };
+    const key = '018f7494-8bd8-7b8a-a387-3bc5a14f22a5';
+    const blog = { entry: 'blog', post: 'on-thi-toeic' };
+
+    assertOk(
+      await service.submitQuizAttempt(
+        'quiz',
+        [1],
+        key,
+        null,
+        undefined,
+        'T'.repeat(43),
+        undefined,
+        blog,
+      ),
+    );
+    assertOk(
+      await service.submitQuizAttempt('quiz', [1], key, session, undefined, undefined, undefined, {
+        entry: 'landing',
+      }),
+    );
+    assertOk(await service.submitQuizAttempt('quiz', [1], key, session));
+    assertOk(
+      await service.submitQuizAttempt('quiz', [1], key, session, undefined, undefined, undefined, {
+        entry: 'hub',
+        topic: 'tieng-anh-lop-10',
+      }),
+    );
+
+    const recorded = vi
+      .mocked(attemptProgressRepository.recordSubmittedAttempt)
+      .mock.calls.map(([data]) => data);
+    expect(recorded[0]).toMatchObject({ guestClaimTokenHash: expect.any(String), ...blog });
+    expect(recorded[1]).toMatchObject({ userId, entry: 'landing' });
+    expect(recorded[1]).not.toHaveProperty('post');
+    expect(recorded[2]).not.toHaveProperty('entry');
+    expect(recorded[2]).not.toHaveProperty('post');
+    expect(recorded[2]).not.toHaveProperty('topic');
+    // RIN-1417: a hub card's topic slug rides along; nothing about the learner.
+    expect(recorded[3]).toMatchObject({ userId, entry: 'hub', topic: 'tieng-anh-lop-10' });
+    expect(recorded[3]).not.toHaveProperty('post');
+  });
+
   it('resolves session email to a user id and returns 404 when unknown', async () => {
     const { service, quizRepository, userRepository, attemptProgressRepository } = createService();
     vi.mocked(quizRepository.findForPlay).mockResolvedValue({

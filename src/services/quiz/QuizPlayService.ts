@@ -31,6 +31,7 @@ import { objectIdSchema } from '@/lib/validation/common';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { deriveMissedQuestionIndices } from '@/services/quiz/quiz-retry';
 import { isQuickRoundEligible, QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
+import type { QuizEntryAttribution } from '@/shared/constants/starter-quiz';
 
 type RetrySourceAttemptRepository = Pick<IAttemptRepository, 'findByIdWithQuiz'>;
 
@@ -328,6 +329,7 @@ export class QuizPlayService {
     retryOfAttemptId?: string,
     guestClaimToken?: string,
     quickQuestionIndices?: number[],
+    attribution?: QuizEntryAttribution,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findForPlay(slug);
@@ -410,6 +412,9 @@ export class QuizPlayService {
         totalQuestions: evaluation.totalQuestions,
         wrongQuestions: evaluation.wrongQuestions,
         takenAt: new Date(),
+        ...(attribution?.entry === undefined ? {} : { entry: attribution.entry }),
+        ...(attribution?.post === undefined ? {} : { post: attribution.post }),
+        ...(attribution?.topic === undefined ? {} : { topic: attribution.topic }),
       });
 
       return {

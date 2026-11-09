@@ -4,6 +4,7 @@ import type {
   StarterQuizCandidateRecord,
   StarterQuizEntryRecord,
 } from '@/interfaces/repositories/IStarterQuizReadRepository';
+import { isQuizContentIndexable } from '@/lib/seo/quiz-indexability';
 import { ROUTES } from '@/shared/constants/routes';
 import { QUICK_ROUND_SIZE, isQuickRoundEligible } from '@/shared/constants/quick-round';
 
@@ -81,6 +82,9 @@ function resolveStarterQuizzes({
       dropped.push({ quizId: entry.quizId, reason: reason ?? 'missing' });
       continue;
     }
+    // A flagged or held quiz stays playable at its URL but is not promoted
+    // (RIN-1341). Not a drop reason: the admin sees the flag where it is cleared.
+    if (!isQuizContentIndexable(candidate)) continue;
     const quick = isQuickRoundEligible(candidate.questionCount);
     starterQuizzes.push({
       slug: candidate.slug,

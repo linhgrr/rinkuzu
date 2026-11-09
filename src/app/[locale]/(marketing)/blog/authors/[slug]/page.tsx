@@ -3,63 +3,37 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { getBlogAuthor, type BlogAuthor } from '@/lib/blog/authors';
+import { blogFeedAlternates } from '@/lib/blog/feed';
+import {
+  formatBlogDate,
+  getBlogAuthorSlugs,
+  getBlogPostsByAuthor,
+  toBlogLocale,
+} from '@/lib/blog/posts';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
-const AUTHORS: Record<
-  string,
-  {
-    name: string;
-    slug: string;
-    role: string;
-    bio: string;
-    shortBio: string;
-    imageUrl: string;
-    links: { label: string; url: string }[];
-  }
-> = {
-  'rinkuzu-team': {
-    name: 'RinKuzu Team',
-    slug: 'rinkuzu-team',
-    role: 'Research & Engineering',
-    bio: `The RinKuzu Team is a group of researchers and engineers at Hanoi University of Science and Technology working at the intersection of personalized learning systems, knowledge graph construction, and educational AI. The team develops the ALSS-LEPC v2 (Adaptive Learning System with LLM-Enhanced RL for Personalized Curriculum) — an end-to-end system that transforms PDF lecture documents into personalized, knowledge-graph-driven learning paths.
+// Re-render at most hourly (ISR) so a post scheduled by a future `date` goes
+// live on that day without a deploy, while crawlers still get a cached static
+// page (RIN-1329, `isPublished` in src/lib/blog/posts.ts).
+export const revalidate = 3600;
 
-The team's research combines Bayesian Knowledge Tracing, deep knowledge tracing with SAINT-Bloom models, Reinforcement Learning-based curriculum sequencing using Dueling Double DQN, and large language model-powered exercise generation to create a fully automated pipeline from document to mastery.`,
-    shortBio:
-      'Researchers and engineers building AI-powered personalized learning systems from Hanoi University of Science and Technology.',
-    imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80',
-    links: [],
-  },
-};
-
-const AUTHOR_SLUGS = Object.keys(AUTHORS);
-
-function localizeAuthor(author: (typeof AUTHORS)[string], locale: string) {
-  if (locale !== 'vi') return author;
-  return {
-    ...author,
-    role: 'Nghiên cứu & Kỹ thuật',
-    bio: `Nhóm RinKuzu gồm các nhà nghiên cứu và kỹ sư tại Đại học Bách khoa Hà Nội, làm việc trong các lĩnh vực hệ thống học cá nhân hóa, xây dựng đồ thị kiến thức và AI giáo dục. Nhóm phát triển quy trình biến tài liệu PDF thành lộ trình luyện tập cá nhân hóa dựa trên quan hệ kiến thức.
-
-Hệ thống kết hợp theo dõi mức độ nắm vững, sắp xếp nội dung học và tạo bài tập bằng mô hình ngôn ngữ để hỗ trợ người học đi từ tài liệu nguồn đến bước luyện tập tiếp theo.`,
-    shortBio:
-      'Nhóm nghiên cứu và kỹ sư phát triển hệ thống học cá nhân hóa bằng AI tại Đại học Bách khoa Hà Nội.',
-  };
-}
-
-export async function generateStaticParams() {
-  return AUTHOR_SLUGS.map((slug) => ({ slug }));
+export function generateStaticParams(): Array<{ slug: string }> {
+  return getBlogAuthorSlugs()
+    .filter((slug) => getBlogAuthor(slug))
+    .map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
-  const sourceAuthor = AUTHORS[slug];
-  const author = sourceAuthor ? localizeAuthor(sourceAuthor, locale) : null;
+  const author = getBlogAuthor(slug, toBlogLocale(locale));
   if (!author) return {};
 
   return buildLocalizedMetadata({
     locale,
     path: `/blog/authors/${slug}`,
+    alternateTypes: blogFeedAlternates(toBlogLocale(locale)),
     title:
       locale === 'vi'
         ? `${author.name} — Tác giả tại Blog RinKuzu`
@@ -68,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-function buildPersonSchema(author: (typeof AUTHORS)[string], locale: string) {
+function buildPersonSchema(author: BlogAuthor, locale: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -89,10 +63,11 @@ function buildPersonSchema(author: (typeof AUTHORS)[string], locale: string) {
 
 export default async function AuthorPage({ params }: Props) {
   const { locale, slug } = await params;
-  const sourceAuthor = AUTHORS[slug];
-  const author = sourceAuthor ? localizeAuthor(sourceAuthor, locale) : null;
+  const author = getBlogAuthor(slug, toBlogLocale(locale));
   if (!author) return null;
   const isVi = locale === 'vi';
+  const blogLocale = toBlogLocale(locale);
+  const posts = getBlogPostsByAuthor(blogLocale, author.slug);
 
   const personSchema = buildPersonSchema(author, locale);
 
@@ -172,59 +147,30 @@ export default async function AuthorPage({ params }: Props) {
               {isVi ? `Bài viết của ${author.name}` : `Articles by ${author.name}`}
             </h2>
             <div className="space-y-6">
-              {/* AI Quiz Generation article */}
-              <Link
-                href="/blog/ai-powered-quiz-generation-guide"
-                className="group flex gap-5 rounded-2xl border border-neutral-200 p-5 transition-[border-color,box-shadow] hover:border-green-200 hover:shadow-md"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
-                      {isVi ? 'AI trong giáo dục' : 'AI in Education'}
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {isVi ? '27 tháng 3, 2026' : 'March 27, 2026'}
-                    </span>
+              {posts.map((post) => (
+                <Link
+                  key={post.slug}
+                  href={`/blog/${post.slug}`}
+                  className="group flex gap-5 rounded-2xl border border-neutral-200 p-5 transition-[border-color,box-shadow] hover:border-green-200 hover:shadow-md"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
+                        {post.category}
+                      </span>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {formatBlogDate(post.date, blogLocale)}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
+                      {post.title}
+                    </h3>
+                    <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
+                      {post.summary ?? post.description}
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
-                    {isVi
-                      ? 'AI biến tài liệu PDF thành quiz cá nhân hóa như thế nào?'
-                      : 'How AI Transforms PDF Learning into Personalized Quizzes'}
-                  </h3>
-                  <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
-                    {isVi
-                      ? 'Tìm hiểu cách RinKuzu trích xuất khái niệm từ PDF, tạo câu hỏi và điều chỉnh nội dung luyện tập theo mức độ nắm vững.'
-                      : 'Discover how RinKuzu turns PDF lectures into personalized quiz journeys.'}
-                  </p>
-                </div>
-              </Link>
-
-              {/* Knowledge Graphs article */}
-              <Link
-                href="/blog/knowledge-graphs-adaptive-learning-pdfs"
-                className="group flex gap-5 rounded-2xl border border-neutral-200 p-5 transition-[border-color,box-shadow] hover:border-green-200 hover:shadow-md"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
-                      {isVi ? 'Khoa học học tập' : 'Learning Science'}
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {isVi ? '20 tháng 3, 2026' : 'March 20, 2026'}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
-                    {isVi
-                      ? 'Đồ thị kiến thức và phân loại Bloom: Hướng dẫn toàn diện'
-                      : "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide"}
-                  </h3>
-                  <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
-                    {isVi
-                      ? 'Tìm hiểu cách quan hệ tiên quyết kết hợp với sáu cấp độ Bloom để tạo lộ trình luyện tập từ tài liệu PDF.'
-                      : "Learn how prerequisite knowledge graphs and Bloom's six cognitive levels shape a personalized practice path for PDF documents."}
-                  </p>
-                </div>
-              </Link>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

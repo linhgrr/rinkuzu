@@ -101,11 +101,35 @@ export const marketingPreferenceSchema = z.strictObject({
   source: z.enum(['settings', 'prompt']).default('settings'),
 });
 
-/** Result-page review-email tick (RIN-915). `optIn: false` un-ticks it. */
-export const reviewReminderRequestSchema = z.strictObject({
-  attemptId: z.string().regex(/^[a-f0-9]{24}$/u, 'Invalid attempt id'),
-  optIn: z.boolean().default(true),
-  locale: z.enum(['vi', 'en']).default('vi'),
+const attemptIdSchema = z.string().regex(/^[a-f0-9]{24}$/u, 'Invalid attempt id');
+
+/**
+ * Result-page review-email choice (RIN-915, RIN-1362). `optIn: false` un-ticks it;
+ * `action: 'snooze'` is "No thanks" (hides the prompt for 7 days, no consent change).
+ */
+export const reviewReminderRequestSchema = z.union([
+  z.strictObject({
+    attemptId: attemptIdSchema,
+    optIn: z.boolean().default(true),
+    locale: z.enum(['vi', 'en']).default('vi'),
+    action: z.literal('snooze').optional(),
+  }),
+  /**
+   * Adaptive end screen (Path B, RIN-1364): no attempt and no timestamps; the
+   * server anchors on the learner's latest adaptive completion.
+   */
+  z.strictObject({
+    path: z.literal('adaptive'),
+    optIn: z.boolean().default(true),
+    locale: z.enum(['vi', 'en']).default('vi'),
+    action: z.literal('snooze').optional(),
+  }),
+]);
+
+/** `GET ?attemptId=` or `?path=adaptive`: the prompt status (RIN-1362, RIN-1364). */
+export const reviewReminderStatusQuerySchema = z.object({
+  attemptId: attemptIdSchema.optional(),
+  path: z.enum(['quiz', 'adaptive']).optional(),
 });
 
 const headingBlockSchema = z.strictObject({

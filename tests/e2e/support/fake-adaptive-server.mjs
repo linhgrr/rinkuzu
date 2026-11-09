@@ -154,6 +154,13 @@ async function handleControlRequest(request, response, pathname) {
     return;
   }
 
+  // The UI locales the BFF forwarded upstream, so a spec can check the web passes them (RIN-1267).
+  if (request.method === 'POST' && pathname === '/__e2e/locales') {
+    const state = statesByUserId.get(body.userId);
+    sendOk(response, state?.forwardedLocales ?? {});
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/__e2e/reset') {
     statesByUserId.delete(body.userId);
     sendOk(response, { reset: true });
@@ -207,6 +214,7 @@ async function handleAdaptiveRequest(request, response, url) {
       sessionId: `e2e-session-${userId}`,
       status: 'extracting',
       subjectId: body.subject_id,
+      forwardedLocales: { process: body.locale ?? null },
     };
     statesByUserId.set(userId, state);
     sendOk(response, {
@@ -258,12 +266,29 @@ async function handleAdaptiveRequest(request, response, url) {
     return;
   }
 
+  // Path B review facts (RIN-1361/RIN-1364): every learner completed a document an hour ago.
+  const reviewFactsMatch = url.pathname.match(/^\/api\/admin\/review-reminder\/adaptive\/([^/]+)$/);
+  if (request.method === 'GET' && reviewFactsMatch) {
+    sendOk(response, {
+      latest_completion: {
+        completed_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        document_id: 'e2e-review-session',
+        job_id: 'e2e-review-job',
+        document_title: 'E2E notes.pdf',
+        due_count: 2,
+      },
+      completions_after: [],
+    });
+    return;
+  }
+
   const createSessionMatch = url.pathname.match(/^\/api\/pipeline\/jobs\/([^/]+)\/create-session$/);
   if (request.method === 'POST' && createSessionMatch) {
     if (!state || createSessionMatch[1] !== state.jobId || state.status !== 'completed') {
       sendError(response, 409, 'conflict', 'Pipeline job is not ready');
       return;
     }
+    state.forwardedLocales.createSession = url.searchParams.get('locale');
     sendOk(response, {
       session_id: state.sessionId,
       n_concepts: 4,

@@ -72,6 +72,31 @@ describe('QuizPersistenceMapper', () => {
     });
   });
 
+  it('maps the personal-data flag and index hold, clearedBy as a string id (RIN-1338)', () => {
+    const checkedAt = new Date('2026-11-09T00:00:00.000Z');
+    const entity = QuizPersistenceMapper.toEntity({
+      ...record,
+      contentFlags: {
+        personalData: false,
+        kinds: ['email'],
+        checkedAt,
+        clearedBy: 'admin-1',
+        clearedAt: checkedAt,
+      },
+      indexHold: { reason: 'reported', since: checkedAt },
+    });
+
+    expect(entity.contentFlags).toEqual({
+      personalData: false,
+      kinds: ['email'],
+      checkedAt,
+      clearedBy: 'admin-1',
+      clearedAt: checkedAt,
+    });
+    expect(entity.indexHold).toEqual({ reason: 'reported', since: checkedAt });
+    expect(QuizPersistenceMapper.toEntity(record)).not.toHaveProperty('contentFlags');
+  });
+
   it('maps canonical single-choice questions with correctIndex only', () => {
     expect(QuizPersistenceMapper.toQuestionEntity(singleQuestion, 0)).toEqual({
       id: 'question-1',

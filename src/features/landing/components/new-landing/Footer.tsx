@@ -108,8 +108,8 @@ export function Footer() {
         </div>
 
         <div className="pt-7 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-sm font-medium text-white/40">{t('copyright')}</p>
-          <p className="text-sm font-medium text-white/40">support@rinkuzu.app</p>
+          <p className="text-sm font-medium text-white/50">{t('copyright')}</p>
+          <p className="text-sm font-medium text-white/50">support@rinkuzu.app</p>
         </div>
       </div>
     </footer>

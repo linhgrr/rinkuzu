@@ -28,6 +28,19 @@ export interface QuizAuthorPersistenceRecord {
   avatar?: string;
 }
 
+export interface QuizContentFlagsPersistenceRecord {
+  personalData: boolean;
+  kinds?: string[];
+  checkedAt: Date;
+  clearedBy?: MongoIdLike;
+  clearedAt?: Date;
+}
+
+interface QuizIndexHoldPersistenceRecord {
+  reason: 'reported';
+  since: Date;
+}
+
 export interface QuizPersistenceRecord {
   _id: MongoIdLike;
   title: string;
@@ -42,6 +55,8 @@ export interface QuizPersistenceRecord {
   tags?: string[];
   sourceDraftId?: string;
   questionCount?: number;
+  contentFlags?: QuizContentFlagsPersistenceRecord;
+  indexHold?: QuizIndexHoldPersistenceRecord;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,4 +69,6 @@ interface QuizOwnerIndexingPersistenceRecord {
 
 export interface QuizMetadataPersistenceRecord extends QuizPersistenceRecord {
   ownerIndexing?: QuizOwnerIndexingPersistenceRecord;
+  /** Texts of the first questions (RIN-1241); entries may be missing in old data. */
+  leadQuestionTexts?: unknown[];
 }

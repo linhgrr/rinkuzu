@@ -107,7 +107,8 @@ describe('RegisterForm Google sign-up analytics', () => {
 });
 
 describe('RegisterForm callbackUrl', () => {
-  const credentials = { email: 'learner@example.com', password: 'Str0ng-Passw0rd!' };
+  // Every form in this block renders on /vi, so the signup stores `vi` (RIN-1263).
+  const credentials = { email: 'learner@example.com', password: 'Str0ng-Passw0rd!', locale: 'vi' };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -150,6 +151,24 @@ describe('RegisterForm callbackUrl', () => {
       ...credentials,
       callbackUrl: '/quiz/nhap-mon-ai',
     });
+  });
+
+  // RIN-1310: the verification link may open in another browser, so the guest
+  // result's claim token goes to the server with the sign-up.
+  it('sends the guest claim tokens this browser holds with the sign-up', async () => {
+    const { addGuestClaim } = await import('@/features/quiz/lib/guest-claims');
+    const token = 'A'.repeat(43);
+    addGuestClaim({ attemptId: 'attempt-1', token, quizSlug: 'nhap-mon-ai', takenAt: Date.now() });
+    try {
+      await renderVi();
+      await submitValidForm();
+      expect(registerAccountMock).toHaveBeenCalledWith({
+        ...credentials,
+        guestClaimTokens: [token],
+      });
+    } finally {
+      window.localStorage.clear();
+    }
   });
 
   it('hands the safe callback to the in-shell switch to sign-in', async () => {
@@ -241,5 +260,17 @@ describe('RegisterForm server errors', () => {
     await submit();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('registrationMethodMismatch');
+  });
+
+  it('sends the en page locale with the signup (RIN-1263)', async () => {
+    registerAccountMock.mockResolvedValue({ message: 'check your inbox' });
+
+    await submit();
+
+    expect(registerAccountMock).toHaveBeenCalledWith({
+      email: 'learner@example.com',
+      password: 'Str0ng-Passw0rd!',
+      locale: 'en',
+    });
   });
 });

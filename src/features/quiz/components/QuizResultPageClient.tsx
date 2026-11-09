@@ -38,6 +38,10 @@ import { QuestionOptionsPreview } from '@/features/quiz/components/shared/Questi
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuestionType } from '@/shared/constants/question-type';
 import { ROUTES } from '@/shared/constants/routes';
+import {
+  resolveQuizEntryAttribution,
+  type QuizEntryAttribution,
+} from '@/shared/constants/starter-quiz';
 
 type QuizResultQuestion = QuizResultQuestionViewModel;
 type QuizResult = QuizResultViewModel;
@@ -672,10 +676,30 @@ function parseUrlScore(raw: string | null): number | null {
   return Number.isFinite(score) && score >= 0 && score <= 100 ? Math.round(score) : null;
 }
 
-function guestResultPath(encodedSlug: string, attemptId: string | null, score: number | null) {
+/**
+ * A failed read that still shows the score from the link. A member keeps it when this
+ * browser holds the guest token (signed in to save the result) or when the attempt is
+ * not theirs yet: signed in from another browser before it was claimed (RIN-1310).
+ */
+function keepsGuestScore(reader: ResultReader, attemptId: string | null, error: unknown) {
+  if (reader === 'guest') return true;
+  if (attemptId !== null && findGuestClaimToken(attemptId) !== null) return true;
+  return error !== null && describeApiError(error).kind === 'not_found';
+}
+
+function guestResultPath(
+  encodedSlug: string,
+  attemptId: string | null,
+  score: number | null,
+  attribution: QuizEntryAttribution,
+) {
   const params = new URLSearchParams();
   if (attemptId) params.set('attemptId', attemptId);
   if (score !== null) params.set('score', String(score));
+  // The quiz's entry/post/topic survive sign-in so blog and hub funnels stay attributed.
+  if (attribution.entry) params.set('entry', attribution.entry);
+  if (attribution.post) params.set('post', attribution.post);
+  if (attribution.topic) params.set('topic', attribution.topic);
   return `${ROUTES.QUIZ.RESULT(encodedSlug)}?${params.toString()}`;
 }
 
@@ -760,14 +784,17 @@ function QuizResultContent() {
   }
 
   // Where sign-in comes back to; never carries the email or the token.
-  const resultPath = guestResultPath(encodedSlug, attemptId, urlScore ?? result?.score ?? null);
+  const resultPath = guestResultPath(
+    encodedSlug,
+    attemptId,
+    urlScore ?? result?.score ?? null,
+    resolveQuizEntryAttribution(get('entry'), get('post'), get('topic')),
+  );
 
-  // A member read that fails while this browser still holds the guest token is the
-  // guest who just signed in to save this result: keep their score, not a 404.
   const holdsGuestScore =
     (state.error !== null || !result) &&
     urlScore !== null &&
-    (reader === 'guest' || (attemptId !== null && findGuestClaimToken(attemptId) !== null));
+    keepsGuestScore(reader, attemptId, state.error);
 
   if (holdsGuestScore) {
     return (

@@ -18,7 +18,8 @@ const ADAPTIVE_EVENTS_TIMEOUT_MS = 2_000;
 
 // An instant with a zone designator, or a naive one the API means as UTC.
 const ZONED_INSTANT = /(?:Z|[+-]\d{2}:?\d{2})$/i;
-const instantSchema = z
+/** An API instant as a `Date`; also used by the review-facts client (RIN-1364). */
+export const instantSchema = z
   .string()
   .transform((value) => new Date(ZONED_INSTANT.test(value) ? value : `${value}Z`))
   .refine((date) => !Number.isNaN(date.getTime()), 'invalid instant');

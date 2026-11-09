@@ -75,6 +75,8 @@ export interface PremiumDecisionResult {
   submission: PremiumQuizSubmission;
   awardedCredits: number;
   rewardLocked: boolean;
+  /** Set on reject: whether the decision moved the source quiz to `public`. */
+  quizMadePublic?: boolean;
 }
 
 export interface PremiumReviewRequestData {
@@ -149,6 +151,40 @@ export interface UpdatePremiumProgressData {
 }
 
 type PremiumSessionSubmissionClaim = 'claimed' | 'replay' | 'conflict' | 'expired';
+
+/**
+ * RIN-1346: outcome of an owner unticking Premium. `premium_published` means an
+ * approved publication is on sale, so nothing was written.
+ */
+export type MakeQuizPublicResult =
+  | { outcome: 'made_public'; withdrawnSubmissions: number }
+  | { outcome: 'premium_published' };
+
+/**
+ * RIN-1346: kept apart from IPremiumQuizRepository so the quiz editor depends on
+ * this one write only.
+ */
+export interface IPremiumSubmissionWithdrawalRepository {
+  /**
+   * In one transaction: refuses while the quiz has an active approved
+   * publication; otherwise sets the quiz `public` and marks its `pending` and
+   * `changes_requested` submissions `withdrawn` and inactive.
+   */
+  makeQuizPublicAndWithdrawSubmissions(quizId: string): Promise<MakeQuizPublicResult>;
+}
+
+/**
+ * RIN-1347: undoes the `personal` save when a Premium submission fails after it,
+ * so the quiz is not left private with nothing under review.
+ */
+export interface IPremiumSubmissionRecoveryRepository {
+  /**
+   * Sets the quiz back to `public` when it is still `personal`, has no
+   * `pending`, `changes_requested` or active approved submission, and was not
+   * hidden by an admin. Returns whether the quiz was flipped.
+   */
+  restorePublicAfterFailedSubmission(quizId: string): Promise<boolean>;
+}
 
 export interface IPremiumQuizRepository {
   isVerifiedUser(userId: string): Promise<boolean>;

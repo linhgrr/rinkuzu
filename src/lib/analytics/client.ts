@@ -1,6 +1,8 @@
 'use client';
 
 import type { AnalyticsEventName } from './events';
+import { readQuizFirstTouch } from './quiz-first-touch';
+import { resolveQuizEntryAttribution } from '@/shared/constants/starter-quiz';
 const ANALYTICS_CONSENT_STORAGE_KEY = 'rinkuzu_analytics_consent_v1';
 const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
 const LANDING_ATTRIBUTION_STORAGE_KEY = 'rinkuzu_landing_attribution_v1';
@@ -393,7 +395,13 @@ export function markAnalyticsSignupPending(method: AnalyticsLoginMethod, locale:
   if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
   window.localStorage.setItem(
     PENDING_SIGNUP_STORAGE_KEY,
-    JSON.stringify({ method, locale, journey_id: window.crypto.randomUUID() }),
+    // The quiz first touch rides along: email verification may finish in another tab.
+    JSON.stringify({
+      method,
+      locale,
+      journey_id: window.crypto.randomUUID(),
+      ...readQuizFirstTouch(),
+    }),
   );
 }
 
@@ -407,6 +415,9 @@ export function capturePendingAnalyticsSignup(): void {
       method?: unknown;
       locale?: unknown;
       journey_id?: unknown;
+      entry?: unknown;
+      post?: unknown;
+      topic?: unknown;
     };
     if (
       (parsed.method === 'credentials' || parsed.method === 'google') &&
@@ -417,6 +428,9 @@ export function capturePendingAnalyticsSignup(): void {
         method: parsed.method,
         locale: parsed.locale,
         journey_id: parsed.journey_id,
+        ...(parsed.entry === undefined
+          ? readQuizFirstTouch()
+          : resolveQuizEntryAttribution(parsed.entry, parsed.post, parsed.topic)),
       });
       window.localStorage.removeItem(PENDING_SIGNUP_STORAGE_KEY);
     }
@@ -453,6 +467,7 @@ export function capturePendingAnalyticsLogin({
         method: 'google',
         locale: parsed.locale,
         journey_id: window.crypto.randomUUID(),
+        ...readQuizFirstTouch(),
       });
       return;
     }

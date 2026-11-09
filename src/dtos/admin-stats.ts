@@ -1,5 +1,6 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
+import { BLOG_POST_SLUG_PATTERN } from '@/shared/constants/starter-quiz';
 
 export const adminStatsListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -174,6 +175,8 @@ export const adminActivationQuerySchema = z.object({
     .min(1)
     .max(ADMIN_ACTIVATION_MAX_WEEKS)
     .default(ADMIN_ACTIVATION_DEFAULT_WEEKS),
+  /** Split by signup locale or country (RIN-1268); absent = today's response. */
+  by: z.enum(['locale', 'country']).optional(),
 });
 
 const isoInstantSchema = z.iso.datetime();
@@ -187,6 +190,23 @@ const activationPathCountsSchema = z
 /** The cohort split, plus `claimedGuest`: a subset of activated, not a fourth path. */
 const cohortPathCountsSchema = activationPathCountsSchema
   .extend({ claimedGuest: countSchema })
+  .strict();
+
+/** RIN-1256: activated signups by the entry of their first qualifying attempt. */
+const activationEntryCountsSchema = z
+  .object({
+    blog: countSchema,
+    landing: countSchema,
+    post_signin_starter: countSchema,
+    activation_email: countSchema,
+    hub: countSchema,
+    none: countSchema,
+  })
+  .strict();
+
+/** A public blog post slug and its activated signups; never a user id. */
+const activationBlogPostSchema = z
+  .object({ post: z.string().regex(BLOG_POST_SLUG_PATTERN), activated: countSchema })
   .strict();
 
 const adminActivationWeekSchema = z
@@ -206,6 +226,8 @@ const adminActivationWeekSchema = z
     w1RetentionRate: z.number().min(0).max(1).nullable(),
     returnedWeek1: countSchema.nullable(),
     complete: z.boolean(),
+    activatedByEntry: activationEntryCountsSchema,
+    blogPosts: z.array(activationBlogPostSchema).max(10),
   })
   .strict();
 
@@ -253,6 +275,8 @@ export const adminActivationStatsSchema = z
         sources: z.string(),
         limitations: z.string(),
         activationEmail: z.string(),
+        activatedByEntry: z.string(),
+        blogPosts: z.string(),
       })
       .strict(),
     // 'unavailable': the adaptive API did not answer, so every number is
@@ -275,6 +299,9 @@ const adminReviewEmailWeekSchema = z
     sent: countSchema,
     // null when Resend open tracking is off: no open was ever reported.
     opened: countSchema.nullable(),
+    // Final day-5 touch (RIN-1304); sent/opened above are the day-2 email.
+    sentD5: countSchema,
+    openedD5: countSchema.nullable(),
     unsubscribed: countSchema,
     optIns: countSchema,
   })
@@ -294,3 +321,50 @@ export const adminReviewEmailStatsSchema = z
   .strict();
 
 export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchema>;
+
+/**
+ * One segment key of the activation breakdown: a locale, an ISO-3166 alpha-2
+ * country, `unknown` (no signup value recorded) or `other` (countries with
+ * fewer signups than the fold threshold). Nothing else can be a key.
+ */
+const activationSegmentKeySchema = z.string().regex(/^(?:[A-Z]{2}|en|vi|unknown|other)$/);
+
+const activationSegmentCountsSchema = z
+  .object({ signups: countSchema, activated: countSchema })
+  .strict();
+
+const adminActivationBreakdownWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    start: isoInstantSchema,
+    end: isoInstantSchema,
+    complete: z.boolean(),
+    segments: z.record(activationSegmentKeySchema, activationSegmentCountsSchema),
+  })
+  .strict();
+
+/**
+ * `GET /api/admin/stats/activation?by=locale|country` (RIN-1268). Aggregate
+ * counts per ISO week and segment; strict like the default response.
+ */
+export const adminActivationBreakdownSchema = z
+  .object({
+    generatedAt: isoInstantSchema,
+    timezone: z.literal('UTC'),
+    by: z.enum(['locale', 'country']),
+    definitions: z
+      .object({
+        segments: z.string(),
+        signups: z.string(),
+        activated: z.string(),
+        complete: z.string(),
+      })
+      .strict(),
+    sources: z.object({ adaptive: z.enum(['ok', 'unavailable']) }).strict(),
+    /** Every key that appears in `weeks[].segments`, in display order. */
+    segments: z.array(activationSegmentKeySchema),
+    weeks: z.array(adminActivationBreakdownWeekSchema),
+  })
+  .strict();
+
+export type AdminActivationBreakdownDto = z.infer<typeof adminActivationBreakdownSchema>;

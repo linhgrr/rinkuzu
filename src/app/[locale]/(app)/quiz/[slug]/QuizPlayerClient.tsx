@@ -27,7 +27,11 @@ import { routePathSegment } from '@/lib/routing/routeParams';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { StarterQuizIntro } from '@/features/quiz/components/player/StarterQuizIntro';
-import { POST_SIGNIN_STARTER_ENTRY, TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
+import {
+  POST_SIGNIN_STARTER_ENTRY,
+  resolveQuizEntryAttribution,
+} from '@/shared/constants/starter-quiz';
+import { rememberQuizFirstTouch } from '@/lib/analytics/quiz-first-touch';
 import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 import {
   drawQuickRound,
@@ -702,9 +706,13 @@ interface QuizPlayerClientProps {
   slug: string;
   /**
    * `?entry=` from the URL: `post_signin_starter` when /start opened this quiz
-   * (RIN-913), `activation_email` from the activation nudge (RIN-1000).
+   * (RIN-913), `activation_email` from the activation nudge (RIN-1000), `blog` from a post.
    */
   entry?: string | null;
+  /** `?post=` from the URL: the blog post slug, kept only next to `entry=blog` (RIN-1242). */
+  post?: string | null;
+  /** `?topic=` from the URL: the hub's topic slug, kept only next to `entry=hub` (RIN-1417). */
+  topic?: string | null;
   /** `?mode=quick|full` from the URL: skips the quick-round choice on a long quiz (RIN-933). */
   mode?: string | null;
   /** Per-request seed of the first shuffle, shared by the server render and hydration (RIN-1032). */
@@ -718,11 +726,11 @@ function postSignInStarterNotice(entry: string | null | undefined, slug: string)
   return entry === POST_SIGNIN_STARTER_ENTRY ? <StarterQuizIntro quizSlug={slug} /> : null;
 }
 
-// `entry` on quiz_started/quiz_completed: the /start starter (RIN-913), the activation
-// email (RIN-1000) or the homepage play-first button (RIN-1178).
-function trackedEntryProperties(entry: string | null | undefined) {
-  return entry && TRACKED_QUIZ_ENTRIES.includes(entry) ? { entry } : {};
-}
+// `entry` (and `post` for a blog entry, RIN-1242) on quiz_started/quiz_completed, the
+// attempt submit and the result URL: the /start starter (RIN-913), the activation email
+// (RIN-1000), the homepage play-first button (RIN-1178), a blog post's quiz CTA or a
+// topic hub card (`topic`, RIN-1417).
+const trackedEntryProperties = resolveQuizEntryAttribution;
 
 /**
  * `?retryOf` session (RIN-917): a subset of the quiz, so it never reads or writes the full
@@ -748,6 +756,8 @@ export default function QuizPlayerClient({
   initialQuiz,
   slug,
   entry,
+  post,
+  topic,
   mode,
   shuffleSeed,
   initialMobile,
@@ -784,6 +794,11 @@ export default function QuizPlayerClient({
   });
 
   useEffect(() => {
+    // The session's first tracked entry, for signup_completed (RIN-1242).
+    rememberQuizFirstTouch(trackedEntryProperties(entry, post, topic));
+  }, [entry, post, topic]);
+
+  useEffect(() => {
     // Fetch KaTeX while auth settles, before the first math question mounts (RIN-679).
     if (initialQuiz) {
       void preloadMathRenderer(
@@ -802,7 +817,7 @@ export default function QuizPlayerClient({
       captureAnalyticsEvent('quiz_started', {
         mode: analyticsMode,
         question_count: questionCount,
-        ...trackedEntryProperties(entry),
+        ...trackedEntryProperties(entry, post, topic),
       });
 
     // The first render already started the quiz (RIN-1032): only announce it.
@@ -923,6 +938,8 @@ export default function QuizPlayerClient({
     analyticsMode,
     slug,
     entry,
+    post,
+    topic,
   ]);
 
   const quiz = state.quiz;
@@ -960,6 +977,7 @@ export default function QuizPlayerClient({
     ...(sessionEmail !== undefined ? { sessionEmail } : {}),
     ...retrySetup.submission,
     ...(state.quickIndices ? { questionIndices: state.quickIndices } : {}),
+    attribution: trackedEntryProperties(entry, post, topic),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),
@@ -967,7 +985,7 @@ export default function QuizPlayerClient({
         score,
         authenticated: Boolean(sessionEmail),
         mode: analyticsMode,
-        ...trackedEntryProperties(entry),
+        ...trackedEntryProperties(entry, post, topic),
       });
       // Only a submitted round counts as seen, so the next draw prefers the rest.
       if (state.quickIndices) markQuickRoundSeen(slug, state.quickIndices);
@@ -979,6 +997,8 @@ export default function QuizPlayerClient({
       const params = new URLSearchParams({
         attemptId,
         score: String(score),
+        // Kept so the guest save card's sign-in links carry them (RIN-1242).
+        ...trackedEntryProperties(entry, post, topic),
       });
       push(`/quiz/${encodedSlug}/result?${params.toString()}`);
     },

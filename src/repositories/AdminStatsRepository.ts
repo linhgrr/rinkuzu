@@ -32,6 +32,16 @@ import {
   unionDocuments,
   utcWeekStart,
 } from '@/repositories/pipelines/activation-stages';
+import {
+  segmentStages,
+  type ActivationSegmentField,
+} from '@/repositories/pipelines/activation-segments';
+import {
+  type ActivationEntryRef,
+  ENTRY_WEEK_ACCUMULATORS,
+  firstEntryRefIn,
+  toEntryWeek,
+} from '@/repositories/pipelines/activation-entry';
 
 interface DailyCountAggregate {
   _id: string;
@@ -60,6 +70,7 @@ interface CohortAggregate extends ActivationPathAggregate {
   byClaimedGuest: number;
   w1Retained: number;
   returnedWeek1: number;
+  entryRefs: (ActivationEntryRef | null)[];
 }
 
 interface FirstCompletionAggregate extends ActivationPathAggregate {
@@ -219,6 +230,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
         learners: row.learners,
         activatedBy: toPathCounts(row),
       })),
+      cohortEntries: cohorts.map((row) => toEntryWeek(row._id, row.entryRefs)),
     };
   }
 
@@ -227,7 +239,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
    * existing, non-excluded user (the same `LEARNER_FILTER` as signups). Ids
    * with no web user, and excluded accounts, are dropped before any count.
    */
-  private static async adaptiveLearnerRows(
+  static async adaptiveLearnerRows(
     adaptive: readonly AdminAdaptiveLearnerEvents[],
   ): Promise<AdaptiveLearnerRow[]> {
     const candidates = adaptive.filter((events) => OBJECT_ID_HEX.test(events.userId));
@@ -298,12 +310,16 @@ export class AdminStatsRepository implements IAdminStatsRepository {
    *
    * First-session funnel (RIN-932): sign-ins and in-progress quizzes join
    * the same group (`pipelines/activation-funnel`).
+   *
+   * `segmentField` (RIN-1268): rows per `{weekStart, segment}` (`activation-segments`).
    */
   static cohortPipeline(
     from: Date,
     to: Date,
     adaptive: readonly AdaptiveLearnerRow[] = [],
+    segmentField?: ActivationSegmentField,
   ): PipelineStage[] {
+    const segment = segmentStages(segmentField);
     const signupAt = '$signupAt';
     const day7 = { $add: [signupAt, 7 * DAY_MS] };
     const day14 = { $add: [signupAt, 14 * DAY_MS] };
@@ -313,7 +329,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
     ]);
     return [
       { $match: { createdAt: { $gte: from, $lt: to }, ...LEARNER_FILTER } },
-      { $project: { _id: 0, uid: '$_id', signupAt: '$createdAt' } },
+      { $project: { _id: 0, uid: '$_id', signupAt: '$createdAt', ...segment.source } },
       attemptUnionStage(AttemptModel.collection.name, from, to),
       {
         $unionWith: {
@@ -330,7 +346,9 @@ export class AdminStatsRepository implements IAdminStatsRepository {
         $group: {
           _id: '$uid',
           signupAt: { $max: '$signupAt' },
+          ...segment.perUser,
           takenAts: { $push: '$takenAt' },
+          attemptRefs: { $push: '$attemptRef' },
           ...FUNNEL_GROUP_FIELDS,
           quizAts: { $push: '$quizAt' },
           completedAts: { $push: '$completedAt' },
@@ -341,10 +359,12 @@ export class AdminStatsRepository implements IAdminStatsRepository {
       {
         $project: {
           weekStart: utcWeekStart(signupAt),
+          ...segment.perSignup,
           byQuiz: anyDateIn('$takenAts', signupAt, day7),
           byAdaptive: anyDateIn('$completedAts', signupAt, day7),
           authored: anyDateIn('$quizAts', signupAt, day7),
           uploaded: anyDateIn('$uploadedAts', signupAt, day7),
+          entryRef: firstEntryRefIn(signupAt, day7),
           returned: {
             $or: [anyDateIn('$takenAts', day7, day14), anyDateIn('$completedAts', day7, day14)],
           },
@@ -354,7 +374,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
       { $addFields: { activated: { $or: ['$byQuiz', '$byAdaptive'] } } },
       {
         $group: {
-          _id: '$weekStart',
+          _id: segment.weekKey,
           signups: { $sum: 1 },
           // Every activated signup is material: an adaptive completion needs a
           // succeeded upload before it.
@@ -365,6 +385,7 @@ export class AdminStatsRepository implements IAdminStatsRepository {
           ...pathCountAccumulators('$byQuiz', '$byAdaptive'),
           w1Retained: { $sum: { $cond: [{ $and: ['$activated', '$returned'] }, 1, 0] } },
           ...FUNNEL_WEEK_ACCUMULATORS,
+          ...ENTRY_WEEK_ACCUMULATORS,
         },
       },
       { $sort: { _id: 1 } },

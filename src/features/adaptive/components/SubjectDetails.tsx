@@ -56,6 +56,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
         historyDetail={historyDetail}
         historyLoading={historyLoading}
         sessionId={sessionId}
+        status={status}
         t={t}
       />
     </div>

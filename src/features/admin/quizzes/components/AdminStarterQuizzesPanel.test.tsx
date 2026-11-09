@@ -36,6 +36,13 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: mocks.toastSuccess } }));
+// The topic panel (RIN-1248) loads with the page; its own tests live beside it.
+vi.mock('@/features/admin/quizzes/api/admin-quiz-topics-api', () => ({
+  fetchAdminQuizTopics: () => Promise.resolve([]),
+}));
+vi.mock('@/features/admin/quizzes/components/AdminQuizTopicsPanel', () => ({
+  AdminQuizTopicsPanel: () => null,
+}));
 vi.mock('@/features/quiz/components/QuizPreviewModal', () => ({ QuizPreviewModal: () => null }));
 vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   fetchAdminQuizListViewModel: (...args: unknown[]) => mocks.fetchList(...args),
@@ -162,6 +169,22 @@ describe('AdminQuizzesPageClient starter panel (RIN-1183)', () => {
     expect(within(second).getByRole('combobox')).toHaveValue('en');
     expect(within(first).getByRole('button', { name: 'moveUp(Fake starter a)' })).toBeDisabled();
     expect(within(second).getByRole('button', { name: 'moveDown(Fake starter b)' })).toBeDisabled();
+  });
+
+  it('gives every row action a 44px touch target below lg and keeps the compact size at lg (RIN-1228)', async () => {
+    mocks.fetchStarters.mockResolvedValue([starter('a', 1), starter('b', 2)]);
+    render(<AdminQuizzesPageClient />);
+
+    const row = nth(within(await starterList()).getAllByRole('listitem'), 0);
+    const actions = [
+      within(row).getByRole('button', { name: 'moveUp(Fake starter a)' }),
+      within(row).getByRole('button', { name: 'moveDown(Fake starter a)' }),
+      within(row).getByRole('button', { name: 'unmark' }),
+    ];
+    for (const action of actions) {
+      expect(action).toHaveClass('min-h-11', 'min-w-11', 'lg:min-h-0', 'lg:min-w-0');
+    }
+    expect(within(row).getByRole('combobox')).toHaveClass('min-h-11', 'lg:min-h-0');
   });
 
   it('shows ⚠ with the reason in words for a dropped starter', async () => {

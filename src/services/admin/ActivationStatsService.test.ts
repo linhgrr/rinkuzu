@@ -59,6 +59,23 @@ function setup(now = NOW) {
           activatedBy: { quiz: 3, adaptive: 2, both: 0 },
         },
       ],
+      cohortEntries: [
+        {
+          weekStart: new Date('2026-10-12T00:00:00.000Z'),
+          activatedByEntry: {
+            blog: 2,
+            landing: 1,
+            post_signin_starter: 0,
+            activation_email: 0,
+            hub: 0,
+            none: 1,
+          },
+          blogPosts: [
+            { post: 'on-thi-toeic', activated: 1 },
+            { post: 'hoc-tu-vung', activated: 1 },
+          ],
+        },
+      ],
     }),
   };
   const activationEmail = {
@@ -90,8 +107,10 @@ function setup(now = NOW) {
   };
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
   const adaptiveEvents = vi.fn().mockResolvedValue(ADAPTIVE_EVENTS);
+  const segments = { getActivationSegments: vi.fn().mockResolvedValue([]) };
   const service = new ActivationStatsService({
     stats,
+    segments,
     activationEmail,
     audit,
     adaptiveEvents,
@@ -142,6 +161,18 @@ describe('ActivationStatsService', () => {
       w1RetentionRate: 0.25,
       returnedWeek1: 3,
       complete: true,
+      activatedByEntry: {
+        blog: 2,
+        landing: 1,
+        post_signin_starter: 0,
+        activation_email: 0,
+        hub: 0,
+        none: 1,
+      },
+      blogPosts: [
+        { post: 'on-thi-toeic', activated: 1 },
+        { post: 'hoc-tu-vung', activated: 1 },
+      ],
     });
     // W43 ended 2026-10-26; 14 days later is 2026-11-09, after NOW.
     expect(result.data.weeks[1]).toMatchObject({
@@ -155,6 +186,16 @@ describe('ActivationStatsService', () => {
       // W43 ended 2026-10-26; 7 days later is 2026-11-02, before NOW.
       returnedWeek1: 0,
       complete: false,
+      // RIN-1256: a week without a cohort row splits nothing.
+      activatedByEntry: {
+        blog: 0,
+        landing: 0,
+        post_signin_starter: 0,
+        activation_email: 0,
+        hub: 0,
+        none: 0,
+      },
+      blogPosts: [],
     });
     // W44 ended 2026-11-02; 7 days later is 2026-11-09, after NOW.
     expect(result.data.weeks[2]?.returnedWeek1).toBeNull();
@@ -342,6 +383,19 @@ describe('ActivationStatsService', () => {
           ]);
         } else if (key === 'weeklyActivatedBy') {
           expect(Object.keys(value as object).sort()).toEqual(['adaptive', 'both', 'quiz']);
+        } else if (key === 'activatedByEntry') {
+          expect(Object.keys(value as object).sort()).toEqual([
+            'activation_email',
+            'blog',
+            'hub',
+            'landing',
+            'none',
+            'post_signin_starter',
+          ]);
+        } else if (key === 'blogPosts') {
+          for (const row of value as object[]) {
+            expect(Object.keys(row).sort()).toEqual(['activated', 'post']);
+          }
         } else expect(value === null || typeof value === 'number').toBe(true);
       }
     }

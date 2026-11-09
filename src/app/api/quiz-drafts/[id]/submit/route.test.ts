@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuizCreationError, QuizDraftSynchronizationError } from '@/lib/quiz/errors';
+import { PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 
 const {
   authMock,
@@ -12,7 +13,7 @@ const {
   buildAdaptiveServiceHeadersMock,
   resolveAdaptiveProxyTimeoutMsMock,
   assertCanContributeMock,
-  createPremiumSubmissionMock,
+  submitSavedQuizMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   createQuizFromDraftMock: vi.fn(),
@@ -26,7 +27,7 @@ const {
   })),
   resolveAdaptiveProxyTimeoutMsMock: vi.fn(() => 5_000),
   assertCanContributeMock: vi.fn(),
-  createPremiumSubmissionMock: vi.fn(),
+  submitSavedQuizMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
@@ -48,7 +49,7 @@ vi.mock('@/lib/quiz-factory', () => ({
 vi.mock('@/lib/premium-quiz-factory', () => ({
   getPremiumQuizService: () => ({
     assertCanContribute: assertCanContributeMock,
-    createSubmission: createPremiumSubmissionMock,
+    submitSavedQuiz: submitSavedQuizMock,
   }),
 }));
 
@@ -108,7 +109,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       id: QUIZ_ID,
       slug: 'arithmetic',
     });
-    createPremiumSubmissionMock.mockResolvedValue({ id: 'premium-submission-1' });
+    submitSavedQuizMock.mockResolvedValue({ id: 'premium-submission-1' });
     assertCanContributeMock.mockResolvedValue(undefined);
     getQuizByIdMock.mockResolvedValue({
       success: true,
@@ -326,7 +327,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         data: {
           quizId: QUIZ_ID,
           slug: 'existing-slug',
-          warnings: ['Quiz nên có ít nhất 5 câu hỏi'],
+          warnings: ['too_few_questions'],
         },
       });
     });
@@ -432,7 +433,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         data: {
           quizId: QUIZ_ID,
           slug: 'arithmetic',
-          warnings: ['Quiz nên có ít nhất 5 câu hỏi'],
+          warnings: ['too_few_questions'],
         },
       });
     });
@@ -510,7 +511,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
           'Content-Type': 'application/json',
         }),
       );
-      expect(createPremiumSubmissionMock).toHaveBeenCalledWith(USER_ID, {
+      expect(submitSavedQuizMock).toHaveBeenCalledWith(USER_ID, {
         quizId: QUIZ_ID,
         rightsAttested: true,
         documentFingerprint: 'a'.repeat(64),
@@ -522,6 +523,41 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
           quizId: QUIZ_ID,
           slug: 'private-quiz',
           warnings: [],
+        },
+      });
+    });
+
+    it('says the quiz was saved as public when the Premium submission fails (RIN-1347)', async () => {
+      fetchQuizDraftServerMock
+        .mockResolvedValueOnce({ id: DRAFT_ID, status: 'ready', submittedQuizId: null })
+        .mockResolvedValueOnce({
+          id: DRAFT_ID,
+          status: 'submitted',
+          submittedQuizId: QUIZ_ID,
+          pdf: {
+            s3Key: `uploads/premium_sources/${DRAFT_ID}/source.pdf`,
+            retainedForPremium: true,
+          },
+        });
+      submitSavedQuizMock.mockRejectedValueOnce(
+        new PremiumSubmissionFailedError(QUIZ_ID, new Error('storage copy failed')),
+      );
+
+      const response = await POST(
+        submitRequest({ ...validBody, submitToPremium: true, rightsAttested: true }),
+        routeContext(),
+      );
+
+      expect(response.status).toBe(502);
+      expect(submitSavedQuizMock).toHaveBeenCalledWith(
+        USER_ID,
+        expect.objectContaining({ quizId: QUIZ_ID }),
+      );
+      await expect(response.json()).resolves.toMatchObject({
+        success: false,
+        error: {
+          code: 'premium_submission_failed',
+          meta: { reason: 'internal_error', visibility: 'public', quizId: QUIZ_ID },
         },
       });
     });

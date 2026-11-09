@@ -4,13 +4,19 @@ import connectDB from '@/lib/mongoose';
 import { isMongoDuplicateKeyError } from '@/lib/mongoose-errors';
 import Attempt from '@/models/Attempt';
 import { EmailOutbox, MarketingConsentEvent, MarketingPreference } from '@/models/Communication';
+import type { OutboxKind } from '@/models/Communication';
 import Quiz from '@/models/Quiz';
 import User from '@/models/User';
 
+/** Both review touches: d2 (RIN-915) and the day-5 email (RIN-1304). */
+const REVIEW_KINDS: OutboxKind[] = ['review_reminder', 'review_reminder_d5'];
+/** The cap allows two review emails in 7 days, so counting stops at two. */
+const CAP_COUNT_LIMIT = 2;
+
 /**
- * Persistence for the opt-in 2-day review email (RIN-915): the
- * `study_reminders` preference and consent events, `review_reminder` outbox
- * rows, and the facts the send-time eligibility check reads. Every query is
+ * Persistence for the opt-in review emails (RIN-915, RIN-1304): the
+ * `study_reminders` preference and consent events, `review_reminder` and
+ * `review_reminder_d5` outbox rows, and the facts the send-time eligibility check reads. Every query is
  * per learner and served by an index: `Attempt {user, takenAt}`,
  * `EmailOutbox {dedupeKey}` and `{userId, kind, updatedAt}`,
  * `MarketingPreference {userId}`.
@@ -30,11 +36,18 @@ interface ReminderRecipient {
   role?: string;
   disable?: number;
   isTestAccount?: boolean;
+  /** The account's UI locale (RIN-1263), used when the opt-in stored none. */
+  locale?: string | null;
 }
 
 interface ReminderPreference {
   studyReminders?: boolean;
   locale?: string | null;
+}
+
+interface ReminderPromptPreference {
+  optedIn: boolean;
+  snoozedUntil: Date | null;
 }
 
 interface ReminderQuiz {
@@ -46,8 +59,11 @@ export interface ReminderSendFacts {
   user: ReminderRecipient | null;
   preference: ReminderPreference | null;
   laterAttempt: boolean;
-  sentInLastWeek: boolean;
+  /** Other completed review emails (both touches) since `capSince`, counted up to 2. */
+  sentInLastWeek: number;
   quiz: ReminderQuiz | null;
+  /** Opt-in page locale, else the account's UI locale (RIN-1263); null when neither is set. */
+  locale: string | null;
 }
 
 interface ReminderRowState {
@@ -62,25 +78,35 @@ interface ReminderUpsertConflict {
 export interface ReminderConsentEvent {
   userId: Types.ObjectId;
   action: 'opt_in' | 'opt_out';
-  source: 'result_page_review' | 'unsubscribe';
+  source: 'result_page_review' | 'adaptive_end_review' | 'unsubscribe';
   ipHash: string | null;
   /** Email an unsubscribe link came from; absent for the review email (RIN-1044). */
   campaign?: 'activation_nudge';
 }
 
-interface OwnedReminderAttempt extends ReminderAttempt {
-  userId: Types.ObjectId;
-}
-
 export interface ReminderSendFactsQuery {
   outboxId: Types.ObjectId;
-  attempt: OwnedReminderAttempt;
+  userId: Types.ObjectId;
+  /** The anchor: a later quiz attempt than this cancels the email. */
+  after: Date;
+  /** Path A: the attempt's quiz; null for Path B (no quiz to read). */
+  quizId: Types.ObjectId | null;
   capSince: Date;
 }
 
+/** Path B anchor (RIN-1364): the adaptive completion the email follows. */
+export interface ReminderCompletionAnchor {
+  at: Date;
+  documentId: string | null;
+}
+
 export interface PendingReminderRow {
+  kind: 'review_reminder' | 'review_reminder_d5';
   dedupeKey: string;
-  attemptId: Types.ObjectId;
+  /** Path A: the attempt id. Path B: `adaptive_completion` with the learner id and an anchor. */
+  entityType: 'attempt' | 'adaptive_completion';
+  entityId: Types.ObjectId;
+  anchor: ReminderCompletionAnchor | null;
   userId: Types.ObjectId;
   to: string;
   from: string;
@@ -116,12 +142,37 @@ export class ReviewReminderRepository {
     };
   }
 
-  /** True when `studyReminders` is ticked for the learner. */
-  async isOptedIn(userId: Types.ObjectId): Promise<boolean> {
-    const preference = await MarketingPreference.findOne({ userId }, { studyReminders: 1 }).lean<{
-      studyReminders?: boolean;
-    } | null>();
-    return preference?.studyReminders === true;
+  /**
+   * Whether the learner has an attempt after `takenAt`. The sender cancels a
+   * review email for such an attempt (`later_attempt`), so the result-page
+   * prompt uses the same rule (RIN-1362).
+   */
+  async hasLaterAttempt(userId: Types.ObjectId, takenAt: Date): Promise<boolean> {
+    await connectDB();
+    return (await Attempt.exists({ user: userId, takenAt: { $gt: takenAt } })) !== null;
+  }
+
+  /** Whether `studyReminders` is ticked and until when the result-page prompt is snoozed. */
+  async promptPreference(userId: Types.ObjectId): Promise<ReminderPromptPreference> {
+    await connectDB();
+    const preference = await MarketingPreference.findOne(
+      { userId },
+      { studyReminders: 1, reviewPromptSnoozedUntil: 1 },
+    ).lean<{ studyReminders?: boolean; reviewPromptSnoozedUntil?: Date | null } | null>();
+    return {
+      optedIn: preference?.studyReminders === true,
+      snoozedUntil: preference?.reviewPromptSnoozedUntil ?? null,
+    };
+  }
+
+  /** Result-page "No thanks" (RIN-1362): hides the prompt until `until`; consent is untouched. */
+  async snoozePrompt(userId: Types.ObjectId, until: Date): Promise<void> {
+    await connectDB();
+    await MarketingPreference.updateOne(
+      { userId },
+      { $set: { reviewPromptSnoozedUntil: until } },
+      { upsert: true },
+    );
   }
 
   /** Ticks `studyReminders`; true when it was already ticked before this write. */
@@ -178,14 +229,19 @@ export class ReviewReminderRepository {
         { dedupeKey: row.dedupeKey, status: { $in: ['pending', 'canceled'] } },
         {
           $set: {
-            kind: 'review_reminder',
-            entityType: 'attempt',
-            entityId: row.attemptId,
+            kind: row.kind,
+            // Every field a path sets is written by both, so a re-pointed row never keeps
+            // the other path's anchor (RIN-1364).
+            entityType: row.entityType,
+            entityId: row.entityId,
+            anchorAt: row.anchor?.at ?? null,
+            anchorDocumentId: row.anchor?.documentId ?? null,
+            dueAt: row.availableAt,
             userId: row.userId,
             to: row.to,
             from: row.from,
             replyTo: null,
-            subject: 'review_reminder',
+            subject: row.kind,
             html: row.body,
             text: row.body,
             status: 'pending',
@@ -209,37 +265,43 @@ export class ReviewReminderRepository {
 
   async cancelPending(userId: Types.ObjectId, reason: string): Promise<number> {
     const result = await EmailOutbox.updateMany(
-      { userId, kind: 'review_reminder', status: 'pending' },
+      { userId, kind: { $in: REVIEW_KINDS }, status: 'pending' },
       { $set: { status: 'canceled', lastError: reason } },
     );
     return result.modifiedCount;
   }
 
   async sendFacts(input: ReminderSendFactsQuery): Promise<ReminderSendFacts> {
-    const { userId } = input.attempt;
+    const { userId } = input;
     const [user, preference, laterAttempt, sentInLastWeek, quiz] = await Promise.all([
       User.findById(userId)
-        .select('email role disable isTestAccount')
+        .select('email role disable isTestAccount locale')
         .lean<ReminderRecipient | null>(),
       MarketingPreference.findOne({ userId })
         .select('studyReminders locale')
         .lean<ReminderPreference | null>(),
-      Attempt.exists({ user: userId, takenAt: { $gt: input.attempt.takenAt } }),
-      EmailOutbox.exists({
-        userId,
-        kind: 'review_reminder',
-        status: 'completed',
-        updatedAt: { $gte: input.capSince },
-        _id: { $ne: input.outboxId },
-      }),
-      Quiz.findById(input.attempt.quizId).select('slug title').lean<ReminderQuiz | null>(),
+      this.hasLaterAttempt(userId, input.after),
+      EmailOutbox.countDocuments(
+        {
+          userId,
+          kind: { $in: REVIEW_KINDS },
+          status: 'completed',
+          updatedAt: { $gte: input.capSince },
+          _id: { $ne: input.outboxId },
+        },
+        { limit: CAP_COUNT_LIMIT },
+      ),
+      input.quizId
+        ? Quiz.findById(input.quizId).select('slug title').lean<ReminderQuiz | null>()
+        : null,
     ]);
     return {
       user,
       preference,
-      laterAttempt: laterAttempt !== null,
-      sentInLastWeek: sentInLastWeek !== null,
+      laterAttempt,
+      sentInLastWeek,
       quiz,
+      locale: preference?.locale ?? user?.locale ?? null,
     };
   }
 }

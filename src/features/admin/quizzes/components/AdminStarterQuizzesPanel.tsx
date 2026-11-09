@@ -26,6 +26,8 @@ import type {
 
 /** Rows shown on small screens before "Show all" (RIN-1229: the full panel pushed the list ~900px down at 375px). */
 const COLLAPSED_ROW_COUNT = 3;
+/** Row actions are 36px (`sm`); below lg they grow to a 44px touch target (RIN-1228). */
+const ROW_ACTION_TOUCH_TARGET = 'min-h-11 min-w-11 lg:min-h-0 lg:min-w-0';
 
 interface StarterRowProps {
   item: AdminStarterQuizViewModel;
@@ -84,6 +86,7 @@ function StarterRow({ item, total, hiddenOnMobile, busy, controller, onUnmark }:
         <Button
           size="sm"
           variant="outline"
+          className={ROW_ACTION_TOUCH_TARGET}
           aria-label={t('moveUp', { title })}
           disabled={busy || item.order <= 1}
           onClick={() => void controller.move(item.id, item.order - 1)}
@@ -93,6 +96,7 @@ function StarterRow({ item, total, hiddenOnMobile, busy, controller, onUnmark }:
         <Button
           size="sm"
           variant="outline"
+          className={ROW_ACTION_TOUCH_TARGET}
           aria-label={t('moveDown', { title })}
           disabled={busy || item.order >= total}
           onClick={() => void controller.move(item.id, item.order + 1)}
@@ -105,7 +109,7 @@ function StarterRow({ item, total, hiddenOnMobile, busy, controller, onUnmark }:
             selectSize="sm"
             aria-label={t('localeFor', { title })}
             disabled={busy}
-            className="bg-surface"
+            className="min-h-11 bg-surface lg:min-h-0"
             onChange={(event) =>
               void controller.setLocale(item.id, event.target.value as AdminStarterQuizLocale)
             }
@@ -117,7 +121,7 @@ function StarterRow({ item, total, hiddenOnMobile, busy, controller, onUnmark }:
         <Button
           size="sm"
           variant="outline"
-          className="border-red-200 text-red-600 hover:border-red-300 hover:text-red-700"
+          className={`${ROW_ACTION_TOUCH_TARGET} border-red-200 text-red-600 hover:border-red-300 hover:text-red-700`}
           disabled={busy}
           onClick={() => onUnmark(item)}
         >

@@ -83,6 +83,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       ...(questionIndices ? { questionIndices } : {}),
       ...(attribution?.entry ? { entry: attribution.entry } : {}),
       ...(attribution?.post ? { post: attribution.post } : {}),
+      ...(attribution?.topic ? { topic: attribution.topic } : {}),
     });
 
     if (pending.guestClaimToken) {

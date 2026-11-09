@@ -33,6 +33,8 @@ interface QuizAttemptSubmissionData {
   entry?: string;
   /** RIN-1256: public blog post slug, only with `entry: 'blog'`. */
   post?: string;
+  /** RIN-1417: hub topic slug, only with `entry: 'hub'`. */
+  topic?: string;
 }
 
 export type RecordQuizAttemptProgressData =

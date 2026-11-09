@@ -10,6 +10,9 @@ describe('toEntryWeek (RIN-1256)', () => {
       { e: 'landing' },
       { e: 'post_signin_starter' },
       { e: 'activation_email' },
+      // RIN-1417: a hub entry has its own bucket; its topic is on the attempt only.
+      { e: 'hub' },
+      { e: 'hub', p: 'stray' },
       {},
       { e: 'toString' },
       // Not activated: the week accumulator pushes null.
@@ -21,6 +24,7 @@ describe('toEntryWeek (RIN-1256)', () => {
       landing: 1,
       post_signin_starter: 1,
       activation_email: 1,
+      hub: 2,
       none: 2,
     });
     expect(week.weekStart).toBe(WEEK);

@@ -789,10 +789,14 @@ jobs:
         env:
           REQUIRED_RESULTS: ${{ toJSON(needs) }}
           EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           node - <<'NODE'
           const results = JSON.parse(process.env.REQUIRED_RESULTS);
           const eventName = process.env.EVENT_NAME;
+          // The cutover guard reads this line to check that a green run was
+          // tested on the current master head.
+          if (eventName === 'pull_request') console.log(`tested-base=${process.env.BASE_SHA}`);
           const EXPECTED_JOBS = 17;
 
           // Two campaigns are deferred to master because their fixed cost makes

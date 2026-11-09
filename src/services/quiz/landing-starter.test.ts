@@ -19,6 +19,8 @@ function candidate(slug: string, extra: Partial<StarterQuizCandidateRecord> = {}
     visibility: 'public',
     questionCount: 7,
     isPremium: false,
+    personalDataFlagged: false,
+    indexHold: false,
     ...extra,
   };
 }
@@ -111,6 +113,8 @@ describe('BlogTryResolver (RIN-1258)', () => {
     ['private', candidate('blog-quiz', { visibility: 'private' })],
     ['premium', candidate('blog-quiz', { isPremium: true })],
     ['empty', candidate('blog-quiz', { questionCount: 0 })],
+    ['personal-data-flagged', candidate('blog-quiz', { personalDataFlagged: true })],
+    ['report-held', candidate('blog-quiz', { indexHold: true })],
     ['unreadable', new Error('db down')],
   ])('falls back to the locale starter for a %s quiz', async (_reason, found) => {
     const { resolver } = createBlogResolver(found);

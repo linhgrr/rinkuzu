@@ -3,6 +3,7 @@ import type {
   IStarterQuizReadRepository,
 } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import { logger } from '@/lib/logger';
+import { isQuizContentIndexable } from '@/lib/seo/quiz-indexability';
 import {
   getStarterQuizDropReason,
   loadStarterQuizzes,
@@ -47,8 +48,8 @@ export class LandingStarterResolver {
 /**
  * Target of a blog post's "try this quiz" card (RIN-1258, spec RIN-1242 AC 4): the
  * post's quiz when a guest can play it free (public, not premium, not empty; a quick
- * round when long, as on the homepage path), else the locale's starter, both with
- * `entry=blog` and the post. `null` sends `/try` to the public quiz list. Never throws.
+ * round when long, as on the homepage path) and promotable (not flagged or held,
+ * RIN-1341), else the locale's starter, both with `entry=blog` and the post. `null` sends `/try` to the public quiz list. Never throws.
  */
 export class BlogTryResolver {
   constructor(
@@ -66,6 +67,8 @@ export class BlogTryResolver {
     try {
       const candidate = await this.quizzes.findQuizCandidateBySlug(slug);
       if (!candidate || getStarterQuizDropReason(candidate)) return null;
+      // A flagged or held quiz stays playable at its URL but is not promoted (RIN-1341).
+      if (!isQuizContentIndexable(candidate)) return null;
       const quick = isQuickRoundEligible(candidate.questionCount);
       return starterQuizHref({ slug: candidate.slug, quick }, params);
     } catch (error) {

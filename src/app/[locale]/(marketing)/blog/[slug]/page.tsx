@@ -24,6 +24,7 @@ import {
 } from '@/lib/blog/posts';
 import { getBlogAuthor } from '@/lib/blog/authors';
 import { hasInlineTryQuiz, splitBlogBody } from '@/lib/blog/try-quiz-marker';
+import { toStableContentEntries } from '@/lib/collections/stable-content-entries';
 import { TryQuizCard, type TryQuizCardLabels } from '@/features/landing/components/TryQuizCard';
 import { blogFeedAlternates } from '@/lib/blog/feed';
 import { RelatedPosts } from './RelatedPosts';
@@ -209,6 +210,12 @@ function ArticleBody({
   labels: TryQuizCardLabels;
 }) {
   const segments = splitBlogBody(article.content);
+  // Content-derived keys: a duplicate segment keeps its occurrence number.
+  const keys = toStableContentEntries(
+    segments.map((segment) =>
+      segment.kind === 'markdown' ? `md:${segment.content}` : `quiz:${segment.teaser ?? ''}`,
+    ),
+  ).map((entry) => entry.key);
   const card = (position: 'blog_inline' | 'blog_end', teaser: string | undefined) => (
     <div className="my-12">
       <TryQuizCard
@@ -225,9 +232,9 @@ function ArticleBody({
     <>
       {segments.map((segment, index) =>
         segment.kind === 'markdown' ? (
-          <MarkdownRenderer key={index} content={segment.content} headingIds />
+          <MarkdownRenderer key={keys[index]} content={segment.content} headingIds />
         ) : (
-          <Fragment key={index}>
+          <Fragment key={keys[index]}>
             {card('blog_inline', segment.teaser ?? article.quiz?.teaser)}
           </Fragment>
         ),

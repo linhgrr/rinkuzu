@@ -92,6 +92,28 @@ describe('quiz-interaction-api', () => {
     });
   });
 
+  it('sends entry and post when present (RIN-1242)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({
+      score: 100,
+      correctAnswers: 1,
+      totalQuestions: 1,
+      attemptId: 'attempt-4',
+    });
+    await submitQuizAttemptViewModel({
+      slug: 'quiz',
+      answers: [1],
+      idempotencyKey: 'idem-4',
+      entry: 'blog',
+      post: 'on-thi-jlpt',
+    });
+    expect(JSON.parse(fetchApiDataMock.mock.calls.at(-1)?.[1].body as string)).toEqual({
+      answers: [1],
+      idempotencyKey: 'idem-4',
+      entry: 'blog',
+      post: 'on-thi-jlpt',
+    });
+  });
+
   it('sends retryOfAttemptId for a retry-missed session (RIN-917)', async () => {
     fetchApiDataMock.mockResolvedValueOnce({
       score: 50,

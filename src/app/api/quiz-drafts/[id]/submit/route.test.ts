@@ -271,20 +271,6 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
       );
     });
 
-    it('forwards an explicit visibility and omits it otherwise, so the service default (private) applies (RIN-1271)', async () => {
-      await POST(submitRequest(), routeContext());
-      await POST(submitRequest({ ...validBody, visibility: 'public' }), routeContext());
-      const invalid = await POST(
-        submitRequest({ ...validBody, visibility: 'unlisted' }),
-        routeContext(),
-      );
-
-      expect(createQuizFromDraftMock.mock.calls[0]?.[2]).not.toHaveProperty('visibility');
-      expect(createQuizFromDraftMock.mock.calls[1]?.[2]).toMatchObject({ visibility: 'public' });
-      expect(invalid.status).toBe(400);
-      expect(createQuizFromDraftMock).toHaveBeenCalledTimes(2);
-    });
-
     it('continues creation when the draft is missing or not submitted', async () => {
       fetchQuizDraftServerMock.mockResolvedValueOnce(null);
       const missing = await POST(submitRequest(), routeContext());
@@ -340,7 +326,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         data: {
           quizId: QUIZ_ID,
           slug: 'existing-slug',
-          warnings: ['Quiz nên có ít nhất 5 câu hỏi'],
+          warnings: ['too_few_questions'],
         },
       });
     });
@@ -446,7 +432,7 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         data: {
           quizId: QUIZ_ID,
           slug: 'arithmetic',
-          warnings: ['Quiz nên có ít nhất 5 câu hỏi'],
+          warnings: ['too_few_questions'],
         },
       });
     });

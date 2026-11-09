@@ -49,7 +49,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     if (!isOpen) return;
 
     let active = true;
-    void fetchSubscriptionPageViewModel()
+    void fetchSubscriptionPageViewModel(locale)
       .then((viewModel) => {
         if (!active) return;
         const validPlans = viewModel.plans.filter(
@@ -64,7 +64,7 @@ export function UpgradePaywallModal({ isOpen, kind, onClose }: UpgradePaywallMod
     return () => {
       active = false;
     };
-  }, [isOpen, reloadKey]);
+  }, [isOpen, locale, reloadKey]);
 
   const bestMonthlyPrice = useMemo(() => {
     if (plansState.status !== 'ready' || plansState.plans.length < 2) return null;

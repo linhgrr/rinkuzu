@@ -22,6 +22,7 @@ const { router, progress, session, submission, media } = vi.hoisted(() => ({
   },
   submission: {
     onSubmitSuccess: null as null | ((attemptId: string, score: number) => Promise<void>),
+    attribution: undefined as unknown,
   },
 }));
 
@@ -67,8 +68,10 @@ vi.mock('@/lib/analytics/client', () => ({
 vi.mock('@/features/quiz/hooks/useQuizSubmission', () => ({
   useQuizSubmission: (options: {
     onSubmitSuccess: (attemptId: string, score: number) => Promise<void>;
+    attribution?: unknown;
   }) => {
     submission.onSubmitSuccess = options.onSubmitSuccess;
+    submission.attribution = options.attribution;
     return {
       submitting: false,
       showSubmitConfirm: false,
@@ -96,7 +99,7 @@ const quiz = {
   ],
 };
 
-function renderPlayer(entry?: string | null) {
+function renderPlayer(entry?: string | null, post?: string) {
   return render(
     <QuizPlayerClient
       initialErrorCode={null}
@@ -104,6 +107,7 @@ function renderPlayer(entry?: string | null) {
       initialQuiz={quiz}
       slug="fake-starter"
       {...(entry === undefined ? {} : { entry })}
+      {...(post === undefined ? {} : { post })}
     />,
   );
 }
@@ -119,6 +123,7 @@ async function completeQuiz() {
 describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     submission.onSubmitSuccess = null;
     media.isMobile = false;
   });
@@ -197,4 +202,48 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
       expect(await completeQuiz()).not.toHaveProperty('entry');
     },
   );
+
+  it('forwards entry=blog and its post on both events, the submit and the result URL (RIN-1242)', async () => {
+    renderPlayer('blog', 'on-thi-jlpt');
+
+    await waitFor(() =>
+      expect(captureAnalyticsEvent).toHaveBeenCalledWith(
+        'quiz_started',
+        expect.objectContaining({ entry: 'blog', post: 'on-thi-jlpt' }),
+      ),
+    );
+    expect(await completeQuiz()).toMatchObject({ entry: 'blog', post: 'on-thi-jlpt' });
+    expect(submission.attribution).toEqual({ entry: 'blog', post: 'on-thi-jlpt' });
+    expect(router.push).toHaveBeenCalledWith(
+      '/quiz/fake-starter/result?attemptId=attempt-1&score=80&entry=blog&post=on-thi-jlpt',
+    );
+    expect(
+      JSON.parse(window.sessionStorage.getItem('rinkuzu_quiz_first_touch_v1') ?? '{}'),
+    ).toEqual({ entry: 'blog', post: 'on-thi-jlpt' });
+  });
+
+  it.each([
+    ['landing', 'on-thi-jlpt'],
+    ['blog', 'Not A Slug!'],
+  ])('drops post for entry=%s post=%s', async (entry, post) => {
+    renderPlayer(entry, post);
+
+    const completed = await completeQuiz();
+    expect(completed).toMatchObject({ entry });
+    expect(completed).not.toHaveProperty('post');
+    expect(submission.attribution).toEqual({ entry });
+  });
+
+  it('keeps the first touch when a later quiz opens with another entry', async () => {
+    window.sessionStorage.setItem(
+      'rinkuzu_quiz_first_touch_v1',
+      JSON.stringify({ entry: 'blog', post: 'on-thi-jlpt' }),
+    );
+    renderPlayer('landing');
+
+    await completeQuiz();
+    expect(
+      JSON.parse(window.sessionStorage.getItem('rinkuzu_quiz_first_touch_v1') ?? '{}'),
+    ).toEqual({ entry: 'blog', post: 'on-thi-jlpt' });
+  });
 });

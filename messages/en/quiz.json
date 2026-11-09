@@ -184,5 +184,12 @@
     "questionNumber": "Question {number}",
     "relatedTitle": "More quizzes on RinKuzu",
     "relatedCount": "{count} questions"
+  },
+  "pdfViewer": {
+    "title": "PDF reference",
+    "openInNewTab": "Open in new tab",
+    "close": "Close PDF",
+    "loading": "Loading PDF",
+    "frameTitle": "PDF viewer"
   }
 }

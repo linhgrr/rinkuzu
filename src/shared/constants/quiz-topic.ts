@@ -23,7 +23,7 @@ export function isTopicIntroPublishable(intro: string): boolean {
   return words >= QUIZ_TOPIC_INTRO_MIN_WORDS && words <= QUIZ_TOPIC_INTRO_MAX_WORDS;
 }
 
-/** @public Input of `isTopicIndexable`, built by the hub read service (RIN-1249); drop this tag there. */
+/** Input of `isTopicIndexable`, built by `QuizTopicHubService`. */
 export interface TopicIndexabilityInput {
   published: boolean;
   intro: string;
@@ -34,7 +34,6 @@ export interface TopicIndexabilityInput {
 /**
  * Spec B5: a hub is indexable when it is published, has a publishable intro and
  * holds at least three indexable quizzes.
- * @public Consumed by the topic hub read service and pages (RIN-1249); drop this tag there.
  */
 export function isTopicIndexable(topic: TopicIndexabilityInput): boolean {
   return (

@@ -184,5 +184,12 @@
     "questionNumber": "Câu {number}",
     "relatedTitle": "Quiz khác trên RinKuzu",
     "relatedCount": "{count} câu hỏi"
+  },
+  "pdfViewer": {
+    "title": "Tài liệu PDF",
+    "openInNewTab": "Mở tab mới",
+    "close": "Đóng PDF",
+    "loading": "Đang tải PDF",
+    "frameTitle": "Trình xem PDF"
   }
 }

@@ -58,7 +58,7 @@ function GuestBottomCtas({ locale }: { locale: string }) {
           cta="upload"
           position="bottom"
           locale={locale}
-          className="flex min-h-[56px] w-full items-center justify-center rounded-[100px] border border-white px-6 py-3 transition-[colors,transform] hover:bg-white/15 active:scale-[0.97] sm:w-auto sm:px-[32px]"
+          className="flex min-h-[56px] w-full items-center justify-center rounded-[100px] border border-white bg-brand-action-strong px-6 py-3 transition-[colors,transform] hover:bg-brand-action-strong-hover active:scale-[0.97] sm:w-auto sm:px-[32px]"
         >
           <span className="font-unbounded text-[18px] font-semibold text-white">
             {isVi ? 'Tải PDF lên' : 'Upload PDF'}

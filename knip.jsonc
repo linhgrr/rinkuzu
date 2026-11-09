@@ -15,6 +15,9 @@
     // Remove these two entries in the first migration PR that imports them.
     "src/lib/api/error-kind.ts!",
     "src/lib/api/use-api-error.ts!",
+    // RIN-1248: the topic hub read service ships before its pages (RIN-1249).
+    // Remove this entry in the RIN-1249 PR that imports it.
+    "src/lib/quiz-topic-hub-factory.ts!",
   ],
   "project": [
     "src/**/*.{ts,tsx}!",

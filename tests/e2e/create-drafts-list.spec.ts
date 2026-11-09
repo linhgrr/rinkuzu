@@ -13,10 +13,14 @@ import { login, withAccounts } from './support/admin-accounts';
 // 120 characters, with one unbroken run so word wrapping alone cannot save the row.
 const LONG_TITLE = `Biology chapter twelve cellular respiration review ${'X'.repeat(69)}`;
 
-function transportDraft(id: string, status: 'failed' | 'processing') {
+function transportDraft(
+  id: string,
+  status: 'failed' | 'processing',
+  overrides: { title?: string; updated_at?: string } = {},
+) {
   return {
     draft_id: id,
-    title: LONG_TITLE,
+    title: overrides.title ?? LONG_TITLE,
     description: null,
     category_id: null,
     prompt: null,
@@ -39,14 +43,17 @@ function transportDraft(id: string, status: 'failed' | 'processing') {
     error_code: null,
     submitted_quiz_id: null,
     created_at: '2026-11-06T08:00:00.000Z',
-    updated_at: '2026-11-06T08:00:00.000Z',
+    updated_at: overrides.updated_at ?? '2026-11-06T08:00:00.000Z',
     expires_at: null,
   };
 }
 
 /** The drafts API is a proxy to the FastAPI service; the list is mocked so the titles are known. */
-async function mockDrafts(page: Page) {
-  let drafts = [transportDraft('e2e-failed', 'failed'), transportDraft('e2e-busy', 'processing')];
+async function mockDrafts(
+  page: Page,
+  initial = [transportDraft('e2e-failed', 'failed'), transportDraft('e2e-busy', 'processing')],
+) {
+  let drafts = initial;
   const ok = (route: Route, data: unknown) =>
     route.fulfill({
       status: 200,
@@ -158,3 +165,41 @@ test.describe('create hub drafts list (RIN-992)', () => {
     });
   });
 });
+
+/**
+ * RIN-1272: the API sends updated_at without an offset (UTC), which the browser read as local
+ * time, and the list was pinned to Asia/Ho_Chi_Minh. 20:06 UTC must read in the viewer's zone.
+ */
+for (const { timezoneId, label } of [
+  { timezoneId: 'Asia/Ho_Chi_Minh', label: 'Nov 9, 2026, 3:06 AM' },
+  { timezoneId: 'UTC', label: 'Nov 8, 2026, 8:06 PM' },
+]) {
+  test.describe(`create hub drafts list time in ${timezoneId} (RIN-1272)`, () => {
+    test.use({ timezoneId });
+
+    test('shows the update time of a naive and an offset-marked UTC timestamp in viewer time', async ({
+      page,
+    }, testInfo) => {
+      await withAccounts(testInfo, async ({ regular }) => {
+        await mockDrafts(page, [
+          transportDraft('e2e-naive', 'failed', {
+            title: 'Naive timestamp draft',
+            updated_at: '2026-11-08T20:06:00',
+          }),
+          transportDraft('e2e-zulu', 'failed', {
+            title: 'Zulu timestamp draft',
+            updated_at: '2026-11-08T20:06:00Z',
+          }),
+        ]);
+        await login(page, regular);
+        await page.goto('/en/create');
+
+        const rows = page.getByTestId('quiz-drafts-list').locator(':scope > *');
+        await expect(rows).toHaveCount(2, { timeout: 20_000 });
+        for (const row of await rows.all()) {
+          await expect(row).toContainText(label);
+        }
+      });
+    });
+  });
+}

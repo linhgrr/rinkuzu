@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const AUTH_SECRET = 'test-auth-secret-at-least-32-characters';
 const REPLY_DOMAIN = 'feedback.rinkuzu.app';
 const CONVERSATION_ID = '6a8ed209f04328ac17443d91';
-const USER_EMAIL = 'hantram3012@gmail.com';
+const USER_EMAIL = 'learner@example.com';
 
 const ENVIRONMENT: Record<string, string> = {
   AUTH_SECRET,

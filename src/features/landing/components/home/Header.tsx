@@ -68,7 +68,7 @@ export default function Header({ isAuthenticated = false, locale }: HeaderProps)
               </Link>
               <Link
                 href="/register"
-                className="flex h-[44px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
+                className="flex h-[44px] items-center justify-center rounded-[100px] bg-brand-action-strong px-6 transition-colors hover:bg-brand-action-strong-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
               >
                 <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                   {isVi ? 'Đăng ký' : 'Sign up'}
@@ -78,7 +78,7 @@ export default function Header({ isAuthenticated = false, locale }: HeaderProps)
           ) : (
             <Link
               href="/dashboard"
-              className="flex h-[44px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] px-6 transition-colors hover:bg-[var(--landing-nav-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
+              className="flex h-[44px] items-center justify-center rounded-[100px] bg-brand-action-strong px-6 transition-colors hover:bg-brand-action-strong-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)] lg:h-[48px] lg:px-[32px]"
             >
               <span className="font-unbounded font-medium text-sm lg:text-[18px] text-white whitespace-nowrap leading-[1.5]">
                 {isVi ? 'Bảng điều khiển' : 'Dashboard'}
@@ -155,7 +155,7 @@ export default function Header({ isAuthenticated = false, locale }: HeaderProps)
                   <Link
                     href="/register"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex h-[48px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
+                    className="flex h-[48px] items-center justify-center rounded-[100px] bg-brand-action-strong transition-colors hover:bg-brand-action-strong-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                   >
                     <span className="font-unbounded font-medium text-[16px] text-white">
                       {isVi ? 'Đăng ký' : 'Sign up'}
@@ -166,7 +166,7 @@ export default function Header({ isAuthenticated = false, locale }: HeaderProps)
                 <Link
                   href="/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex h-[48px] items-center justify-center rounded-[100px] bg-[var(--landing-nav-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
+                  className="flex h-[48px] items-center justify-center rounded-[100px] bg-brand-action-strong transition-colors hover:bg-brand-action-strong-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-nav-accent-hover)]"
                 >
                   <span className="font-unbounded font-medium text-[16px] text-white">
                     {isVi ? 'Bảng điều khiển' : 'Dashboard'}

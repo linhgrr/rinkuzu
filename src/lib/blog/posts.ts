@@ -1,4 +1,5 @@
-import type { Locale } from '@/i18n/config';
+import { locales, type Locale } from '@/i18n/config';
+import { getBlogAuthor } from './authors';
 import { getAllBlogPosts, getBlogPostBySlug, getBlogPostsByLocale, type BlogPost } from './content';
 
 /**
@@ -52,6 +53,14 @@ export const getBlogArticleSlugs = (): string[] => [
 ];
 
 /**
+ * Locales whose `/<locale>/blog/<slug>` renders an article, in {@link locales}
+ * order. A listing-only translation counts, since its page falls back to the
+ * source article; a post with no source-locale body exists only in its own.
+ */
+export const getBlogArticleLocales = (slug: string): Locale[] =>
+  locales.filter((locale) => getBlogArticle(locale, slug) !== undefined);
+
+/**
  * Neighbours of an article among the articles in its locale, newest first:
  * `previous` is the next newer post and `next` the next older one.
  */
@@ -61,6 +70,37 @@ export const getAdjacentBlogArticles = (
   const articles = getBlogPostsByLocale(article.locale).filter(hasBody).sort(byNewestFirst);
   const index = articles.findIndex((post) => post.slug === article.slug);
   return { previous: articles[index - 1], next: articles[index + 1] };
+};
+
+/**
+ * A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`).
+ * `locales` limits an article to the locales it exists in; without it the route
+ * exists in every locale.
+ */
+type BlogSitemapRoute = { path: string; lastModified: string; locales?: Locale[] };
+
+const newestDate = (posts: BlogPost[]): string =>
+  posts.reduce((newest, post) => (post.date > newest ? post.date : newest), '');
+
+/**
+ * Article and author routes for the sitemap, derived from content/blog: one per
+ * article slug and one per author with a profile, so a new post needs no
+ * hand-written sitemap entry.
+ */
+export const getBlogSitemapRoutes = (): BlogSitemapRoute[] => {
+  const posts = getAllBlogPosts();
+  const articles = getBlogArticleSlugs().map((slug) => ({
+    path: `/blog/${slug}`,
+    lastModified: newestDate(posts.filter((post) => post.slug === slug)),
+    locales: getBlogArticleLocales(slug),
+  }));
+  const authors = getBlogAuthorSlugs()
+    .filter((author) => getBlogAuthor(author))
+    .map((author) => ({
+      path: `/blog/authors/${author}`,
+      lastModified: newestDate(posts.filter((post) => post.author === author)),
+    }));
+  return [...articles, ...authors];
 };
 
 const VI_MONTH_PREFIX = 'tháng';

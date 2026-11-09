@@ -1,14 +1,10 @@
-import type { AnchorHTMLAttributes } from 'react';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { LandingCtaLink } from './LandingCtaLink';
 
-vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
-    <a href={href} {...props} />
-  ),
-}));
 vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: vi.fn() }));
 
 describe('LandingCtaLink (RIN-1178)', () => {
@@ -26,5 +22,21 @@ describe('LandingCtaLink (RIN-1178)', () => {
       position: 'bottom',
       locale: 'vi',
     });
+  });
+
+  it('links to the locale-prefixed path without an intl provider (RIN-1370)', () => {
+    render(
+      <LandingCtaLink href="/try" cta="play_first" position="hero" locale="en">
+        Play
+      </LandingCtaLink>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Play' })).toHaveAttribute('href', '/en/try');
+  });
+
+  it('keeps next-intl out of the static landing client graph (RIN-1370)', () => {
+    const source = readFileSync(path.join(__dirname, 'LandingCtaLink.tsx'), 'utf8');
+
+    expect(source).not.toMatch(/from '(?:@\/i18n\/navigation|next-intl[^']*)'/);
   });
 });

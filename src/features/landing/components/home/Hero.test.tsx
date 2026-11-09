@@ -22,7 +22,7 @@ describe('landing hero calls to action', () => {
 
     expect(screen.getByRole('link', { name: 'Start Learning' })).toHaveAttribute(
       'href',
-      '/register?next=/adaptive',
+      '/en/register?next=/adaptive',
     );
     expect(screen.queryByText('Try Demo')).not.toBeInTheDocument();
   });
@@ -45,9 +45,9 @@ describe('landing hero calls to action', () => {
       const links = screen.getAllByRole('link');
       expect(links.map((link) => link.textContent)).toEqual([play, upload, register]);
       expect(links.map((link) => link.getAttribute('href'))).toEqual([
-        '/try',
-        '/register?next=/adaptive/upload',
-        '/register?next=/adaptive',
+        `/${locale}/try`,
+        `/${locale}/register?next=/adaptive/upload`,
+        `/${locale}/register?next=/adaptive`,
       ]);
       expect(links[0]).toHaveClass('bg-brand-action-strong');
       expect(links[1]).toHaveClass('border');
@@ -97,8 +97,8 @@ describe('landing bottom calls to action (RIN-1178)', () => {
 
     const links = screen.getAllByRole('link');
     expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
-      ['Làm thử quiz 2 phút, không cần tài khoản', '/try'],
-      ['Tải PDF lên', '/register?next=/adaptive/upload'],
+      ['Làm thử quiz 2 phút, không cần tài khoản', '/vi/try'],
+      ['Tải PDF lên', '/vi/register?next=/adaptive/upload'],
     ]);
   });
 

@@ -102,6 +102,32 @@ describe('PremiumSubmissionsPageClient reject outcome (RIN-1348)', () => {
     );
   });
 
+  it('shows the outcome in the rejected submission card only, not under another submission', async () => {
+    const other = {
+      ...submission(),
+      id: '6a8ed209f04328ac17443d99',
+      snapshot: { title: 'Plant biology', slug: 'plant-biology', questions: [] },
+    };
+    mocks.fetchPremium.mockResolvedValue({ items: [submission(), other] });
+    mocks.decide.mockResolvedValue({
+      submission: submission('rejected'),
+      awardedCredits: 0,
+      rewardLocked: false,
+      quizMadePublic: true,
+    });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'premiumReviewReject' }));
+    const status = await screen.findByRole('status');
+    // Inside the detail card, so a mobile admin sees it where the buttons were.
+    const card = screen.getByText(/premiumReviewContributor/u).closest('[class*="lg:col-span-2"]');
+    expect(card).toContainElement(status);
+
+    await userEvent.click(screen.getByRole('button', { name: /Plant biology/u }));
+    expect(await screen.findAllByRole('heading', { name: 'Plant biology' })).not.toHaveLength(0);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('says nothing about visibility after a request for changes', async () => {
     mocks.decide.mockResolvedValue({
       submission: submission('changes_requested'),

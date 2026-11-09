@@ -61,6 +61,26 @@ describe('loadBlogPosts', () => {
   });
 });
 
+describe('loadBlogPosts body safety (RIN-1329)', () => {
+  it('rejects code in a body with the file and line', () => {
+    const load = () => loadBlogPosts(fixtureRoot('unsafe-body'));
+    expect(load).toThrow(BlogContentError);
+    // Line 17 of the file: 11 frontmatter lines, then blank, heading, blank, prose, blank.
+    expect(load).toThrow(/unsafe-body[\\/]en[\\/]script-tag\.mdx:17: raw HTML\/JSX tag `<script`/);
+  });
+
+  it('accepts code blocks, code spans, escapes, tables and safe links', () => {
+    const [post] = loadBlogPosts(fixtureRoot('safe-body'));
+    expect(post?.slug).toBe('code-and-tables');
+    expect(post?.content).toContain('<Quiz id={42}');
+  });
+
+  it('reads an optional draft flag', () => {
+    const [post] = loadBlogPosts(fixtureRoot('valid'));
+    expect(post?.draft).toBeUndefined();
+  });
+});
+
 describe('parseFrontmatter', () => {
   it('handles CRLF line endings and a BOM', () => {
     const raw = '﻿---\r\ntitle: Hello\r\ndate: 2026-01-15\r\n---\r\nBody\r\n';
@@ -80,7 +100,8 @@ describe('parseFrontmatter', () => {
 });
 
 // Build gate: every real post under content/blog must validate, so a bad
-// frontmatter field fails CI before any page can render it.
+// frontmatter field or code in a body (RIN-1329) fails CI before any page can
+// render it. This is the `test:node` step of `local/ci`.
 describe('content/blog', () => {
   it('contains only valid posts with unique slugs per locale', () => {
     const posts = getAllBlogPosts();

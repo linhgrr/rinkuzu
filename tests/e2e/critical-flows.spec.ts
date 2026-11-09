@@ -359,6 +359,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       }),
       db.collection('questionprogresses').deleteMany({ userId: { $in: userIdStrings } }),
       db.collection('userprogresses').deleteMany({ userId: { $in: userIdStrings } }),
+      db.collection('marketingpreferences').deleteMany({ userId: { $in: userIds } }),
       db.collection('auditlogs').deleteMany({
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
@@ -844,8 +845,29 @@ test.describe('production critical paths', () => {
       expect(source).toMatchObject({ score: 0, totalQuestions: 1 });
       const sourceId = String(source?._id);
 
-      // AC2: the primary action and the opt-in render with the result.
-      await expect(page.getByLabel('Email me a 2-minute review in 2 days')).not.toBeChecked();
+      // AC2: the primary action and the explicit review choice render with the result
+      // (RIN-1362). "No thanks" hides it for 7 days, stored server-side, no consent event.
+      const remind = page.getByRole('button', { name: 'Remind me in 2 days', exact: true });
+      const decline = page.getByRole('button', { name: 'No thanks', exact: true });
+      await expect(remind).toBeVisible();
+      await expect(decline).toBeVisible();
+      await expect(remind).not.toBeFocused();
+      await decline.click();
+      await expect(decline).toBeHidden();
+      await expect
+        .poll(async () => {
+          const preference = await fixture.db
+            .collection('marketingpreferences')
+            .findOne({ userId: fixture.regular.id });
+          const until = preference?.['reviewPromptSnoozedUntil'] as Date | undefined;
+          return until ? Math.round((until.getTime() - Date.now()) / 86_400_000) : null;
+        })
+        .toBe(7);
+      expect(
+        await fixture.db
+          .collection('marketingconsentevents')
+          .countDocuments({ userId: fixture.regular.id }),
+      ).toBe(0);
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
         page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),
@@ -1125,6 +1147,104 @@ test.describe('production critical paths', () => {
             },
           }),
           fixture.db.collection('auth_rate_limits').deleteMany({ key: /^auth:register_ip:/ }),
+        ]);
+        await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
+  test('claims a guest result when the verification link opens in another browser @critical-quiz-guest-claim-cross-browser', async ({
+    page,
+    browser,
+    baseURL,
+  }, testInfo) => {
+    // RIN-1310: the guest's claim token lives in browser A; the email is verified and the
+    // learner signs in from browser B. The server claims the attempt at verification.
+    // Guest quiz, sign-up, verification and sign-in in two contexts: longer than 30 s.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      const email = `e2e-xbrowser-${randomUUID().slice(0, 12)}@example.com`;
+      const origin = new URL(baseURL ?? 'http://localhost:3000').origin;
+      let attemptId = '';
+      // A fresh context shares nothing with the guest's: no storage, no cookies.
+      const other = await browser.newContext({ baseURL: origin });
+      try {
+        await page.goto(`/en/quiz/${starterSlug}`);
+        await submitStarterQuiz(page, starterSlug);
+        const resultUrl = new URL(page.url());
+        attemptId = resultUrl.searchParams.get('attemptId') ?? '';
+
+        await page.getByRole('link', { name: 'Create an account' }).first().click();
+        await page.waitForURL(/\/en\/register\?callbackUrl=/);
+        await page.getByLabel('Email Address').fill(email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await page.getByLabel('Confirm password').fill(E2E_PASSWORD);
+        await page.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+        await expect(page.getByText('Check your email')).toBeVisible();
+
+        // The raw token only exists in the email: pin a known one on the pending account.
+        const verificationToken = randomUUID().replace(/-/g, '').repeat(2);
+        await fixture.db.collection('users').updateOne(
+          { email },
+          {
+            $set: {
+              emailVerificationTokenHash: createHash('sha256')
+                .update(verificationToken, 'utf8')
+                .digest('hex'),
+            },
+          },
+        );
+
+        const otherPage = await other.newPage();
+        const verified = await otherPage.request.post('/api/auth/verify-email', {
+          data: { token: verificationToken },
+          headers: { origin },
+        });
+        expect(verified.status()).toBe(200);
+
+        const resultPath = `${resultUrl.pathname.replace(/^\/en/, '')}${resultUrl.search}`;
+        await otherPage.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);
+        await otherPage.getByLabel('Email Address').fill(email);
+        await otherPage.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await otherPage.getByRole('button', { name: 'Sign In', exact: true }).click();
+        // A soft navigation after sign-in: no load event for waitForURL to wait on.
+        await expect(otherPage).toHaveURL(
+          new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=${attemptId}`),
+          { timeout: 20_000 },
+        );
+        const user = await fixture.db.collection('users').findOne({ email });
+        const attempt = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(attempt?.['user']?.toString()).toBe(String(user?.['_id']));
+        await expect(otherPage.getByRole('link', { name: 'Redo' }).first()).toBeVisible();
+        await expect(otherPage.getByText("We couldn't find this")).toHaveCount(0);
+        await expect(otherPage.getByText(/can't open the question review/)).toHaveCount(0);
+      } finally {
+        await other.close();
+        const created = await fixture.db.collection('users').findOne({ email });
+        const ownedAttempts = [
+          ...(ObjectId.isValid(attemptId) ? [{ _id: new ObjectId(attemptId) }] : []),
+          ...(created ? [{ user: created['_id'] }] : []),
+        ];
+        await Promise.all([
+          ownedAttempts.length > 0
+            ? fixture.db.collection('attempts').deleteMany({ $or: ownedAttempts })
+            : Promise.resolve(),
+          fixture.db.collection('auditlogs').deleteMany({ email }),
+          fixture.db.collection('auth_rate_limits').deleteMany({
+            key: {
+              $in: [
+                ...ownedCredentialsRateLimitKeys([email]),
+                ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+              ],
+            },
+          }),
+          fixture.db
+            .collection('auth_rate_limits')
+            .deleteMany({ key: /^auth:(?:register_ip|verify_email_ip):/ }),
         ]);
         await fixture.db.collection('users').deleteMany({ email });
       }

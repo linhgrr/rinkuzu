@@ -13,6 +13,7 @@ vi.mock('next/navigation', async (importOriginal) => ({
   useParams: () => ({}),
 }));
 vi.mock('next/image', () => ({ default: () => null }));
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/blog-intl-mock'));
 vi.mock('@/components/blog/ReadingProgressBar', () => ({ ReadingProgressBar: () => null }));
 vi.mock('@/components/blog/ShareButtons', () => ({ ShareButtons: () => null }));
 

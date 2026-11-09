@@ -12,6 +12,11 @@ import {
 
 type Props = { params: Promise<{ locale: string }> };
 
+// Re-render at most hourly (ISR) so a post scheduled by a future `date` goes
+// live on that day without a deploy, while crawlers still get a cached static
+// page (RIN-1329, `isPublished` in src/lib/blog/posts.ts).
+export const revalidate = 3600;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const isVi = locale === 'vi';

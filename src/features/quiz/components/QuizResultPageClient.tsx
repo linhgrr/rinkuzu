@@ -676,6 +676,17 @@ function parseUrlScore(raw: string | null): number | null {
   return Number.isFinite(score) && score >= 0 && score <= 100 ? Math.round(score) : null;
 }
 
+/**
+ * A failed read that still shows the score from the link. A member keeps it when this
+ * browser holds the guest token (signed in to save the result) or when the attempt is
+ * not theirs yet: signed in from another browser before it was claimed (RIN-1310).
+ */
+function keepsGuestScore(reader: ResultReader, attemptId: string | null, error: unknown) {
+  if (reader === 'guest') return true;
+  if (attemptId !== null && findGuestClaimToken(attemptId) !== null) return true;
+  return error !== null && describeApiError(error).kind === 'not_found';
+}
+
 function guestResultPath(
   encodedSlug: string,
   attemptId: string | null,
@@ -779,12 +790,10 @@ function QuizResultContent() {
     resolveQuizEntryAttribution(get('entry'), get('post')),
   );
 
-  // A member read that fails while this browser still holds the guest token is the
-  // guest who just signed in to save this result: keep their score, not a 404.
   const holdsGuestScore =
     (state.error !== null || !result) &&
     urlScore !== null &&
-    (reader === 'guest' || (attemptId !== null && findGuestClaimToken(attemptId) !== null));
+    keepsGuestScore(reader, attemptId, state.error);
 
   if (holdsGuestScore) {
     return (

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { defaultLocale, locales } from '@/i18n/config';
+import { getBlogSitemapRoutes } from '@/lib/blog/posts';
 import { serializeDate } from '@/lib/date-serialization';
 import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
 import { canonicalFor } from '@/lib/seo';
@@ -59,6 +60,13 @@ export async function buildPublicSitemapEntries(
   for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
     for (const locale of locales) {
       pushEntry(toEntry(locale, route));
+    }
+  }
+
+  for (const route of getBlogSitemapRoutes()) {
+    const lastModified = new Date(`${route.lastModified}T00:00:00.000Z`);
+    for (const locale of locales) {
+      pushEntry(toEntry(locale, route.path, lastModified));
     }
   }
 

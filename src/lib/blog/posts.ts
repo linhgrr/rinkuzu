@@ -1,4 +1,5 @@
 import type { Locale } from '@/i18n/config';
+import { getBlogAuthor } from './authors';
 import { getAllBlogPosts, getBlogPostBySlug, getBlogPostsByLocale, type BlogPost } from './content';
 
 /**
@@ -61,6 +62,32 @@ export const getAdjacentBlogArticles = (
   const articles = getBlogPostsByLocale(article.locale).filter(hasBody).sort(byNewestFirst);
   const index = articles.findIndex((post) => post.slug === article.slug);
   return { previous: articles[index - 1], next: articles[index + 1] };
+};
+
+/** A blog route for the sitemap, dated by the newest post behind it (`YYYY-MM-DD`). */
+type BlogSitemapRoute = { path: string; lastModified: string };
+
+const newestDate = (posts: BlogPost[]): string =>
+  posts.reduce((newest, post) => (post.date > newest ? post.date : newest), '');
+
+/**
+ * Article and author routes for the sitemap, derived from content/blog: one per
+ * article slug and one per author with a profile, so a new post needs no
+ * hand-written sitemap entry.
+ */
+export const getBlogSitemapRoutes = (): BlogSitemapRoute[] => {
+  const posts = getAllBlogPosts();
+  const articles = getBlogArticleSlugs().map((slug) => ({
+    path: `/blog/${slug}`,
+    lastModified: newestDate(posts.filter((post) => post.slug === slug)),
+  }));
+  const authors = getBlogAuthorSlugs()
+    .filter((author) => getBlogAuthor(author))
+    .map((author) => ({
+      path: `/blog/authors/${author}`,
+      lastModified: newestDate(posts.filter((post) => post.author === author)),
+    }));
+  return [...articles, ...authors];
 };
 
 const VI_MONTH_PREFIX = 'tháng';

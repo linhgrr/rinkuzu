@@ -10,6 +10,7 @@ import {
   getBlogArticleSlugs,
   getBlogAuthorSlugs,
   getBlogIndexPosts,
+  getBlogSitemapRoutes,
   toBlogLocale,
 } from './posts';
 
@@ -62,5 +63,15 @@ describe('blog post queries', () => {
     for (const post of getAllBlogPosts()) {
       expect(getBlogArticle(post.locale, post.slug)).toBeDefined();
     }
+  });
+
+  it('derives sitemap routes for every article and author from content/blog (RIN-406)', () => {
+    expect(getBlogSitemapRoutes()).toEqual(
+      expect.arrayContaining([
+        { path: '/blog/ai-powered-quiz-generation-guide', lastModified: '2026-03-27' },
+        { path: '/blog/knowledge-graphs-adaptive-learning-pdfs', lastModified: '2026-03-20' },
+        { path: '/blog/authors/rinkuzu-team', lastModified: expect.any(String) },
+      ]),
+    );
   });
 });

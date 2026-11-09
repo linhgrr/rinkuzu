@@ -45,6 +45,38 @@ Optional fields override copy that otherwise falls back to a required field:
 A missing or invalid required field fails validation (and the build) rather
 than rendering a broken page — see `src/lib/blog/content.test.ts`.
 
+## Publishing a new post
+
+A standard post is a content-file-only PR: no route, component, sitemap or
+SEO code changes.
+
+1. Add `content/blog/en/<slug>.mdx` with the required frontmatter and the
+   article body in plain Markdown (`##`/`###` headings build the table of
+   contents). Link to other pages with locale-prefixed paths, for example
+   `/en/faq`: links in the body are plain anchors and skip the locale router.
+2. Add `content/blog/vi/<slug>.mdx` with Vietnamese frontmatter. Leave the body
+   empty for a listing-only translation (see below), or add one to publish a
+   translated article.
+3. Run `npx vitest run --config vitest.node.config.ts src/lib/blog` to validate
+   the frontmatter, then open a PR labelled `type:ui` so QA checks the preview.
+
+Everything else is derived from the frontmatter when the site builds:
+
+- the index, article and author pages (`src/app/[locale]/(marketing)/blog`);
+- `<title>`, meta description, canonical, hreflang, Open Graph and Twitter
+  tags (`generateMetadata` in `blog/[slug]/page.tsx`, via
+  `buildLocalizedMetadata`);
+- Article and BreadcrumbList JSON-LD (same file);
+- sitemap entries for the article and its author, dated by `date`
+  (`getBlogSitemapRoutes` in `src/lib/blog/posts.ts`, read by
+  `src/lib/public-sitemap.ts`).
+
+Product copy says **personalized** (en) and **cá nhân hóa** (vi), never
+"adaptive" or "thích ứng".
+
+A new author needs a profile in `src/lib/blog/authors.ts` (code change);
+until then the author page and its sitemap entry are skipped.
+
 ## Routing
 
 - `/<locale>/blog` lists the locale's posts, newest first.

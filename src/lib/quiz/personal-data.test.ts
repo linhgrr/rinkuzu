@@ -27,6 +27,8 @@ describe('detectPersonalData', () => {
     ['id_number', 'Mã số sinh viên là 2020123'],
     ['id_number', 'student ID #  20201234'],
     ['id_number', 'CCCD số 0012030045'],
+    ['id_number', 'Danh sách: 001203012345, 001203012346, 001203012347'],
+    ['id_number', 'Mã đề 123456789.'],
     ['labelled_name', 'Họ và tên: Nguyễn Văn An'],
     ['labelled_name', 'HỌ TÊN: TRẦN THỊ BÌNH'],
     ['labelled_name', 'Full name: Jane Doe'],
@@ -58,6 +60,7 @@ describe('detectPersonalData', () => {
     'Họ và tên: ................',
     'Họ và tên: nguyễn văn an',
     'Diện tích là 1,234,567,890 m²',
+    'Số π xấp xỉ 3,141592653',
     'Phương trình 2x + 5 = 0912345678x',
     '@username trên mạng xã hội',
   ])('ignores %j', (text) => {

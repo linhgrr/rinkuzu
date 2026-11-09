@@ -37,10 +37,15 @@ const MOBILE = /^(?:84|0)[35789]\d{8}$/u;
 const LANDLINE = /^02\d{9}$/u;
 const WORD_CHAR = /^[\p{L}\p{N}_]$/u;
 
-/** Operators and decimal separators that make a digit run part of a number or expression. */
-const OPERATOR = String.raw`[=+\-−×*/÷^<>≤≥±%.,]`;
+/** Operators that make a digit run part of an expression. */
+const OPERATOR = String.raw`[=+\-−×*/÷^<>≤≥±%]`;
+/**
+ * `.` and `,` join a digit run to a longer number (decimal or thousands) only
+ * when a digit sits on their other side; otherwise they are punctuation, as in
+ * a comma-separated roster of ID numbers or an ID ending a sentence.
+ */
 const STANDALONE_ID = new RegExp(
-  String.raw`(?<!${OPERATOR}\s*)(?<![\p{L}\p{N}_])(?:\d{12}|\d{9})(?![\p{L}\p{N}_])(?!\s*${OPERATOR})`,
+  String.raw`(?<!${OPERATOR}\s*)(?<!\d[.,])(?<![\p{L}\p{N}_])(?:\d{12}|\d{9})(?![\p{L}\p{N}_])(?![.,]\d)(?!\s*${OPERATOR})`,
   'u',
 );
 

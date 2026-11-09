@@ -70,6 +70,8 @@
   "administrator": "Administrator",
   "addSubscription": "Add Subscription",
   "addCredit": "Add credit",
+  "userActionSupport": "Support",
+  "userActionRequestFeedback": "Request feedback",
   "makeUser": "Make User",
   "makeAdmin": "Make Admin",
   "delete": "Delete",

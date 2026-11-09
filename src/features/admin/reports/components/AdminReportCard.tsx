@@ -76,8 +76,8 @@ export function PendingIndexHoldCount({ count }: { count: number }) {
     <p
       className={
         count > 0
-          ? 'rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800'
-          : 'rounded-lg border border-line px-3 py-2 text-sm text-ink-muted'
+          ? 'mb-4 inline-block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800'
+          : 'mb-4 inline-block rounded-lg border border-line px-3 py-2 text-sm text-ink-muted'
       }
     >
       {count} pending copyright / personal-data

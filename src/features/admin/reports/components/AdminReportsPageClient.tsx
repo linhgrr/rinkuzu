@@ -365,12 +365,8 @@ export function AdminReportsPageClient() {
             <AdminPageHeader
               title={tAdmin('quizReports')}
               description={tAdmin('reportsDescription')}
-              actions={
-                state.loadError ? null : (
-                  <PendingIndexHoldCount count={state.pendingIndexHoldCount} />
-                )
-              }
             />
+            {state.loadError ? null : <PendingIndexHoldCount count={state.pendingIndexHoldCount} />}
             {state.loadError ? null : (
               <ReportFilterBar
                 statusFilter={state.statusFilter}

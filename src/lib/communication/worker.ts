@@ -814,10 +814,18 @@ async function processOutbox(
           canceled += 1;
           continue;
         }
-        if (prepared.decision === 'wait') {
+        if (prepared.decision === 'wait' || prepared.decision === 'retry') {
+          // `retry`: the adaptive API was unavailable (RIN-1364); the window still runs
+          // from the row's `dueAt`, so a later claim past it cancels `too_late`.
           await EmailOutbox.updateOne(
             { _id: item._id, leaseToken },
-            { $set: { status: 'pending' }, $unset: { leaseToken: '', leaseUntil: '' } },
+            {
+              $set: {
+                status: 'pending',
+                ...(prepared.decision === 'retry' ? { availableAt: prepared.availableAt } : {}),
+              },
+              $unset: { leaseToken: '', leaseUntil: '' },
+            },
           );
           continue;
         }

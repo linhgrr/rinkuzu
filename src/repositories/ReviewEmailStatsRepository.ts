@@ -77,8 +77,17 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
         {
           $group: {
             _id: utcWeekStart('$createdAt'),
+            // Both prompts: the quiz result page and the adaptive end screen (RIN-1364).
             optIns: countWhen({
-              $and: [{ $eq: ['$action', 'opt_in'] }, { $eq: ['$source', 'result_page_review'] }],
+              $and: [
+                { $eq: ['$action', 'opt_in'] },
+                {
+                  $or: [
+                    { $eq: ['$source', 'result_page_review'] },
+                    { $eq: ['$source', 'adaptive_end_review'] },
+                  ],
+                },
+              ],
             }),
             unsubscribed: countWhen({
               $and: [

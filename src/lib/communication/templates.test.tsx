@@ -189,3 +189,54 @@ describe('communication email templates', () => {
     expect(mail.html).not.toContain('<script');
   });
 });
+
+describe('Path B review email (RIN-1364)', () => {
+  const unsubscribeUrl = 'https://www.rinkuzu.app/vi/unsubscribe?t=token';
+
+  it.each([
+    ['d2', 'vi', 'Ôn lại 2 khái niệm chưa vững trong “Biology notes.pdf”', 'w1-review'],
+    ['d2', 'en', 'Review the 2 concepts to firm up in “Biology notes.pdf”', 'w1-review'],
+    ['d5', 'vi', '2 khái niệm trong “Biology notes.pdf” đã đến lúc ôn lại', 'w1-review-d5'],
+    ['d5', 'en', '2 concepts in “Biology notes.pdf” are due for review', 'w1-review-d5'],
+  ] as const)(
+    'renders %s/%s: document title, due count, one adaptive link, no answers',
+    async (touch, locale, subject, campaign) => {
+      const link = `https://www.rinkuzu.app/${locale}/adaptive/subject/session-1?utm_source=email&utm_campaign=${campaign}`;
+      const mail = await renderReviewReminder({
+        touch,
+        path: 'adaptive',
+        locale,
+        quizTitle: 'Biology notes.pdf',
+        missedCount: 2,
+        retryUrl: link,
+        unsubscribeUrl,
+      });
+      expect(mail.subject).toBe(subject);
+      expect(mail.html.split(link.replaceAll('&', '&amp;')).length - 1).toBe(1);
+      expect(mail.html).toContain(unsubscribeUrl);
+      expect(mail.html).toContain(`lang="${locale}"`);
+      const copy = `${mail.subject}\n${mail.text.replaceAll(link, '')}`;
+      expect(copy).not.toMatch(/adaptive|thích ứng|answer|đáp án|question|câu hỏi/iu);
+      expect(copy).toMatch(/personalized|cá nhân hóa/u);
+    },
+  );
+
+  it('agrees in number and reads without a due count', async () => {
+    const input = { path: 'adaptive', retryUrl: 'https://x.test/', unsubscribeUrl } as const;
+    const one = await renderReviewReminder({
+      ...input,
+      locale: 'en',
+      quizTitle: 'Notes',
+      missedCount: 1,
+    });
+    const none = await renderReviewReminder({
+      ...input,
+      touch: 'd5',
+      locale: 'vi',
+      quizTitle: 'tài liệu của bạn',
+      missedCount: 0,
+    });
+    expect(one.subject).toBe('Review the 1 concept to firm up in “Notes”');
+    expect(none.subject).toBe('Đến lúc ôn lại “tài liệu của bạn”');
+  });
+});

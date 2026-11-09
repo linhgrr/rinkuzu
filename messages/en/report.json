@@ -12,5 +12,28 @@
   "describeClearly": "Describe the problem clearly and specifically",
   "submitting": "Submitting...",
   "submitReport": "Submit Report",
-  "failedToSubmit": "Failed to submit report"
+  "failedToSubmit": "Failed to submit report",
+  "quizPage": {
+    "link": "Report",
+    "title": "Report this quiz",
+    "reasonLabel": "Reason",
+    "reasons": {
+      "copyright": "Copyright",
+      "personal_data": "Personal data",
+      "wrong_content": "Wrong content",
+      "offensive": "Offensive content"
+    },
+    "detailsLabel": "Details (optional)",
+    "detailsCount": "{count}/{max}",
+    "emailLabel": "Email to reply to (optional)",
+    "emailHint": "We only use it to reply about this report.",
+    "emailInvalid": "Enter a valid email address.",
+    "submit": "Send report",
+    "sending": "Sending…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "thanks": "Thanks, we'll review it.",
+    "rateLimited": "Too many reports, try again later.",
+    "failed": "Could not send the report. Try again."
+  }
 }

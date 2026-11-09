@@ -406,11 +406,29 @@ describe('QuizPlayerPage landing (RIN-1247)', () => {
     const { landing, player } = await landingOf();
 
     expect(player).toBeUndefined();
-    expect(landing?.props).toMatchObject({ locale: 'vi', signedIn: false });
+    expect(landing?.props).toMatchObject({
+      locale: 'vi',
+      signedIn: false,
+      viewerEmail: null,
+      ownedByViewer: false,
+    });
     expect(getRelatedPublicQuizzes).toHaveBeenCalledWith({
       excludeSlug: NEW_SLUG,
       contentLocale: 'vi',
       limit: 6,
+    });
+  });
+
+  it('passes a signed-in viewer email to the report dialog (RIN-1344)', async () => {
+    getCurrentSession.mockResolvedValue({
+      user: { id: 'learner-1', role: 'user', email: 'learner@example.com' },
+    });
+
+    const { landing } = await landingOf();
+
+    expect(landing?.props).toMatchObject({
+      viewerEmail: 'learner@example.com',
+      ownedByViewer: false,
     });
   });
 

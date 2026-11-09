@@ -1,14 +1,24 @@
-import { z } from 'zod';
-import { formatZodIssues } from '@/lib/validation/zod-issues';
-
-const publicEnvSchema = z.object({
-  NEXT_PUBLIC_SITE_URL: z.url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
-  NEXT_PUBLIC_API_URL: z.url('NEXT_PUBLIC_API_URL must be a valid URL'),
-});
-
-type PublicEnv = z.infer<typeof publicEnvSchema>;
+/**
+ * Public (NEXT_PUBLIC_*) configuration. This module reaches client bundles through
+ * `@/lib/seo`, so it validates with `URL` instead of zod: one zod import here put all
+ * of zod in the first-load JS of the quiz result page (RIN-1370).
+ */
+interface PublicEnv {
+  NEXT_PUBLIC_SITE_URL: string;
+  NEXT_PUBLIC_API_URL: string;
+}
 
 let cached: PublicEnv | null = null;
+
+function isValidUrl(value: string | undefined): value is string {
+  if (!value) return false;
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Read NEXT_PUBLIC_* values via direct property access so Next.js inlines
@@ -20,20 +30,20 @@ function loadPublicEnv(): PublicEnv {
 
   // Direct property access so Next.js inlines the value at build time.
   // Bracket access (`process.env['NEXT_PUBLIC_*']`) is NOT inlined.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const values = {
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  };
 
-  const parsed = publicEnvSchema.safeParse({
-    NEXT_PUBLIC_SITE_URL: siteUrl,
-    NEXT_PUBLIC_API_URL: apiUrl,
-  });
+  const issues = Object.entries(values)
+    .filter(([, value]) => !isValidUrl(value))
+    .map(([name]) => `  • ${name}: ${name} must be a valid URL`);
 
-  if (!parsed.success) {
-    const issues = formatZodIssues(parsed.error.issues);
-    throw new Error(`Invalid public environment configuration:\n${issues}`);
+  if (issues.length > 0) {
+    throw new Error(`Invalid public environment configuration:\n${issues.join('\n')}`);
   }
 
-  cached = parsed.data;
+  cached = values as PublicEnv;
   return cached;
 }
 

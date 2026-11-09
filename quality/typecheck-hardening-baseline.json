@@ -27,7 +27,6 @@
     "src/features/ask-rin-chan/components/AskRinPanelContent.tsx",
     "src/features/communications/components/AdminCampaignDetailPage.tsx",
     "src/features/communications/components/AdminCampaignsPage.tsx",
-    "src/features/landing/components/home/StruggleSection.tsx",
     "src/features/profile/components/ProfileQuizzes.tsx",
     "src/features/profile/mappers/profile-bookmark.mapper.test.ts",
     "src/features/quiz/components/editor/QuizEditorWorkspace.tsx",

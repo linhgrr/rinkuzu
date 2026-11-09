@@ -269,6 +269,53 @@ describe('review reminder send-time preparation (AC5)', () => {
     );
   });
 
+  it('falls back to the account locale when the preference has none (RIN-1263)', async () => {
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true, locale: null }));
+    mocks.user.findById.mockReturnValue(
+      query({
+        email: 'learner@gmail.com',
+        role: 'user',
+        disable: 0,
+        isTestAccount: false,
+        locale: 'en',
+      }),
+    );
+
+    const prepared = await prepareReviewReminder(item, due);
+
+    expect(prepared.decision).toBe('send');
+    if (prepared.decision !== 'send') return;
+    expect(prepared.mail.text).toContain('https://www.rinkuzu.app/en/quiz/cell-biology');
+  });
+
+  it('cancels when the account no longer exists', async () => {
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true, locale: null }));
+    mocks.user.findById.mockReturnValue(query(null));
+
+    const prepared = await prepareReviewReminder(item, due);
+
+    expect(prepared.decision).toBe('cancel');
+  });
+
+  it('keeps the opt-in page locale over the account locale', async () => {
+    mocks.preference.findOne.mockReturnValue(query({ studyReminders: true, locale: 'vi' }));
+    mocks.user.findById.mockReturnValue(
+      query({
+        email: 'learner@gmail.com',
+        role: 'user',
+        disable: 0,
+        isTestAccount: false,
+        locale: 'en',
+      }),
+    );
+
+    const prepared = await prepareReviewReminder(item, due);
+
+    expect(prepared.decision).toBe('send');
+    if (prepared.decision !== 'send') return;
+    expect(prepared.mail.text).toContain('https://www.rinkuzu.app/vi/quiz/cell-biology');
+  });
+
   it('cancels after a later attempt by the same learner', async () => {
     mocks.attempt.exists.mockResolvedValue({ _id: new Types.ObjectId() });
 

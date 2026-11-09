@@ -213,7 +213,7 @@ export async function prepareReviewReminder(
   if (verdict.decision !== 'send') return verdict;
   if (!facts.quiz) return { decision: 'cancel', reason: 'quiz_missing' };
 
-  const locale = reminderLocale(facts.preference?.locale);
+  const locale = reminderLocale(facts.locale);
   const site = siteUrl();
   const token = unsubscribeToken(userId.toString(), communicationEnvironment('AUTH_SECRET'));
   const rendered = await renderReviewReminder({

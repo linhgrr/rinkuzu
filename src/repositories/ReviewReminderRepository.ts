@@ -36,6 +36,8 @@ interface ReminderRecipient {
   role?: string;
   disable?: number;
   isTestAccount?: boolean;
+  /** The account's UI locale (RIN-1263), used when the opt-in stored none. */
+  locale?: string | null;
 }
 
 interface ReminderPreference {
@@ -55,6 +57,8 @@ export interface ReminderSendFacts {
   /** Other completed review emails (both touches) since `capSince`, counted up to 2. */
   sentInLastWeek: number;
   quiz: ReminderQuiz | null;
+  /** Opt-in page locale, else the account's UI locale (RIN-1263); null when neither is set. */
+  locale: string | null;
 }
 
 interface ReminderRowState {
@@ -227,7 +231,7 @@ export class ReviewReminderRepository {
     const { userId } = input.attempt;
     const [user, preference, laterAttempt, sentInLastWeek, quiz] = await Promise.all([
       User.findById(userId)
-        .select('email role disable isTestAccount')
+        .select('email role disable isTestAccount locale')
         .lean<ReminderRecipient | null>(),
       MarketingPreference.findOne({ userId })
         .select('studyReminders locale')
@@ -251,6 +255,7 @@ export class ReviewReminderRepository {
       laterAttempt: laterAttempt !== null,
       sentInLastWeek,
       quiz,
+      locale: preference?.locale ?? user?.locale ?? null,
     };
   }
 }

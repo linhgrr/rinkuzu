@@ -18,7 +18,11 @@ export class GuestAttemptClaimService implements IGuestAttemptClaimService {
   ) {}
 
   async claim(userId: string, tokens: readonly string[]): Promise<string[]> {
-    const hashes = [...new Set(tokens)].map(hashGuestClaimToken);
+    return this.claimHashed(userId, tokens.map(hashGuestClaimToken));
+  }
+
+  async claimHashed(userId: string, tokenHashes: readonly string[]): Promise<string[]> {
+    const hashes = [...new Set(tokenHashes)];
     if (hashes.length === 0) return [];
     const now = this.now();
     const claimableSince = new Date(now.getTime() - GUEST_ATTEMPT_CLAIM_WINDOW_MS);

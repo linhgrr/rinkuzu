@@ -78,11 +78,15 @@ describe('AuthAccountRepository', () => {
         $unset: {
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
+          guestClaimHashes: 1,
         },
       }),
-      { new: true },
+      // The pre-image still carries the guest claim hashes the update removes (RIN-1310).
+      { new: false },
     );
-    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith('email role');
+    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith(
+      'email role guestClaimHashes',
+    );
   });
 
   it('matches password-reset tokens through the partial-index type contract', async () => {
@@ -342,6 +346,39 @@ describe('AuthAccountRepository', () => {
         signupOrigin: { signupLocale: 'vi', signupCountry: null },
       }),
     ).rejects.toThrow('write concern failed');
+  });
+
+  it('stores guest claim hashes on a pending account only when there are some (RIN-1310)', async () => {
+    mocks.create.mockResolvedValue(identityRecord({ password: 'hash' }));
+    const repository = new AuthAccountRepository();
+    const base = {
+      email: 'user@example.com',
+      passwordHash: 'hash',
+      verificationTokenHash: 'verify-hash',
+      verificationExpires: now,
+      signupOrigin: { signupLocale: 'en' as const, signupCountry: null },
+    };
+
+    await repository.createPending({ ...base, guestClaimHashes: ['a'.repeat(64)] });
+    await repository.createPending({ ...base, guestClaimHashes: [] });
+
+    expect(mocks.create.mock.calls[0]?.[0]).toMatchObject({ guestClaimHashes: ['a'.repeat(64)] });
+    expect(mocks.create.mock.calls[1]?.[0]).not.toHaveProperty('guestClaimHashes');
+  });
+
+  it('returns the guest claim hashes from the verified pre-image, and null for an unknown token (RIN-1310)', async () => {
+    const repository = new AuthAccountRepository();
+    mocks.findOneAndUpdate.mockReturnValueOnce(
+      queryChain(identityRecord({ guestClaimHashes: ['b'.repeat(64)] })),
+    );
+
+    await expect(repository.verifyEmail('verification-hash', now)).resolves.toEqual({
+      id: accountId,
+      email: 'user@example.com',
+      role: 'user',
+      guestClaimHashes: ['b'.repeat(64)],
+    });
+    await expect(repository.verifyEmail('unknown-hash', now)).resolves.toBeNull();
   });
 
   it('unsets every password-reset and verification field on successful reset', async () => {

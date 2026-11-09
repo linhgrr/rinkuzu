@@ -101,6 +101,35 @@ describe('QuizAdminService', () => {
     });
   });
 
+  it('narrows the admin list to quizzes with an uncleared personal-data flag (RIN-1342)', async () => {
+    const repository = createRepository({
+      findAll: vi.fn().mockResolvedValue({
+        items: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: 12,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      }),
+    });
+    const service = new QuizAdminService(repository);
+
+    await service.listAdminQuizzes({
+      page: 1,
+      limit: 12,
+      visibility: 'all',
+      flag: 'personal_data',
+    });
+
+    expect(repository.findAll).toHaveBeenCalledWith(
+      { personalDataFlagged: true },
+      { page: 1, limit: 12, sort: { createdAt: -1 } },
+    );
+  });
+
   it('uses the canonical summary repository read for quiz list DTOs', async () => {
     const repository = createRepository({
       findAll: vi.fn().mockResolvedValue({

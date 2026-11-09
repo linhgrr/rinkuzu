@@ -18,6 +18,8 @@ export interface QuizFindFilter {
   author?: string;
   excludeAuthor?: string;
   folder?: string | null;
+  /** Only quizzes whose personal-data flag is set and not cleared (RIN-1342). */
+  personalDataFlagged?: true;
   $or?: QuizTextSearchCondition[];
 }
 

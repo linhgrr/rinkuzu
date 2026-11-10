@@ -731,6 +731,30 @@ interface QuizPlayerClientProps {
   guestDraft?: { submitAttempt: QuizAttemptSubmitter; notice: ReactNode };
 }
 
+/**
+ * What a guest-draft source changes (RIN-1448): its own submit and notice, and no saved
+ * progress even for a signed-in visitor. Without one, the starter notice and the session.
+ */
+function guestDraftSetup(
+  guestDraft: QuizPlayerClientProps['guestDraft'],
+  signedIn: boolean,
+  entry: string | null | undefined,
+  slug: string,
+) {
+  if (!guestDraft) {
+    return {
+      savesProgress: signedIn,
+      submission: {},
+      notice: postSignInStarterNotice(entry, slug),
+    };
+  }
+  return {
+    savesProgress: false,
+    submission: { submitAttempt: guestDraft.submitAttempt },
+    notice: guestDraft.notice,
+  };
+}
+
 // Opened by /start right after sign-in (RIN-913): intro + Skip, tagged completion.
 function postSignInStarterNotice(entry: string | null | undefined, slug: string) {
   return entry === POST_SIGNIN_STARTER_ENTRY ? <StarterQuizIntro quizSlug={slug} /> : null;
@@ -781,12 +805,11 @@ export default function QuizPlayerClient({
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD, initialMobile);
   const clientMount = useClientOnlyMount();
-  const starterNotice = guestDraft?.notice ?? postSignInStarterNotice(entry, slug);
+  const draftSetup = guestDraftSetup(guestDraft, Boolean(session?.user?.email), entry, slug);
+  const starterNotice = draftSetup.notice;
 
   const sessionEmail = session?.user?.email || undefined;
-  // A guest draft never reads or writes saved progress, even for a signed-in visitor.
-  const savesProgress = Boolean(session?.user?.email) && guestDraft === undefined;
-  const retrySetup = retrySessionSetup(initialQuiz, savesProgress, t);
+  const retrySetup = retrySessionSetup(initialQuiz, draftSetup.savesProgress, t);
   const [playMode, setPlayMode] = useState(() => initialPlayMode(initialQuiz, mode));
   const { progressEnabled, analyticsMode, layoutProps } = playModeSetup(playMode, retrySetup, t);
   // Render the first question on the server when no saved progress is needed (RIN-1032).
@@ -991,7 +1014,7 @@ export default function QuizPlayerClient({
     ...retrySetup.submission,
     ...(state.quickIndices ? { questionIndices: state.quickIndices } : {}),
     attribution: trackedEntryProperties(entry, post, topic),
-    ...(guestDraft ? { submitAttempt: guestDraft.submitAttempt } : {}),
+    ...draftSetup.submission,
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),

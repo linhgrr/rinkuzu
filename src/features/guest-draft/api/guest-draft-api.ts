@@ -1,10 +1,11 @@
 import type { GuestDraftPlayDto, GuestDraftStatusDto } from '@/dtos/guest-draft';
 import type { QuizAttemptResultDto } from '@/dtos/quiz';
-import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import type {
+  GuestDraftAttemptInput,
   GuestDraftProgress,
   GuestDraftRefusal,
+  SubmittedGuestDraftAttempt,
 } from '@/features/guest-draft/types/guest-draft-view-model';
 import { ApiResponseError, fetchApiData } from '@/lib/api/client';
 import {
@@ -101,8 +102,8 @@ export async function fetchGuestDraftPlay(token: string): Promise<QuizPlayViewMo
 /** `POST /api/guest-drafts/attempt`: scored on the server, stored as a RIN-912 guest attempt. */
 export async function submitGuestDraftAttempt(
   token: string,
-  input: { answers: QuizAnswer[]; idempotencyKey: string; guestClaimToken: string },
-): Promise<{ attemptId: string; score: number }> {
+  input: GuestDraftAttemptInput,
+): Promise<SubmittedGuestDraftAttempt> {
   const dto = await fetchApiData<QuizAttemptResultDto>('/api/guest-drafts/attempt', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/navigation';
-import { Suspense, type ReactNode } from 'react';
+import { Fragment, Suspense, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
@@ -36,24 +36,71 @@ const SEARCH_TYPES: SearchType[] = ['all', 'mine', 'adaptive', 'quizzes'];
 const ALL_SECTION_LIMIT = 4;
 const PAGE_SIZE = 12;
 const EMPTY_QUIZZES: QuizListItemViewModel[] = [];
+const GRID_CLASS = 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3';
 
-function QuizGridSkeleton({ count = ALL_SECTION_LIMIT }: { count?: number }) {
+/**
+ * On the All tab, Your quizzes and Adaptive preview exactly one grid row: 1 card under md,
+ * 2 from md, 3 from xl ("View all" opens the rest). Their loading, empty and filled states
+ * then share one height, so the panels below no longer jump when the fetch settles
+ * (RIN-1406: CLS 0.377 on mobile when 4 stacked skeletons collapsed to one empty line).
+ */
+const ROW_SLOT_CLASSES = ['grid', 'hidden md:grid', 'hidden xl:grid'] as const;
+const ROW_LIMIT = ROW_SLOT_CLASSES.length;
+/** Heights of one card row: QuizCard(Skeleton) and the Library card (196px, 212px from sm). */
+const QUIZ_ROW_MIN_HEIGHT = 'min-h-[146px]';
+const ADAPTIVE_ROW_MIN_HEIGHT = 'min-h-[196px] sm:min-h-[212px]';
+
+/** Grid cell that shows its card only at widths where it fits in the first row. */
+function RowSlot({ index, children }: { index: number; children: ReactNode }) {
+  return <div className={ROW_SLOT_CLASSES[index]}>{children}</div>;
+}
+
+function QuizGridSkeleton({ count = ALL_SECTION_LIMIT, oneRow = false }: GridSkeletonProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: count }, (_, index) => (
-        <QuizCardSkeleton key={`quiz-search-skeleton-${index}`} />
-      ))}
+    <div className={GRID_CLASS}>
+      {Array.from({ length: oneRow ? ROW_LIMIT : count }, (_, index) =>
+        oneRow ? (
+          <RowSlot key={`quiz-search-skeleton-${index}`} index={index}>
+            <QuizCardSkeleton />
+          </RowSlot>
+        ) : (
+          <QuizCardSkeleton key={`quiz-search-skeleton-${index}`} />
+        ),
+      )}
     </div>
   );
 }
 
-function AdaptiveGridSkeleton({ count = ALL_SECTION_LIMIT }: { count?: number }) {
+function AdaptiveGridSkeleton({ count = ALL_SECTION_LIMIT, oneRow = false }: GridSkeletonProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: count }, (_, index) => (
-        <LibraryCardSkeleton key={`adaptive-search-skeleton-${index}`} />
-      ))}
+    <div className={GRID_CLASS}>
+      {Array.from({ length: oneRow ? ROW_LIMIT : count }, (_, index) =>
+        oneRow ? (
+          <RowSlot key={`adaptive-search-skeleton-${index}`} index={index}>
+            <LibraryCardSkeleton />
+          </RowSlot>
+        ) : (
+          <LibraryCardSkeleton key={`adaptive-search-skeleton-${index}`} />
+        ),
+      )}
     </div>
+  );
+}
+
+interface GridSkeletonProps {
+  count?: number;
+  /** All-tab preview: one row of skeletons, the same height as what replaces it. */
+  oneRow?: boolean;
+}
+
+/** All-tab empty line, as tall as the card row it replaces. */
+function SectionEmpty({ message, minHeight }: { message: string; minHeight: string }) {
+  return (
+    <p
+      className={`flex items-center justify-center rounded-xl border border-dashed border-line px-4 text-center font-home text-sm text-ink-muted ${minHeight}`}
+    >
+      {message}
+    </p>
   );
 }
 
@@ -106,12 +153,22 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
   );
 }
 
-function QuizResults({ quizzes }: { quizzes: QuizListItemViewModel[] }) {
+function QuizResults({
+  quizzes,
+  oneRow = false,
+}: {
+  quizzes: QuizListItemViewModel[];
+  oneRow?: boolean;
+}) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {quizzes.map((quiz) => (
-        <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />
-      ))}
+    <div className={GRID_CLASS}>
+      {oneRow
+        ? quizzes.slice(0, ROW_LIMIT).map((quiz, index) => (
+            <RowSlot key={quiz.id} index={index}>
+              <QuizCard quiz={quiz} quizId={quiz.id} />
+            </RowSlot>
+          ))
+        : quizzes.map((quiz) => <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />)}
     </div>
   );
 }
@@ -120,26 +177,34 @@ function AdaptiveResults({
   subjects,
   loadingJobId,
   onOpenSubject,
+  oneRow = false,
 }: {
   subjects: DashboardSubject[];
   loadingJobId: string | null;
   onOpenSubject: (jobId: string) => void;
+  oneRow?: boolean;
 }) {
   const t = useTranslations('adaptiveLearning.dashboard');
+  const card = (subject: DashboardSubject) => (
+    <SubjectCard
+      subject={subject}
+      loading={loadingJobId === subject.jobId}
+      deleting={false}
+      busy={loadingJobId !== null}
+      onOpenSubject={onOpenSubject}
+      t={t}
+    />
+  );
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {subjects.map((subject) => (
-        <SubjectCard
-          key={subject.jobId}
-          subject={subject}
-          loading={loadingJobId === subject.jobId}
-          deleting={false}
-          busy={loadingJobId !== null}
-          onOpenSubject={onOpenSubject}
-          t={t}
-        />
-      ))}
+    <div className={GRID_CLASS}>
+      {oneRow
+        ? subjects.slice(0, ROW_LIMIT).map((subject, index) => (
+            <RowSlot key={subject.jobId} index={index}>
+              {card(subject)}
+            </RowSlot>
+          ))
+        : subjects.map((subject) => <Fragment key={subject.jobId}>{card(subject)}</Fragment>)}
     </div>
   );
 }
@@ -320,13 +385,16 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                 {isSignedOut ? (
                   ownedSignedOut
                 ) : ownedLoading ? (
-                  <QuizGridSkeleton />
+                  <QuizGridSkeleton oneRow />
                 ) : ownedError ? (
                   <SectionError onRetry={() => void retryOwned()} />
                 ) : ownedQuizzes.length > 0 ? (
-                  <QuizResults quizzes={ownedQuizzes} />
+                  <QuizResults quizzes={ownedQuizzes} oneRow />
                 ) : (
-                  <p className="font-home text-sm text-ink-muted">{t('sections.mine.empty')}</p>
+                  <SectionEmpty
+                    message={t('sections.mine.empty')}
+                    minHeight={QUIZ_ROW_MIN_HEIGHT}
+                  />
                 )}
               </SurfaceCard>
 
@@ -340,7 +408,7 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                 {isSignedOut ? (
                   adaptiveSignedOut
                 ) : adaptiveLoading ? (
-                  <AdaptiveGridSkeleton />
+                  <AdaptiveGridSkeleton oneRow />
                 ) : adaptiveError ? (
                   <SectionError onRetry={() => void retryAdaptive()} />
                 ) : visibleSubjects.length > 0 ? (
@@ -348,9 +416,13 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                     subjects={visibleSubjects}
                     loadingJobId={loadingJobId}
                     onOpenSubject={(jobId) => void startSubject(jobId)}
+                    oneRow
                   />
                 ) : (
-                  <p className="font-home text-sm text-ink-muted">{t('sections.adaptive.empty')}</p>
+                  <SectionEmpty
+                    message={t('sections.adaptive.empty')}
+                    minHeight={ADAPTIVE_ROW_MIN_HEIGHT}
+                  />
                 )}
               </SurfaceCard>
 

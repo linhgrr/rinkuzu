@@ -3,15 +3,19 @@ import { Types } from 'mongoose';
 import type {
   ClaimableGuestDraft,
   GuestDraftQuestion,
+  GuestDraftQuiz,
   GuestDraftReadyUpdate,
   GuestDraftRecord,
   IGuestDraftClaimRepository,
+  IGuestDraftQuizSource,
   IGuestQuizDraftRepository,
   NewGuestDraft,
 } from '@/interfaces/repositories/IGuestQuizDraftRepository';
 import connectDB from '@/lib/mongoose';
 import GuestQuizDraftModel, { type GuestQuizDraftDocument } from '@/models/GuestQuizDraft';
 import type { QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
+import { QuizPersistenceMapper } from '@/repositories/mappers/QuizPersistenceMapper';
+import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPersistence';
 
 type StoredGuestDraft = Pick<
   GuestQuizDraftDocument,
@@ -41,6 +45,12 @@ function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
   };
 }
 
+type StoredReadyDraft = {
+  _id: Types.ObjectId;
+  title?: string;
+  questions: QuizQuestionPersistenceRecord[];
+};
+
 type StoredClaimableDraft = Pick<
   GuestQuizDraftDocument,
   'apiDraftId' | 'title' | 'locale' | 'entry'
@@ -60,7 +70,7 @@ function toGuestQuestion(doc: QuizQuestionDocument): GuestDraftQuestion {
 }
 
 export class GuestQuizDraftRepository
-  implements IGuestQuizDraftRepository, IGuestDraftClaimRepository
+  implements IGuestQuizDraftRepository, IGuestDraftClaimRepository, IGuestDraftQuizSource
 {
   async create(draft: NewGuestDraft): Promise<GuestDraftRecord> {
     await connectDB();
@@ -74,6 +84,24 @@ export class GuestQuizDraftRepository
       .lean<StoredGuestDraft>()
       .exec();
     return doc ? toRecord(doc) : null;
+  }
+
+  async findReadyByTokenHash(tokenHash: string): Promise<GuestDraftQuiz | null> {
+    await connectDB();
+    const doc = await GuestQuizDraftModel.findOne(
+      { tokenHash, status: 'ready' },
+      { title: 1, questions: 1 },
+    )
+      .lean<StoredReadyDraft>()
+      .exec();
+    if (!doc || doc.questions.length === 0) return null;
+    return {
+      id: doc._id.toString(),
+      title: doc.title ?? 'Quiz',
+      questions: doc.questions.map((question, index) =>
+        QuizPersistenceMapper.toQuestionEntity(question, index),
+      ),
+    };
   }
 
   async markReady(id: string, update: GuestDraftReadyUpdate): Promise<boolean> {

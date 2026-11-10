@@ -126,7 +126,7 @@ describe('GuestDraftService.create', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('refunds both slots when the API refuses the upload', async () => {
+  it('refunds both slots when the API refuses the upload with a 4xx', async () => {
     const { service, limiter, repository, upstream, events } = setup();
     upstream.create.mockResolvedValue({
       ok: false,
@@ -143,6 +143,25 @@ describe('GuestDraftService.create', () => {
     expect(repository.create).not.toHaveBeenCalled();
     expect(events.started).not.toHaveBeenCalled();
   });
+
+  it.each([503, 504, 500])(
+    'keeps the daily slot spent when the API answered %s (it may already be extracting)',
+    async (status) => {
+      const { service, limiter, upstream } = setup();
+      upstream.create.mockResolvedValue({
+        ok: false,
+        status,
+        code: 'service_unavailable',
+        meta: null,
+      });
+
+      const result = await service.create(createInput);
+
+      expect(result).toMatchObject({ ok: false, error: 'upstream', status });
+      expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+      expect(limiter.refundDaily).not.toHaveBeenCalled();
+    },
+  );
 
   it('refuses a token already used before touching the caps', async () => {
     const { service, limiter } = setup(record());
@@ -200,10 +219,48 @@ describe('GuestDraftService.status', () => {
       draft: upstreamDraft({ status: 'completed', questions: readyQuestions }),
     });
     repository.markReady.mockResolvedValue(false);
+    repository.findByTokenHash
+      .mockResolvedValueOnce(record())
+      .mockResolvedValueOnce(record({ status: 'ready', title: 'Stored', questionCount: 2 }));
 
-    await service.status(TOKEN, IP);
+    const result = await service.status(TOKEN, IP);
 
+    expect(result).toMatchObject({ ok: true, draft: { status: 'ready', title: 'Stored' } });
     expect(events.ready).not.toHaveBeenCalled();
+  });
+
+  it('a poll that loses markFailed to a ready poll answers ready, not failed', async () => {
+    // Poll A marked the draft ready and deleted it upstream; poll B then sees a 404.
+    const { service, repository, upstream, limiter, events } = setup(record());
+    upstream.get.mockResolvedValue({ ok: false, status: 404, code: 'not_found', meta: null });
+    repository.markFailed.mockResolvedValue(false);
+    repository.findByTokenHash
+      .mockResolvedValueOnce(record())
+      .mockResolvedValueOnce(record({ status: 'ready', title: 'Cells', questionCount: 2 }));
+
+    const result = await service.status(TOKEN, IP);
+
+    expect(result).toEqual({
+      ok: true,
+      draft: {
+        status: 'ready',
+        progressPercent: 100,
+        title: 'Cells',
+        questionCount: 2,
+        failureReason: null,
+      },
+    });
+    expect(limiter.refundIp).not.toHaveBeenCalled();
+    expect(events.failed).not.toHaveBeenCalled();
+  });
+
+  it('a lost transition on a draft the TTL already removed answers not_found', async () => {
+    const { service, repository, upstream } = setup(record());
+    upstream.get.mockResolvedValue({ ok: false, status: 404, code: 'not_found', meta: null });
+    repository.markFailed.mockResolvedValue(false);
+    repository.findByTokenHash.mockResolvedValueOnce(record()).mockResolvedValueOnce(null);
+
+    expect(await service.status(TOKEN, IP)).toEqual({ ok: false, error: 'not_found' });
   });
 
   it('serves a stored ready draft without calling the API again', async () => {

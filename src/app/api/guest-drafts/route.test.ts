@@ -59,13 +59,13 @@ describe('POST /api/guest-drafts', () => {
     );
   });
 
-  it('refuses a PDF over 10 MB before the service (no cap, no upstream)', async () => {
-    const response = await POST(upload(pdfFile(10 * 1024 * 1024)));
+  it('refuses a PDF over 4 MB (the Vercel body limit is 4.5 MB) before the service (no cap, no upstream)', async () => {
+    const response = await POST(upload(pdfFile(4 * 1024 * 1024)));
 
     expect(response.status).toBe(413);
     expect((await response.json()).error.meta).toMatchObject({
       reason: 'guest_pdf_too_large',
-      limit_mb: 10,
+      limit_mb: 4,
     });
     expect(createMock).not.toHaveBeenCalled();
   });

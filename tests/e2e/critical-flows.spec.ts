@@ -1432,7 +1432,17 @@ test.describe('production critical paths', () => {
       try {
         await storeGuestDraftToken(page, draft.token);
         await page.goto('/en/register');
-        await page.getByLabel('Email Address').fill(email);
+        // A cold load: on WebKit the fills can land before hydration, React Hook Form never
+        // sees them and `Create Account` stays disabled. Fill only once React owns the form.
+        const emailInput = page.getByLabel('Email Address');
+        await expect
+          .poll(() =>
+            emailInput.evaluate((node) =>
+              Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+            ),
+          )
+          .toBe(true);
+        await emailInput.fill(email);
         await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
         await page.getByLabel('Confirm password').fill(E2E_PASSWORD);
         await page.getByRole('checkbox').check();

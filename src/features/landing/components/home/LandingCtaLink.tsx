@@ -3,10 +3,17 @@
 import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import type { MarketingHeaderPosition } from '@/lib/routing/pathname';
 
-type LandingCta = 'play_first' | 'upload' | 'guest_pdf' | 'register';
-/** Homepage spots (RIN-1178) and the blog quiz card's (RIN-1258). */
-type LandingCtaPosition = 'hero' | 'bottom' | 'blog_inline' | 'blog_end' | 'blog_index';
+type LandingCta = 'play_first' | 'upload' | 'guest_pdf' | 'register' | 'signin' | 'dashboard';
+/** Homepage spots (RIN-1178), the blog quiz card's (RIN-1258) and the content-page header's (RIN-1519). */
+type LandingCtaPosition =
+  | 'hero'
+  | 'bottom'
+  | 'blog_inline'
+  | 'blog_end'
+  | 'blog_index'
+  | MarketingHeaderPosition;
 
 interface LandingCtaLinkProps {
   href: string;
@@ -16,6 +23,8 @@ interface LandingCtaLinkProps {
   /** Blog post slug of a post's quiz card; absent elsewhere (and on the /blog index). */
   post?: string;
   className?: string;
+  /** Runs after the event is reported, e.g. to close the header menu (RIN-1519). */
+  onNavigate?: () => void;
   children: ReactNode;
 }
 
@@ -32,20 +41,22 @@ export function LandingCtaLink({
   locale,
   post,
   className,
+  onNavigate,
   children,
 }: LandingCtaLinkProps) {
   return (
     <Link
       href={href}
       className={className}
-      onClick={() =>
+      onClick={() => {
         captureAnalyticsEvent('landing_cta_clicked', {
           cta,
           position,
           locale,
           ...(post ? { post } : {}),
-        })
-      }
+        });
+        onNavigate?.();
+      }}
     >
       {children}
     </Link>

@@ -137,6 +137,25 @@ export function shouldHideGlobalFooter(pathname: string): boolean {
   return !shouldShowFooter;
 }
 
+/** Where a marketing header click happened, as reported with `landing_cta_clicked`. */
+export type MarketingHeaderPosition = 'blog_header' | 'pricing_header' | 'content_header';
+
+/**
+ * The content pages of the marketing layout get the light site header
+ * (RIN-1519): the footer pages minus the landing, which keeps its own header.
+ * Auth and utility routes in the same layout get none. Returns the analytics
+ * position of the page, or null where no header is shown.
+ */
+export function getMarketingHeaderPosition(pathname: string): MarketingHeaderPosition | null {
+  const pathWithoutLocale = stripLocaleFromPath(pathname);
+  if (matchesPrefix(pathWithoutLocale, '/blog')) return 'blog_header';
+  if (matchesPrefix(pathWithoutLocale, '/pricing')) return 'pricing_header';
+  const isContentPage = FOOTER_PATHS.some(
+    (path) => path !== '/' && matchesPrefix(pathWithoutLocale, path),
+  );
+  return isContentPage ? 'content_header' : null;
+}
+
 export type ProductScope = 'adaptive' | 'quiz' | 'hub';
 
 const ADAPTIVE_SCOPE_PREFIXES = ['/adaptive'];

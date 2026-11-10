@@ -537,6 +537,12 @@
     }
   }
 
+  /* The sticky 64 px header of the marketing content pages (RIN-1519): keep
+     anchor targets (blog TOC headings) and focus moves clear of it. */
+  html:has(.marketing-header) {
+    scroll-padding-top: 5rem;
+  }
+
   .app-bottom-inset {
     padding-bottom: calc(
       var(--app-bottom-nav-height) + env(safe-area-inset-bottom, 8px) +

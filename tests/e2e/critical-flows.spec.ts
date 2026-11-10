@@ -727,6 +727,20 @@ test.describe('production critical paths', () => {
       await page.goto('/en/admin/stats');
       await expect(page).toHaveURL(/\/en\/dashboard(?:[/?#]|$)/);
 
+      // RIN-1519: the blog header shows Dashboard instead of Sign In / Register once
+      // signed in, and its skip link moves focus to the page's one main landmark.
+      await page.goto('/en/blog');
+      const marketingHeader = page.getByRole('banner');
+      await expect(marketingHeader.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
+        'href',
+        '/en/dashboard',
+      );
+      await expect(marketingHeader.getByRole('link', { name: 'Sign In' })).toHaveCount(0);
+      await expect(page.locator('main')).toHaveCount(1);
+      await page.getByRole('link', { name: 'Skip to main content' }).focus();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#main-content')).toBeFocused();
+
       await page.goto('/en/dashboard');
       const desktopUserMenu = page.getByRole('button', { name: 'Toggle user menu' });
       if (await desktopUserMenu.isVisible()) {
@@ -1382,6 +1396,10 @@ test.describe('production critical paths', () => {
       const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
       await recordAnalyticsEvents(page);
       await page.goto('/en/blog');
+      // RIN-1519: a signed-out reader can sign up from the header at every width.
+      await expect(
+        page.getByRole('banner').getByRole('link', { name: 'Register' }),
+      ).toHaveAttribute('href', '/en/register');
       const start = page.getByTestId('try-quiz-card').getByRole('link', { name: 'Start the quiz' });
       await expect
         .poll(() =>

@@ -66,5 +66,8 @@
   "skipToContent": "Skip to main content",
   "credits": "credits",
   "creditBalanceLoading": "Loading credit balance",
-  "creditBalanceUnavailable": "Credit balance unavailable"
+  "creditBalanceUnavailable": "Credit balance unavailable",
+  "blog": "Blog",
+  "pricing": "Pricing",
+  "dashboard": "Dashboard"
 }

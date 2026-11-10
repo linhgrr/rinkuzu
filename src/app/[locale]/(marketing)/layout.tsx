@@ -4,6 +4,7 @@ import { getScopedMessages } from '@/i18n/messages';
 import { MARKETING_MESSAGE_NAMESPACES } from '@/i18n/namespaces';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { ClientOnlyMarketingAddons } from '@/components/ClientOnlyMarketingAddons';
+import { MarketingContentShell } from '@/components/marketing/MarketingContentShell';
 
 export default async function MarketingLayout({
   children,
@@ -18,7 +19,7 @@ export default async function MarketingLayout({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      {children}
+      <MarketingContentShell>{children}</MarketingContentShell>
       <GlobalFooter />
       <ClientOnlyMarketingAddons />
     </NextIntlClientProvider>

@@ -232,7 +232,7 @@ function VietnamesePrivacyPage() {
   ];
 
   return (
-    <main className="mx-auto max-w-4xl space-y-8 px-6 py-12 text-neutral-700">
+    <div className="mx-auto max-w-4xl space-y-8 px-6 py-12 text-neutral-700">
       <header>
         <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Chính sách quyền riêng tư</h1>
         <p className="text-sm text-neutral-500">Cập nhật lần cuối: 9 tháng 11, 2026</p>
@@ -259,7 +259,7 @@ function VietnamesePrivacyPage() {
           .
         </p>
       </PolicySection>
-    </main>
+    </div>
   );
 }
 

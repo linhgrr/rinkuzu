@@ -66,5 +66,8 @@
   "skipToContent": "Chuyển đến nội dung chính",
   "credits": "credit",
   "creditBalanceLoading": "Đang tải số dư credit",
-  "creditBalanceUnavailable": "Không tải được số dư credit"
+  "creditBalanceUnavailable": "Không tải được số dư credit",
+  "blog": "Blog",
+  "pricing": "Bảng giá",
+  "dashboard": "Bảng điều khiển"
 }

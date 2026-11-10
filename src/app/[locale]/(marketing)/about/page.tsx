@@ -110,7 +110,7 @@ export default async function AboutPage({ params }: Props) {
     : englishStats;
 
   return (
-    <main className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
       {/* JSON-LD */}
       <JsonLd id="about-schema" data={teamSchema} />
 
@@ -313,6 +313,6 @@ export default async function AboutPage({ params }: Props) {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

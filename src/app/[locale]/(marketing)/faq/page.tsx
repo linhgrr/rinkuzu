@@ -76,7 +76,7 @@ export default async function FAQPage({ params }: Props) {
   const plainFaqSchema = buildFaqSchema(plainFaqs);
 
   return (
-    <main className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
       {/* FAQ JSON-LD */}
       <JsonLd id="faq-schema" data={plainFaqSchema} />
 
@@ -188,6 +188,6 @@ export default async function FAQPage({ params }: Props) {
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -75,7 +75,7 @@ export default async function AuthorPage({ params }: Props) {
     <>
       <JsonLd id="person-schema" data={personSchema} />
 
-      <main className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white">
         {/* Hero */}
         <section className="bg-[var(--bg-section)] py-20 md:py-28">
           <div className="max-w-3xl mx-auto px-6">
@@ -174,7 +174,7 @@ export default async function AuthorPage({ params }: Props) {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </>
   );
 }

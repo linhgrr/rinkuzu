@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   getLocaleFromPath,
+  getMarketingHeaderPosition,
   shouldHideGlobalFooter,
   stripLocaleFromPath,
   toBrowserPath,
@@ -105,5 +106,38 @@ describe('shouldHideGlobalFooter', () => {
     '/en/verify-email',
   ])('hides the footer outside the public marketing allowlist for %s', (pathname) => {
     expect(shouldHideGlobalFooter(pathname)).toBe(true);
+  });
+});
+
+describe('getMarketingHeaderPosition (RIN-1519)', () => {
+  it.each([
+    ['/blog', 'blog_header'],
+    ['/en/blog', 'blog_header'],
+    ['/vi/blog/some-post', 'blog_header'],
+    ['/en/blog/authors', 'blog_header'],
+    ['/en/pricing', 'pricing_header'],
+    ['/pricing/', 'pricing_header'],
+    ['/en/about', 'content_header'],
+    ['/vi/faq', 'content_header'],
+    ['/en/contact', 'content_header'],
+    ['/en/privacy', 'content_header'],
+    ['/en/terms', 'content_header'],
+    ['/en/cookies', 'content_header'],
+  ] as const)('shows the header on %s as %s', (pathname, position) => {
+    expect(getMarketingHeaderPosition(pathname)).toBe(position);
+  });
+
+  it.each([
+    '/',
+    '/en',
+    '/vi',
+    '/en/login',
+    '/en/register',
+    '/en/forgot-password',
+    '/en/try',
+    '/en/blogger',
+    '/en/dashboard',
+  ])('keeps %s without the header', (pathname) => {
+    expect(getMarketingHeaderPosition(pathname)).toBeNull();
   });
 });

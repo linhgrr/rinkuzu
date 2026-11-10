@@ -65,7 +65,7 @@ export default async function PricingPage({ params }: Props) {
   const pricingSchema = buildPricingSchema(premiumPlans);
 
   return (
-    <main className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
       <JsonLd id="pricing-schema" data={pricingSchema} />
       <JsonLd id="pricing-faq-schema" data={faqSchema} />
       <PricingViewTracker />
@@ -192,7 +192,7 @@ export default async function PricingPage({ params }: Props) {
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 

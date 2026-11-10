@@ -54,5 +54,52 @@
     "makeAgain": "Tạo lại",
     "goToLibrary": "Tới thư viện của tôi",
     "loading": "Đang tải quiz…"
+  },
+  "seo": {
+    "howTitle": "Cách hoạt động",
+    "steps": {
+      "upload": {
+        "title": "Tải PDF lên",
+        "body": "Chọn một tệp PDF tối đa {pages} trang: bài giảng, một chương giáo trình hoặc slide."
+      },
+      "generate": {
+        "title": "Rinkuzu soạn câu hỏi",
+        "body": "Rin đọc tài liệu và soạn tối đa {questions} câu hỏi trắc nghiệm, thường mất khoảng một phút."
+      },
+      "play": {
+        "title": "Làm quiz, đăng ký để lưu lại",
+        "body": "Làm quiz ngay. Đăng ký miễn phí để giữ quiz; nếu không, quiz sẽ bị xóa sau {hours} giờ."
+      }
+    },
+    "limitsTitle": "Giới hạn khi dùng thử miễn phí",
+    "limits": {
+      "pages": "Tối đa {pages} trang mỗi PDF",
+      "size": "Tối đa {mb} MB mỗi tệp",
+      "questions": "Tối đa {questions} câu hỏi mỗi quiz",
+      "kept": "Lưu {hours} giờ nếu bạn chưa đăng ký"
+    },
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": {
+      "free": {
+        "q": "Tạo quiz từ PDF có miễn phí không?",
+        "a": "Có. Tạo và làm quiz từ PDF của bạn hoàn toàn miễn phí. Số lượt dùng không cần tài khoản mỗi ngày có giới hạn, và đăng ký cũng miễn phí."
+      },
+      "account": {
+        "q": "Tôi có cần tài khoản không?",
+        "a": "Không. Bạn tải PDF lên và làm quiz mà không cần đăng ký hay nhập email."
+      },
+      "files": {
+        "q": "Tôi có thể tải lên loại tệp nào?",
+        "a": "Chỉ tệp PDF, tối đa {pages} trang và {mb} MB. PDF có chữ chọn được cho kết quả tốt nhất; PDF scan dạng ảnh khó đọc hơn."
+      },
+      "expiry": {
+        "q": "Quiz của tôi sẽ ra sao sau {hours} giờ?",
+        "a": "Nếu bạn chưa đăng ký, quiz và tệp của bạn sẽ bị xóa {hours} giờ sau khi tạo. Trước đó chỉ bạn mở được chúng."
+      },
+      "keep": {
+        "q": "Làm sao để giữ quiz của tôi?",
+        "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
+      }
+    }
   }
 }

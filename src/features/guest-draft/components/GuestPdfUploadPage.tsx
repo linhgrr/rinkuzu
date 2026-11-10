@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Pill } from '@/components/ui/Pill';
 import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
@@ -98,8 +99,14 @@ function FlowBody({ flow }: { flow: Flow }) {
   return <UploadForm flow={flow} />;
 }
 
+interface GuestPdfUploadPageProps {
+  entry?: GuestDraftEntry | undefined;
+  /** Server-rendered copy under the widget (RIN-1498); the widget stays first on screen. */
+  children?: ReactNode;
+}
+
 /** `/try/pdf` (RIN-1448): a signed-out visitor turns their own PDF into a quiz and plays it. */
-export function GuestPdfUploadPage({ entry }: { entry?: GuestDraftEntry | undefined }) {
+export function GuestPdfUploadPage({ entry, children }: GuestPdfUploadPageProps) {
   const t = useTranslations('guestDraft.upload');
   const flow = useGuestPdfDraft(entry);
 
@@ -115,6 +122,7 @@ export function GuestPdfUploadPage({ entry }: { entry?: GuestDraftEntry | undefi
         <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
           {t('higherLimits')}
         </Link>
+        {children}
       </div>
     </main>
   );

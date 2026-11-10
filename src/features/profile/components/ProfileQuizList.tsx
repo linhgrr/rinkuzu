@@ -37,7 +37,7 @@ function EmptyLibrary() {
     >
       <HiOutlineDocumentText className="size-12 text-ink/25" />
       <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h2>
-      <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
+      <p className="mt-1 max-w-sm text-sm text-ink/70">{t('createFirst')}</p>
       <Link href="/create" className="mt-5">
         <Button>{t('newQuiz')}</Button>
       </Link>

@@ -116,7 +116,7 @@ export function OcrModelPanel() {
         <div className="rounded-lg border border-line-blue/30 bg-white p-5 md:col-span-2">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-sm font-medium text-ink/55">{t('ocrModelActive')}</div>
+              <div className="text-sm font-medium text-ink/70">{t('ocrModelActive')}</div>
               <div className="mt-2 break-all font-mono text-xl font-semibold text-ink">
                 {settings?.modelName || '—'}
               </div>
@@ -127,7 +127,7 @@ export function OcrModelPanel() {
           </div>
         </div>
         <div className="rounded-lg border border-line-blue/30 bg-white p-5">
-          <div className="text-sm font-medium text-ink/55">{t('ocrModelSource')}</div>
+          <div className="text-sm font-medium text-ink/70">{t('ocrModelSource')}</div>
           <div className="mt-3">
             <Badge variant={settings?.source === 'database' ? 'success' : 'warning'}>
               {settings?.source === 'database'
@@ -135,14 +135,14 @@ export function OcrModelPanel() {
                 : t('ocrModelSourceEnvironment')}
             </Badge>
           </div>
-          <div className="mt-3 text-xs text-ink/50">{updatedAt}</div>
+          <div className="mt-3 text-xs text-ink/70">{updatedAt}</div>
         </div>
       </section>
 
       <section className="rounded-lg border border-line-blue/30 bg-white">
         <div className="border-b border-line-blue/25 px-5 py-4">
           <h2 className="text-lg font-semibold text-ink">{t('ocrModelConfigureTitle')}</h2>
-          <p className="mt-1 text-sm text-ink/55">{t('ocrModelConfigureDescription')}</p>
+          <p className="mt-1 text-sm text-ink/70">{t('ocrModelConfigureDescription')}</p>
         </div>
         <form onSubmit={handleSave} className="space-y-5 p-5">
           <label className="block max-w-2xl">
@@ -161,10 +161,10 @@ export function OcrModelPanel() {
 
           <div className="flex flex-col gap-3 rounded-lg bg-neutral-50 p-4 text-sm text-ink/65 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
-              <HiOutlineDatabase className="mt-0.5 size-5 shrink-0 text-ink/45" />
+              <HiOutlineDatabase className="mt-0.5 size-5 shrink-0 text-ink/60" />
               <div>
                 <div>{t('ocrModelFallbackLabel')}</div>
-                <div className="mt-1 break-all font-mono text-xs text-ink/55">
+                <div className="mt-1 break-all font-mono text-xs text-ink/70">
                   {settings?.envFallbackModel || '—'}
                 </div>
               </div>

@@ -73,7 +73,7 @@ function TopicForm({ editor, controller }: TopicFormProps) {
           onChange={(event) => setIntro(event.target.value)}
         />
       </label>
-      <p id="quiz-topic-intro-words" className="text-sm text-ink/60">
+      <p id="quiz-topic-intro-words" className="text-sm text-ink/70">
         {t('introWords', {
           count: words,
           min: QUIZ_TOPIC_INTRO_MIN_WORDS,

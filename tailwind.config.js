@@ -1,5 +1,56 @@
+// RIN-1524: Tailwind 3 cannot put an opacity modifier on a bare `var()`
+// colour, so `bg-surface/95` and every other `<var-token>/<n>` class used to
+// emit no CSS. Each bare `var(--x)` colour below becomes a colour function:
+// without a modifier it returns the plain `var(--x)` (unchanged output, no
+// dependency on color-mix), and with one it mixes the variable with
+// transparent, so the modifier follows the light and dark theme values.
+const BARE_VAR_COLOUR = /^var\(--[\w-]+\)$/;
+const COLOUR_KEYS = ['colors', 'backgroundColor', 'textColor', 'borderColor'];
+
+function opacityPercent(opacityValue) {
+  const value = String(opacityValue).trim();
+  if (value.endsWith('%')) return value;
+  const number = Number(value);
+  if (value !== '' && Number.isFinite(number)) return `${Math.round(number * 1000) / 10}%`;
+  return `calc(${value} * 100%)`;
+}
+
+function alphaCapableVar(colour) {
+  return ({ opacityValue } = {}) => {
+    if (
+      opacityValue === undefined ||
+      String(opacityValue).startsWith('var(--tw-') ||
+      Number(opacityValue) === 1
+    ) {
+      return colour;
+    }
+    // Fully transparent needs no mix. This is also the implicit end stop of a
+    // plain `from-*` gradient, so it stays Tailwind's own default value.
+    if (Number(opacityValue) === 0) return 'rgb(255 255 255 / 0)';
+    return `color-mix(in srgb, ${colour} ${opacityPercent(opacityValue)}, transparent)`;
+  };
+}
+
+function withAlphaCapableVars(value) {
+  if (typeof value === 'string') {
+    return BARE_VAR_COLOUR.test(value) ? alphaCapableVar(value) : value;
+  }
+  if (value === null || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key, withAlphaCapableVars(entry)]),
+  );
+}
+
+function withAlphaCapableVarColours(config) {
+  const extend = { ...config.theme.extend };
+  for (const key of COLOUR_KEYS) {
+    if (extend[key]) extend[key] = withAlphaCapableVars(extend[key]);
+  }
+  return { ...config, theme: { ...config.theme, extend } };
+}
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
   darkMode: ['class', '[data-theme="dark"]'],
   content: {
     relative: true,
@@ -325,3 +376,5 @@ module.exports = {
   },
   plugins: [require('@tailwindcss/typography'), require('@tailwindcss/forms')],
 };
+
+module.exports = withAlphaCapableVarColours(config);

@@ -171,7 +171,7 @@ export function AdminQuizzesPageClient() {
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-ink">{t('quizManagement')}</h1>
-          <p className="mt-2 text-ink/60">{t('quizManagementDescription')}</p>
+          <p className="mt-2 text-ink/70">{t('quizManagementDescription')}</p>
         </div>
         {state.loadError ? null : (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -247,7 +247,7 @@ export function AdminQuizzesPageClient() {
               <div className="flex min-h-[320px] flex-col items-center justify-center text-center">
                 <HiOutlineDocumentText className="size-12 text-ink/25" />
                 <h2 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzesFound')}</h2>
-                <p className="mt-1 text-sm text-ink/50">{t('noQuizzesCreated')}</p>
+                <p className="mt-1 text-sm text-ink/70">{t('noQuizzesCreated')}</p>
               </div>
             ) : (
               <div className="divide-y divide-line-blue/25">
@@ -279,7 +279,7 @@ export function AdminQuizzesPageClient() {
                           <PersonalDataFlagBadge kinds={quiz.personalDataKinds} />
                         ) : null}
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/55">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/70">
                         <AdminQuizAuthorLink author={quiz.author} />
                         <span>•</span>
                         <span>{t('questionTotal', { count: quiz.questionCount })}</span>

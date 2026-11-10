@@ -46,7 +46,7 @@ function TopicQuizRow({ quiz, total, controller }: TopicQuizRowProps) {
         <p className="truncate text-sm font-semibold text-ink">
           {quiz.order}. {title}
         </p>
-        <p className="text-xs text-ink/55">{t('questionCount', { count: quiz.questionCount })}</p>
+        <p className="text-xs text-ink/70">{t('questionCount', { count: quiz.questionCount })}</p>
         {quiz.isPublic ? null : (
           <p className="mt-1 flex items-start gap-1.5 text-xs text-amber-800">
             <HiOutlineExclamation className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -104,13 +104,13 @@ function TopicQuizzes({ controller }: ControllerProps) {
   }
   if (!detail) {
     return (
-      <p role="status" className="text-sm text-ink/55">
+      <p role="status" className="text-sm text-ink/70">
         {t('detailLoading')}
       </p>
     );
   }
   if (detail.quizzes.length === 0) {
-    return <p className="text-sm text-ink/55">{t('noQuizzes')}</p>;
+    return <p className="text-sm text-ink/70">{t('noQuizzes')}</p>;
   }
   return (
     <ol
@@ -156,7 +156,7 @@ function TopicRow({ topic, controller }: TopicRowProps) {
               {t(topic.published ? 'publishedBadge' : 'draftBadge')}
             </span>
           </div>
-          <p className="mt-1 truncate text-sm text-ink/55">
+          <p className="mt-1 truncate text-sm text-ink/70">
             /vi/explore/{topic.slug} · {t('quizCount', { count: topic.quizCount })} ·{' '}
             {t('introWordCount', { count: topic.introWords })}
           </p>
@@ -200,7 +200,7 @@ function TopicRow({ topic, controller }: TopicRowProps) {
       {open ? (
         <div id={panelId} className="mt-3 rounded-xl bg-surface-blue/40 px-4 py-2">
           <TopicQuizzes controller={controller} />
-          <p className="mt-2 text-xs text-ink/55">{t('assignHint')}</p>
+          <p className="mt-2 text-xs text-ink/70">{t('assignHint')}</p>
         </div>
       ) : null}
     </li>
@@ -218,7 +218,7 @@ function TopicPanelBody({ controller }: ControllerProps) {
     return (
       <div className="p-6 text-center">
         <p className="font-semibold text-ink">{t('emptyTitle')}</p>
-        <p className="mt-1 text-sm text-ink/55">{t('emptyHint')}</p>
+        <p className="mt-1 text-sm text-ink/70">{t('emptyHint')}</p>
       </div>
     );
   }
@@ -246,7 +246,7 @@ export function AdminQuizTopicsPanel({ controller }: ControllerProps) {
           <h2 id="admin-quiz-topics-heading" className="text-lg font-semibold text-ink">
             {t('title')}
           </h2>
-          <p className="mt-1 text-sm text-ink/60">{t('description')}</p>
+          <p className="mt-1 text-sm text-ink/70">{t('description')}</p>
         </div>
         <Button
           size="sm"

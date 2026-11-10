@@ -32,6 +32,7 @@ function quiz(id: string, overrides: Partial<QuizTopicHubQuizRecord> = {}): Quiz
     title: `Đề ${id}`,
     visibility: 'public',
     authorId: 'author-real',
+    author: { name: null, displayName: 'Học viên thật', avatar: null },
     questionCount: 10,
     personalDataFlagged: false,
     indexHold: false,
@@ -94,11 +95,13 @@ describe('QuizTopicHubService.getTopicWithIndexableQuizzes', () => {
       quizzes: [
         quiz('q1'),
         quiz('q2', { updatedAt: new Date('2026-11-02T00:00:00.000Z') }),
-        quiz('q3'),
+        quiz('q3', { authorId: null, author: null }),
       ],
     });
 
     const hub = await service.getTopicWithIndexableQuizzes('sinh-hoc');
+    // RIN-1469: the card's author line, name and avatar only; null for a deleted author.
+    const author = { name: null, displayName: 'Học viên thật', avatar: null };
 
     expect(hub).toEqual({
       slug: 'sinh-hoc',
@@ -107,9 +110,27 @@ describe('QuizTopicHubService.getTopicWithIndexableQuizzes', () => {
       intro: INTRO_150_WORDS,
       indexable: true,
       quizzes: [
-        { slug: 'de-q3', title: 'Đề q3', questionCount: 10, updatedAt: '2026-10-01T00:00:00.000Z' },
-        { slug: 'de-q1', title: 'Đề q1', questionCount: 10, updatedAt: '2026-10-01T00:00:00.000Z' },
-        { slug: 'de-q2', title: 'Đề q2', questionCount: 10, updatedAt: '2026-11-02T00:00:00.000Z' },
+        {
+          slug: 'de-q3',
+          title: 'Đề q3',
+          questionCount: 10,
+          author: null,
+          updatedAt: '2026-10-01T00:00:00.000Z',
+        },
+        {
+          slug: 'de-q1',
+          title: 'Đề q1',
+          questionCount: 10,
+          author,
+          updatedAt: '2026-10-01T00:00:00.000Z',
+        },
+        {
+          slug: 'de-q2',
+          title: 'Đề q2',
+          questionCount: 10,
+          author,
+          updatedAt: '2026-11-02T00:00:00.000Z',
+        },
       ],
     });
   });
@@ -279,7 +300,10 @@ describe('QuizTopicHubService.getQuizTopicContext', () => {
       slug: 'sinh-hoc',
       name: 'Sinh học',
       quizzes: [
-        expect.objectContaining({ slug: 'de-q1' }),
+        expect.objectContaining({
+          slug: 'de-q1',
+          author: { name: null, displayName: 'Học viên thật', avatar: null },
+        }),
         expect.objectContaining({ slug: 'de-q4' }),
       ],
     });

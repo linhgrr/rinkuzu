@@ -4,7 +4,6 @@ import { HiOutlineLockClosed, HiOutlineLockOpen } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import type { UserIdentity } from '@/components/user/user-identity';
-import { cn } from '@/lib/utils';
 import { ROUTES } from '@/shared/constants/routes';
 import { QuizCardOwnerMenu } from './QuizCardOwnerMenu';
 
@@ -18,14 +17,6 @@ export interface QuizCardQuiz {
   awardedCredits?: number;
 }
 
-/** A one-tap link that starts a round, e.g. the topic hub's "Chơi ngay" (RIN-1466). */
-interface QuizCardPlayAction {
-  /** Locale-less path; carries its own `mode` and `entry` so the round stays attributable. */
-  href: string;
-  label: string;
-  ariaLabel: string;
-}
-
 /**
  * The one quiz card (RIN-1466): lists, Explore, topic hubs and related quizzes.
  * No 'use client': server pages render it as HTML; only the owner menu hydrates.
@@ -35,9 +26,11 @@ interface QuizCardProps {
   /** Required with `onDelete`: the owner menu links to `/edit/<quizId>`. */
   quizId?: string;
   onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
-  /** Public surfaces with no author data (hubs, related quizzes) hide the author line. */
-  showAuthor?: boolean;
-  play?: QuizCardPlayAction | undefined;
+  /**
+   * Locale-less link target; defaults to `/quiz/<slug>`. A topic hub passes its
+   * `entry=hub&topic=` landing link (RIN-1469).
+   */
+  href?: string | undefined;
   /** Short status shown next to the question count, e.g. "Unlocked" on owned Premium cards. */
   badge?: string | undefined;
 }
@@ -47,25 +40,12 @@ function getAuthor(quiz: QuizCardQuiz): UserIdentity {
   return quiz.author;
 }
 
-export function QuizCard({
-  quiz,
-  quizId,
-  onDelete,
-  badge,
-  showAuthor = true,
-  play,
-}: QuizCardProps) {
+export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps) {
   const t = useTranslations('profile');
   const author = getAuthor(quiz);
 
   return (
-    <article
-      className={cn(
-        'group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none',
-        // The height floor fits the author row; cards without it hug their content.
-        !showAuthor && 'min-h-0',
-      )}
-    >
+    <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/40">
         <div className="flex flex-wrap items-center gap-2">
           <span>{t('questionCount', { count: quiz.questionCount })}</span>
@@ -90,36 +70,25 @@ export function QuizCard({
       </div>
 
       <Link
-        href={ROUTES.QUIZ.VIEW(encodeURIComponent(quiz.slug))}
+        href={href ?? ROUTES.QUIZ.VIEW(encodeURIComponent(quiz.slug))}
         className="mt-2 flex flex-1 flex-col rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <h3 className="line-clamp-2 break-words font-home text-body font-semibold text-ink">
           {quiz.title}
         </h3>
-        {showAuthor ? (
-          <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
-            <UserAvatar user={author} size={26} />
-            <span className="min-w-0 truncate">
-              {author.displayName || author.name || 'RinKuzu learner'}
-            </span>
-            {quiz.visibility === 'personal' ? (
-              <HiOutlineLockClosed
-                className="ml-auto size-4 shrink-0 text-ink/45"
-                aria-label={t('personalSource')}
-              />
-            ) : null}
-          </div>
-        ) : null}
+        <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
+          <UserAvatar user={author} size={26} />
+          <span className="min-w-0 truncate">
+            {author.displayName || author.name || 'RinKuzu learner'}
+          </span>
+          {quiz.visibility === 'personal' ? (
+            <HiOutlineLockClosed
+              className="ml-auto size-4 shrink-0 text-ink/45"
+              aria-label={t('personalSource')}
+            />
+          ) : null}
+        </div>
       </Link>
-      {play ? (
-        <Link
-          href={play.href}
-          aria-label={play.ariaLabel}
-          className="btn btn-secondary mt-3 min-h-11 w-full sm:w-auto sm:self-start"
-        >
-          {play.label}
-        </Link>
-      ) : null}
     </article>
   );
 }

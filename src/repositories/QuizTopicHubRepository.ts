@@ -5,6 +5,11 @@ import QuizTopicModel from '@/models/QuizTopic';
 import QuizTopicAssignmentModel from '@/models/QuizTopicAssignment';
 import { QUIZ_INDEX_BLOCK_PROJECTION } from '@/repositories/quiz-index-filter';
 import {
+  PUBLIC_QUIZ_AUTHOR_LOOKUP,
+  toPublicQuizAuthor,
+  type PublicQuizAuthorPersistence,
+} from '@/repositories/pipelines/public-quiz-author';
+import {
   TOPIC_PROJECTION,
   toTopicRecord,
   type QuizTopicPersistence,
@@ -31,6 +36,7 @@ interface HubQuizPersistence {
   title?: string;
   visibility: string;
   author?: Types.ObjectId | null;
+  authorIdentity?: PublicQuizAuthorPersistence[];
   questionCount: number;
   personalDataFlagged: boolean;
   indexHold: boolean;
@@ -114,12 +120,14 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
     await connectDB();
     const rows = await QuizModel.aggregate<HubQuizPersistence>([
       { $match: { _id: { $in: ids }, visibility: 'public' } },
+      PUBLIC_QUIZ_AUTHOR_LOOKUP,
       {
         $project: {
           slug: 1,
           title: 1,
           visibility: 1,
           author: 1,
+          authorIdentity: 1,
           createdAt: 1,
           updatedAt: 1,
           questionCount: { $size: { $ifNull: ['$questions', []] } },
@@ -133,6 +141,7 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
       title: row.title ?? '',
       visibility: row.visibility,
       authorId: row.author ? row.author.toString() : null,
+      author: toPublicQuizAuthor(row.authorIdentity),
       questionCount: row.questionCount,
       personalDataFlagged: row.personalDataFlagged,
       indexHold: row.indexHold,

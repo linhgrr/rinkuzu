@@ -224,6 +224,7 @@ describe('sitemap', () => {
         title: `Đề ${id}`,
         visibility: 'public',
         authorId: 'learner-1',
+        author: null,
         questionCount: 10,
         personalDataFlagged: false,
         indexHold: false,

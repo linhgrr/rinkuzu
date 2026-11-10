@@ -56,11 +56,26 @@ describe('toQuizLandingViewModel', () => {
       quiz: quizWith(3),
       description: '',
       authorName: null,
-      related: [{ slug: 'hoa-hoc', title: 'Hóa học', questionCount: 12 }],
+      related: [
+        {
+          slug: 'hoa-hoc',
+          title: 'Hóa học',
+          questionCount: 12,
+          author: { name: 'Minh', displayName: null, avatar: 'https://example.com/a.png' },
+        },
+      ],
     });
 
     expect(landing.previewQuestions).toHaveLength(3);
     expect(landing.quickRoundEligible).toBe(false);
-    expect(landing.related).toEqual([{ slug: 'hoa-hoc', title: 'Hóa học', questionCount: 12 }]);
+    expect(landing.related).toEqual([
+      {
+        slug: 'hoa-hoc',
+        title: 'Hóa học',
+        questionCount: 12,
+        author: { name: 'Minh', displayName: null, avatar: 'https://example.com/a.png' },
+      },
+    ]);
+    expect(landing.hubEntry).toBeNull();
   });
 });

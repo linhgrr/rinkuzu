@@ -51,6 +51,11 @@ import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependent
 import { buildCompactQuizPipeline } from '@/repositories/pipelines/quiz-list.mjs';
 import { buildPaginatedCreatorStatsPipeline } from '@/repositories/pipelines/creator-stats.mjs';
 import { INDEXABLE_QUIZ_CONTENT_MATCH } from '@/repositories/quiz-index-filter';
+import {
+  PUBLIC_QUIZ_AUTHOR_LOOKUP,
+  toPublicQuizAuthor,
+  type PublicQuizAuthorPersistence,
+} from '@/repositories/pipelines/public-quiz-author';
 import { deleteOwnedPdfUrlsBestEffort, getQuizPdfObjectPrefix } from '@/lib/s3';
 
 interface QuizListAggregateMeta {
@@ -335,6 +340,7 @@ function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenc
 
 interface PublicQuizSitemapPersistenceRow {
   slug: string;
+  authorIdentity?: PublicQuizAuthorPersistence[];
   title?: string;
   questionCount: number;
   leadQuestionTexts?: unknown[];
@@ -425,6 +431,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
   async findPublicSitemapEntries({
     excludeAuthorIds,
     limit,
+    withAuthor = false,
   }: PublicQuizSitemapQuery): Promise<PublicQuizSitemapRecord[]> {
     await connectDB();
     const excluded = excludeAuthorIds
@@ -444,11 +451,14 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       },
       { $sort: { createdAt: -1 } },
       { $limit: limit },
+      // Only after the limit, and only for cards: the sitemap reads no user.
+      ...(withAuthor ? [PUBLIC_QUIZ_AUTHOR_LOOKUP] : []),
       {
         $project: {
           _id: 0,
           slug: 1,
           title: 1,
+          ...(withAuthor ? { authorIdentity: 1 } : {}),
           createdAt: 1,
           updatedAt: 1,
           questionCount: { $size: { $ifNull: ['$questions', []] } },
@@ -465,6 +475,7 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
       ),
       createdAt: row.createdAt,
       ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
+      ...(withAuthor ? { author: toPublicQuizAuthor(row.authorIdentity) } : {}),
     }));
   }
 

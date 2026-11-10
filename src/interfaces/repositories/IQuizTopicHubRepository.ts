@@ -2,6 +2,7 @@ import type {
   QuizTopicAssignmentRecord,
   QuizTopicRecord,
 } from '@/interfaces/repositories/IQuizTopicAdminRepository';
+import type { PublicQuizAuthorRecord } from '@/interfaces/repositories/IQuizRepository';
 
 /** The fields a topic hub needs from one assigned quiz, nothing else (RIN-1248). */
 export interface QuizTopicHubQuizRecord {
@@ -10,6 +11,8 @@ export interface QuizTopicHubQuizRecord {
   title: string;
   visibility: string;
   authorId: string | null;
+  /** Name and avatar for the hub card (RIN-1469); null for a deleted author. */
+  author: PublicQuizAuthorRecord | null;
   questionCount: number;
   /** Personal data flagged with no admin clear in force (RIN-1341). */
   personalDataFlagged: boolean;

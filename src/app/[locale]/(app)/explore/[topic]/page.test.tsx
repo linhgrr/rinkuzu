@@ -51,6 +51,8 @@ function hub(quizCount: number, indexable = quizCount >= 3): QuizTopicHubDto {
       slug: `de-sinh-${i + 1}`,
       title: `Đề sinh ${i + 1}`,
       questionCount: i === 0 ? 40 : 8,
+      // Fake people; the second quiz's author was deleted.
+      author: i === 1 ? null : { name: null, displayName: `Học viên ${i + 1}`, avatar: null },
       updatedAt: '2026-11-01T00:00:00.000Z',
     })),
   };
@@ -106,7 +108,7 @@ describe('topic hub metadata (B4, B5)', () => {
 });
 
 describe('topic hub page (B3, B7)', () => {
-  it('lists crawlable quiz links and hub-tagged play links', async () => {
+  it('lists crawlable hub-tagged quiz links with authors and no play button', async () => {
     getTopicWithIndexableQuizzes.mockResolvedValue(hub(3));
     await renderHub();
 
@@ -123,16 +125,22 @@ describe('topic hub page (B3, B7)', () => {
     expect(within(list).getAllByRole('article')).toHaveLength(3);
     expect(within(list).getByRole('heading', { level: 3, name: 'Đề sinh 1' })).toBeInTheDocument();
     expect(within(list).getByText('40 câu hỏi')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Đề sinh 1' })).toHaveAttribute(
+    // RIN-1469: the card itself carries the hub attribution to the landing.
+    expect(within(list).getByRole('link', { name: /Đề sinh 1/ })).toHaveAttribute(
       'href',
-      '/vi/quiz/de-sinh-1',
+      '/vi/quiz/de-sinh-1?entry=hub&topic=sinh-hoc',
     );
-    const play = screen.getByRole('link', { name: 'Chơi ngay: Đề sinh 1' });
-    expect(play).toHaveAttribute('href', '/vi/quiz/de-sinh-1?mode=quick&entry=hub&topic=sinh-hoc');
-    expect(screen.getByRole('link', { name: 'Chơi ngay: Đề sinh 2' })).toHaveAttribute(
+    expect(within(list).getByRole('link', { name: /Đề sinh 2/ })).toHaveAttribute(
       'href',
-      '/vi/quiz/de-sinh-2?mode=full&entry=hub&topic=sinh-hoc',
+      '/vi/quiz/de-sinh-2?entry=hub&topic=sinh-hoc',
     );
+    expect(within(list).getByText('Học viên 1')).toBeInTheDocument();
+    expect(within(list).getByText('Học viên 3')).toBeInTheDocument();
+    expect(within(list).getByText('RinKuzu learner')).toBeInTheDocument();
+    expect(screen.queryByText('Chơi ngay')).toBeNull();
+    for (const card of within(list).getAllByRole('article')) {
+      expect(within(card).getAllByRole('link')).toHaveLength(1);
+    }
   });
 
   it('emits the breadcrumb and the item list as JSON-LD', async () => {
@@ -164,7 +172,7 @@ describe('topic hub page (B3, B7)', () => {
     const { container } = await renderHub();
 
     expect(screen.getByText('31 bộ câu hỏi')).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: /^Chơi ngay: / })).toHaveLength(30);
+    expect(screen.getAllByRole('article')).toHaveLength(30);
     const data = JSON.parse(
       container.querySelector('script#topic-hub-schema')?.textContent ?? '{}',
     ) as { '@graph': Array<{ itemListElement: unknown[] }> };
@@ -185,7 +193,7 @@ describe('topic hub page (B3, B7)', () => {
       'href',
       '/vi/explore',
     );
-    expect(screen.queryByRole('link', { name: /^Chơi ngay/ })).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
     expect(screen.queryByText('0 bộ câu hỏi')).toBeNull();
   });
 });

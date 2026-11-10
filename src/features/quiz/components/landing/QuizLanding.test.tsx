@@ -42,9 +42,17 @@ function landingWith(overrides: Partial<QuizLandingViewModel> = {}): QuizLanding
         { letter: 'B', text: 'Lục lạp' },
       ],
     })),
-    related: [{ slug: 'hoa-hoc', title: 'Hóa học 10', questionCount: 12 }],
+    related: [
+      {
+        slug: 'hoa-hoc',
+        title: 'Hóa học 10',
+        questionCount: 12,
+        author: { name: null, displayName: 'Thầy Minh', avatar: null },
+      },
+    ],
     relatedSameTopic: false,
     topic: null,
+    hubEntry: null,
     ...overrides,
   };
 }
@@ -90,10 +98,41 @@ describe('QuizLanding (RIN-1247)', () => {
 
     expect(html).toContain('Quiz khác trên RinKuzu');
     expect(html).toContain('href="/vi/quiz/hoa-hoc"');
-    // RIN-1466: the shared QuizCard, without an author line or a play link.
-    expect(html).toMatch(/<article\b[^>]*>[\s\S]*12 câu hỏi[\s\S]*<h3\b[^>]*>Hóa học 10<\/h3>/u);
+    // RIN-1469: the shared QuizCard as on Explore: the real author, no play link.
+    expect(html).toMatch(
+      /<article\b[^>]*>[\s\S]*12 câu hỏi[\s\S]*<h3\b[^>]*>Hóa học 10<\/h3>[\s\S]*Thầy Minh/u,
+    );
     expect(html).not.toContain('RinKuzu learner');
     expect(html).not.toContain('entry=hub');
+  });
+
+  it('shows "RinKuzu learner" on a related card whose author was deleted', async () => {
+    const html = await render(
+      landingWith({
+        related: [{ slug: 'hoa-hoc', title: 'Hóa học 10', questionCount: 12, author: null }],
+      }),
+    );
+
+    expect(html).toContain('RinKuzu learner');
+  });
+
+  it('keeps the hub entry and topic on both CTAs when opened from a hub card (RIN-1469)', async () => {
+    const html = await render(landingWith({ hubEntry: { topic: 'sinh-hoc' } }));
+
+    expect(html).toContain(
+      'href="/vi/quiz/sinh-hoc-10?mode=quick&amp;entry=hub&amp;topic=sinh-hoc"',
+    );
+    expect(html).toContain(
+      'href="/vi/quiz/sinh-hoc-10?mode=full&amp;entry=hub&amp;topic=sinh-hoc"',
+    );
+    expect(html).not.toContain('entry=quiz_landing');
+  });
+
+  it('keeps the hub entry without a topic when the link had no valid one', async () => {
+    const html = await render(landingWith({ hubEntry: { topic: null } }));
+
+    expect(html).toContain('href="/vi/quiz/sinh-hoc-10?mode=quick&amp;entry=hub"');
+    expect(html).not.toContain('topic=');
   });
 
   it('hides the related block when there is nothing to link', async () => {

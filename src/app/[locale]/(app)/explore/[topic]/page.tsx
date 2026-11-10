@@ -16,7 +16,7 @@ import {
   TOPIC_HUB_LOCALE,
   TOPIC_HUB_QUIZ_LIMIT,
   topicHubPath,
-  topicHubPlayHref,
+  topicHubQuizHref,
 } from '@/lib/seo/topic-hub';
 import { QUIZ_TOPIC_SLUG_PATTERN } from '@/shared/constants/quiz-topic';
 
@@ -112,16 +112,11 @@ export default async function TopicHubPage({ params }: Props) {
                     quiz={{
                       title: quiz.title,
                       slug: quiz.slug,
-                      author: null,
+                      author: quiz.author,
                       visibility: 'public',
                       questionCount: quiz.questionCount,
                     }}
-                    showAuthor={false}
-                    play={{
-                      href: topicHubPlayHref(quiz, hub.slug),
-                      label: t('play'),
-                      ariaLabel: t('playAria', { title: quiz.title }),
-                    }}
+                    href={topicHubQuizHref(quiz.slug, hub.slug)}
                   />
                 </li>
               ))}

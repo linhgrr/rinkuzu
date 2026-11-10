@@ -22,6 +22,7 @@ interface QuizLandingInput {
   related: readonly RelatedQuizDto[];
   relatedSameTopic?: boolean;
   topic?: QuizLandingViewModel['topic'];
+  hubEntry?: QuizLandingViewModel['hubEntry'];
 }
 
 /**
@@ -58,6 +59,7 @@ export function toQuizLandingViewModel({
   related,
   relatedSameTopic = false,
   topic = null,
+  hubEntry = null,
 }: QuizLandingInput): QuizLandingViewModel {
   return {
     slug,
@@ -67,12 +69,14 @@ export function toQuizLandingViewModel({
     questionCount: quiz.questionCount,
     quickRoundEligible: isQuickRoundEligible(quiz.questionCount),
     previewQuestions: quiz.questions.slice(0, QUIZ_LANDING_PREVIEW_SIZE).map(toPreviewQuestion),
-    related: related.map(({ slug: relatedSlug, title, questionCount }) => ({
+    related: related.map(({ slug: relatedSlug, title, questionCount, author }) => ({
       slug: relatedSlug,
       title,
       questionCount,
+      author,
     })),
     relatedSameTopic,
     topic,
+    hubEntry,
   };
 }

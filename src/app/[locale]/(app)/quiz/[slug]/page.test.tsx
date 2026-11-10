@@ -449,15 +449,38 @@ describe('QuizPlayerPage landing (RIN-1247)', () => {
     expect(player).toBeDefined();
   });
 
-  it.each<Record<string, string>>([{ mode: 'quick' }, { entry: 'quiz_landing' }, { retryOf: 'x' }])(
-    'skips the landing when the URL has %j',
-    async (searchParams) => {
-      const { landing, player } = await landingOf(searchParams);
+  it.each<Record<string, string>>([
+    { mode: 'quick' },
+    { entry: 'quiz_landing' },
+    { entry: 'blog' },
+    { retryOf: 'x' },
+    { mode: 'quick', entry: 'hub', topic: 'sinh-hoc' },
+  ])('skips the landing when the URL has %j', async (searchParams) => {
+    const { landing, player } = await landingOf(searchParams);
 
-      expect(landing).toBeUndefined();
-      expect(player).toBeDefined();
-    },
-  );
+    expect(landing).toBeUndefined();
+    expect(player).toBeDefined();
+  });
+
+  // RIN-1469: a hub card links the landing with its attribution, which the CTAs keep.
+  it('shows the landing for a hub card link, with the hub entry and topic', async () => {
+    const { landing, player } = await landingOf({ entry: 'hub', topic: 'sinh-hoc' });
+
+    expect(player).toBeUndefined();
+    expect(landing?.props['landing']).toMatchObject({ hubEntry: { topic: 'sinh-hoc' } });
+  });
+
+  it('drops an invalid hub topic but keeps the hub entry', async () => {
+    const { landing } = await landingOf({ entry: 'hub', topic: '../Bad Topic' });
+
+    expect(landing?.props['landing']).toMatchObject({ hubEntry: { topic: null } });
+  });
+
+  it('has no hub entry on a plain landing', async () => {
+    const { landing } = await landingOf();
+
+    expect(landing?.props['landing']).toMatchObject({ hubEntry: null });
+  });
 
   it('skips the landing for a quiz that is not indexable', async () => {
     getQuizMetadataBySlug.mockResolvedValue({ ...metadata, ownerIndexable: false });

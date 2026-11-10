@@ -153,6 +153,7 @@ function toIndexableQuiz(quiz: QuizTopicHubQuizRecord): IndexableQuiz {
       slug: quiz.slug,
       title: quiz.title,
       questionCount: quiz.questionCount,
+      author: quiz.author,
       updatedAt: lastModified.toISOString(),
     },
     lastModified,

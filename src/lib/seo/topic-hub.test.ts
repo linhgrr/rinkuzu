@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTopicHubDescription, topicHubPlayHref } from './topic-hub';
+import { buildTopicHubDescription, topicHubQuizHref } from './topic-hub';
 
 // RIN-1249 B4 and B3/E17. Fake topic text only.
 
@@ -20,13 +20,11 @@ describe('buildTopicHubDescription', () => {
   });
 });
 
-describe('topicHubPlayHref', () => {
-  it('opens a quick round on a long quiz and the full quiz on a short one', () => {
-    expect(topicHubPlayHref({ slug: 'de-1', questionCount: 16 }, 'sinh-hoc')).toBe(
-      '/quiz/de-1?mode=quick&entry=hub&topic=sinh-hoc',
-    );
-    expect(topicHubPlayHref({ slug: 'de-2', questionCount: 15 }, 'sinh-hoc')).toBe(
-      '/quiz/de-2?mode=full&entry=hub&topic=sinh-hoc',
+describe('topicHubQuizHref', () => {
+  it('links the quiz landing with the hub entry and topic, no mode (RIN-1469)', () => {
+    expect(topicHubQuizHref('de-1', 'sinh-hoc')).toBe('/quiz/de-1?entry=hub&topic=sinh-hoc');
+    expect(topicHubQuizHref('đề 2', 'sinh-hoc')).toBe(
+      `/quiz/${encodeURIComponent('đề 2')}?entry=hub&topic=sinh-hoc`,
     );
   });
 });

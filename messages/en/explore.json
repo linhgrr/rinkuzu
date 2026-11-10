@@ -49,8 +49,6 @@
     "h1": "{name} quiz with answers",
     "count": "{count} quiz sets",
     "listHeading": "Choose a quiz set",
-    "play": "Play now",
-    "playAria": "Play now: {title}",
     "more": "Explore more quizzes",
     "emptyTitle": "No quiz sets for this topic yet",
     "emptyText": "Check back later or explore other quizzes.",

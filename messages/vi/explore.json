@@ -49,8 +49,6 @@
     "h1": "Đề trắc nghiệm {name} có đáp án",
     "count": "{count} bộ câu hỏi",
     "listHeading": "Chọn một bộ đề",
-    "play": "Chơi ngay",
-    "playAria": "Chơi ngay: {title}",
     "more": "Xem thêm quiz khác",
     "emptyTitle": "Chưa có bộ đề nào cho chủ đề này",
     "emptyText": "Hãy quay lại sau hoặc khám phá các quiz khác.",

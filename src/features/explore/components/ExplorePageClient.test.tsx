@@ -210,12 +210,9 @@ describe('ExplorePageClient All tab: one row per signed-in section (RIN-1406)', 
     render(<ExplorePageClient />);
 
     expect(screen.queryByTestId('adaptive-skeleton')).not.toBeInTheDocument();
-    // QuizCardSkeleton is min-h-[146px]; LibraryCardSkeleton is 196px, 212px from sm.
-    expect(screen.getByText('sections.mine.empty')).toHaveClass('min-h-[146px]');
-    expect(screen.getByText('sections.adaptive.empty')).toHaveClass(
-      'min-h-[196px]',
-      'sm:min-h-[212px]',
-    );
+    // QuizCardSkeleton is 146px tall; LibraryCardSkeleton 196px, 212px from sm (scale: 144/192/208).
+    expect(screen.getByText('sections.mine.empty')).toHaveClass('min-h-36');
+    expect(screen.getByText('sections.adaptive.empty')).toHaveClass('min-h-48', 'sm:min-h-52');
   });
 
   it('populated: shows one row of owned quizzes and subjects, the rest stays behind View all', () => {

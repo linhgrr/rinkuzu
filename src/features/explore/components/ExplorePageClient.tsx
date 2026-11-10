@@ -46,51 +46,56 @@ const GRID_CLASS = 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3';
  */
 const ROW_SLOT_CLASSES = ['grid', 'hidden md:grid', 'hidden xl:grid'] as const;
 const ROW_LIMIT = ROW_SLOT_CLASSES.length;
-/** Heights of one card row: QuizCard(Skeleton) and the Library card (196px, 212px from sm). */
-const QUIZ_ROW_MIN_HEIGHT = 'min-h-[146px]';
-const ADAPTIVE_ROW_MIN_HEIGHT = 'min-h-[196px] sm:min-h-[212px]';
+/**
+ * Heights of one card row on the spacing scale, within 4px of the cards they stand in for:
+ * QuizCard(Skeleton) is 146px, the Library card 196px (212px from sm).
+ */
+const QUIZ_ROW_MIN_HEIGHT = 'min-h-36';
+const ADAPTIVE_ROW_MIN_HEIGHT = 'min-h-48 sm:min-h-52';
 
 /** Grid cell that shows its card only at widths where it fits in the first row. */
 function RowSlot({ index, children }: { index: number; children: ReactNode }) {
   return <div className={ROW_SLOT_CLASSES[index]}>{children}</div>;
 }
 
-function QuizGridSkeleton({ count = ALL_SECTION_LIMIT, oneRow = false }: GridSkeletonProps) {
-  return (
-    <div className={GRID_CLASS}>
-      {Array.from({ length: oneRow ? ROW_LIMIT : count }, (_, index) =>
-        oneRow ? (
-          <RowSlot key={`quiz-search-skeleton-${index}`} index={index}>
-            <QuizCardSkeleton />
-          </RowSlot>
-        ) : (
-          <QuizCardSkeleton key={`quiz-search-skeleton-${index}`} />
-        ),
-      )}
-    </div>
-  );
-}
-
-function AdaptiveGridSkeleton({ count = ALL_SECTION_LIMIT, oneRow = false }: GridSkeletonProps) {
-  return (
-    <div className={GRID_CLASS}>
-      {Array.from({ length: oneRow ? ROW_LIMIT : count }, (_, index) =>
-        oneRow ? (
-          <RowSlot key={`adaptive-search-skeleton-${index}`} index={index}>
-            <LibraryCardSkeleton />
-          </RowSlot>
-        ) : (
-          <LibraryCardSkeleton key={`adaptive-search-skeleton-${index}`} />
-        ),
-      )}
-    </div>
-  );
+/** Stable keys for a fixed run of placeholder cards. */
+function skeletonKeys(prefix: string, count: number) {
+  return Array.from({ length: count }, (_, position) => `${prefix}-${position}`);
 }
 
 interface GridSkeletonProps {
   count?: number;
   /** All-tab preview: one row of skeletons, the same height as what replaces it. */
   oneRow?: boolean;
+}
+
+function GridSkeleton({
+  count = ALL_SECTION_LIMIT,
+  oneRow = false,
+  keyPrefix,
+  card,
+}: GridSkeletonProps & { keyPrefix: string; card: ReactNode }) {
+  return (
+    <div className={GRID_CLASS}>
+      {oneRow
+        ? ROW_SLOT_CLASSES.map((slotClass) => (
+            <div key={slotClass} className={slotClass}>
+              {card}
+            </div>
+          ))
+        : skeletonKeys(keyPrefix, count).map((key) => <Fragment key={key}>{card}</Fragment>)}
+    </div>
+  );
+}
+
+function QuizGridSkeleton(props: GridSkeletonProps) {
+  return <GridSkeleton {...props} keyPrefix="quiz-search-skeleton" card={<QuizCardSkeleton />} />;
+}
+
+function AdaptiveGridSkeleton(props: GridSkeletonProps) {
+  return (
+    <GridSkeleton {...props} keyPrefix="adaptive-search-skeleton" card={<LibraryCardSkeleton />} />
+  );
 }
 
 /** All-tab empty line, as tall as the card row it replaces. */

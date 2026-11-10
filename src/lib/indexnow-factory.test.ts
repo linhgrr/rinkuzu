@@ -22,7 +22,9 @@ vi.mock('@/services/seo/IndexNowService', () => ({
   },
 }));
 
-import { indexNowNotifier, scheduleIndexNow } from '@/lib/indexnow-factory';
+import { indexNowNotifier } from '@/lib/indexnow-factory';
+
+const scheduleIndexNow = (urls: readonly string[]) => indexNowNotifier.notifyChanged(urls);
 
 const QUIZ_URL = 'https://www.rinkuzu.app/vi/quiz/fake-biology-quiz';
 

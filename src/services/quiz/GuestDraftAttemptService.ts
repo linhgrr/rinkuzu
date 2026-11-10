@@ -29,7 +29,7 @@ const DRAFT_NOT_READY: ServiceFailure = {
  * Snapshot slug of a guest-draft attempt. A guest draft has no Quiz slug; this one is
  * reserved (no Quiz slug starts with `guest-draft-`) and stays stable per draft.
  */
-export function guestDraftSnapshotSlug(draftId: string): string {
+function guestDraftSnapshotSlug(draftId: string): string {
   return `guest-draft-${draftId}`;
 }
 

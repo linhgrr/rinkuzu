@@ -11,11 +11,11 @@ export const createGuestDraftFieldsSchema = z.object({
   entry: z.enum(GUEST_DRAFT_ENTRIES),
 });
 
-/** `POST /api/guest-drafts/status`: the token travels in the body, never in the URL. */
-export const guestDraftStatusRequestSchema = z.object({ token: guestClaimTokenSchema }).strict();
-
-/** `POST /api/guest-drafts/play`: the questions of a ready draft, without answers. */
-export const guestDraftPlayRequestSchema = guestDraftStatusRequestSchema;
+/**
+ * `POST /api/guest-drafts/status` and `/play`: the token travels in the body, never in
+ * the URL.
+ */
+export const guestDraftTokenRequestSchema = z.object({ token: guestClaimTokenSchema }).strict();
 
 /**
  * `POST /api/guest-drafts/attempt`: `token` names the draft; `guestClaimToken` is a fresh

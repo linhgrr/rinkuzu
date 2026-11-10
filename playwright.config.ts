@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { KEEP_ALIVE_TIMEOUT_MS } from './tests/e2e/support/connection-timeouts.mjs';
+
 const port = Number(process.env['PORT'] ?? 3000);
 const baseURL = process.env['PLAYWRIGHT_BASE_URL'] ?? `http://localhost:${port}`;
 const isCI = Boolean(process.env['CI']);
@@ -119,6 +121,10 @@ export default defineConfig({
               AUTH_TRUST_HOST: 'true',
               NEXT_PUBLIC_SITE_URL: baseURL,
               INTERNAL_SERVICE_TOKEN: e2eServiceToken,
+              // Next's standalone server reads this (ms). Node's 5 s default
+              // closes an idle keep-alive socket in the moment Playwright's
+              // shared agent reuses it: "socket hang up" (RIN-1443).
+              KEEP_ALIVE_TIMEOUT: String(KEEP_ALIVE_TIMEOUT_MS),
             },
             reuseExistingServer: false,
             timeout: 120 * 1000,

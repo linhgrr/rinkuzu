@@ -47,6 +47,12 @@ export class IndexNowService {
     if (!claimed) return null;
 
     const result = await this.deps.submit(pending);
+    // A 4xx other than 429 would fail again the same way: drop the batch.
+    // Network errors, 429 and 5xx keep it for the next flush.
+    if (result.outcome === 'sent' || result.outcome === 'rejected') {
+      await this.deps.queue.removePending(pending);
+    }
+    // Last, so a failed write never keeps an already-sent batch for a resend.
     await this.deps.queue.recordResult({
       outcome: result.outcome,
       status: result.status,
@@ -54,11 +60,6 @@ export class IndexNowService {
       urlCount: result.urlCount,
       at: this.now(),
     });
-    // A 4xx other than 429 would fail again the same way: drop the batch.
-    // Network errors, 429 and 5xx keep it for the next flush.
-    if (result.outcome === 'sent' || result.outcome === 'rejected') {
-      await this.deps.queue.removePending(pending);
-    }
     return result;
   }
 }

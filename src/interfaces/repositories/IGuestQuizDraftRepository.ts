@@ -50,3 +50,20 @@ export interface IGuestQuizDraftRepository {
   /** Moves a processing draft to failed; false when it was no longer processing. */
   markFailed(id: string, failureReason: string): Promise<boolean>;
 }
+
+/** A ready, unexpired guest draft with what the claim copies into a `Quiz` (RIN-1447). */
+export interface ClaimableGuestDraft {
+  id: string;
+  apiDraftId: string;
+  title: string;
+  questions: GuestDraftQuestion[];
+  locale: 'vi' | 'en';
+  entry: GuestDraftEntry;
+}
+
+/** The claim side of the guest draft store; never logs or returns a hash. */
+export interface IGuestDraftClaimRepository {
+  findClaimable(tokenHashes: readonly string[], now: Date): Promise<ClaimableGuestDraft[]>;
+  /** True only for the call that removed it, so a second tab sends no second event. */
+  deleteClaimed(id: string): Promise<boolean>;
+}

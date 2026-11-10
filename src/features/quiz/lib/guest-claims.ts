@@ -98,7 +98,7 @@ export function findGuestClaimToken(attemptId: string, now: number = Date.now())
  * is not a new learner, so it lands on the dashboard, not the starter (RIN-921).
  * It never carries the token or the attempt id.
  */
-function setPendingClaimCookie(maxAgeSeconds: number): void {
+export function setPendingClaimCookie(maxAgeSeconds: number): void {
   if (typeof document === 'undefined') return;
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   document.cookie = `${GUEST_CLAIM_PENDING_COOKIE}=1; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;

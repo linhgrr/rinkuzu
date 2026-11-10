@@ -83,6 +83,7 @@ function setup(existing: GuestDraftRecord | null = null) {
     started: vi.fn(async () => undefined),
     ready: vi.fn(async () => undefined),
     failed: vi.fn(async () => undefined),
+    claimed: vi.fn(async () => undefined),
   } satisfies GuestDraftEvents;
   const service = new GuestDraftService(repository, limiter, upstream, events, () => NOW);
   return { service, repository, limiter, upstream, events };

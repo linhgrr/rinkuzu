@@ -37,6 +37,7 @@ export interface GuestDraftEvents {
   started(context: GuestDraftEventContext): Promise<void>;
   ready(context: GuestDraftEventContext): Promise<void>;
   failed(context: GuestDraftEventContext, reason: string): Promise<void>;
+  claimed(context: GuestDraftEventContext): Promise<void>;
 }
 
 export interface GuestDraftCreateInput {

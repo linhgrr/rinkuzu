@@ -259,6 +259,7 @@ describe('activation stats integration', () => {
   const cohortBy = (quiz: number, adaptive: number, both: number, claimedGuest = 0) => ({
     ...by(quiz, adaptive, both),
     claimedGuest,
+    claimedGuestDraft: 0,
   });
 
   it('produces exact quiz-only cohort and first-attempt counts per ISO week', async () => {

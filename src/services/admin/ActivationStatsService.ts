@@ -38,7 +38,11 @@ const ANALYTICS_SERVICE_ACTOR_ID = '000000000000000000000000';
 /** Adaptive events are fetched up to this long after the last week ends (retention). */
 const ADAPTIVE_EVENTS_TAIL_MS = 14 * DAY_MS;
 const NO_PATH: AdminActivationPathCounts = { quiz: 0, adaptive: 0, both: 0 };
-const NO_COHORT_PATH: AdminActivationCohortPathCounts = { ...NO_PATH, claimedGuest: 0 };
+const NO_COHORT_PATH: AdminActivationCohortPathCounts = {
+  ...NO_PATH,
+  claimedGuest: 0,
+  claimedGuestDraft: 0,
+};
 const NO_ENTRY: AdminActivationEntryCounts = {
   blog: 0,
   landing: 0,
@@ -70,7 +74,7 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   activated:
     'Signups of the week with at least one completed (submitted) quiz attempt or adaptive completion within 7 days of signup. Each learner is counted once.',
   activatedBy:
-    'Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated. claimedGuest is a subset of activated, not a fourth path: activated signups with a qualifying attempt made as a guest and claimed into the account (0 until guest claiming ships).',
+    'Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated. claimedGuest is a subset of activated, not a fourth path: activated signups with a qualifying attempt made as a guest and claimed into the account. claimedGuestDraft is a subset of claimedGuest: that attempt was on a quiz the guest made from their own PDF, claimed with the quiz.',
   weeklyActivatedLearners:
     'Distinct non-excluded users whose first ever completion, the earlier of their first completed attempt and their first adaptive completion, fell in the week, whatever their signup week. North-star series.',
   weeklyActivatedBy:

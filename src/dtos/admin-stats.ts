@@ -187,9 +187,9 @@ const activationPathCountsSchema = z
   .object({ quiz: countSchema, adaptive: countSchema, both: countSchema })
   .strict();
 
-/** The cohort split, plus `claimedGuest`: a subset of activated, not a fourth path. */
+/** The cohort split, plus `claimedGuest` (a subset of activated) and its `claimedGuestDraft`. */
 const cohortPathCountsSchema = activationPathCountsSchema
-  .extend({ claimedGuest: countSchema })
+  .extend({ claimedGuest: countSchema, claimedGuestDraft: countSchema })
   .strict();
 
 /** RIN-1256: activated signups by the entry of their first qualifying attempt. */

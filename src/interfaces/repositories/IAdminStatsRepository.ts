@@ -35,6 +35,8 @@ export interface AdminActivationPathCounts {
  */
 export interface AdminActivationCohortPathCounts extends AdminActivationPathCounts {
   claimedGuest: number;
+  /** Of `claimedGuest`: the attempt was on the guest's own-PDF quiz (RIN-1447). */
+  claimedGuestDraft: number;
 }
 
 /**

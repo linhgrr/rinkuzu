@@ -91,6 +91,7 @@ export function funnelUnionStages(from: Date, to: Date): PipelineStage[] {
 /** Per-learner `$group` fields; `claimedTakenAt` comes from the attempts branch. */
 export const FUNNEL_GROUP_FIELDS = {
   claimedTakenAts: { $push: '$claimedTakenAt' },
+  claimedDraftTakenAts: { $push: '$claimedDraftTakenAt' },
   loginAts: { $push: '$loginAt' },
   progressAts: { $push: '$progressAt' },
 } as const;
@@ -106,6 +107,7 @@ export function funnelFlags(signupAt: string, day7: unknown): Record<string, unk
       ],
     },
     byClaimedGuest: anyDateIn('$claimedTakenAts', signupAt, day7),
+    byClaimedGuestDraft: anyDateIn('$claimedDraftTakenAts', signupAt, day7),
     returnedWeek1: {
       $or: ['$loginAts', '$takenAts', '$completedAts'].map((dates) =>
         anyLaterDayBefore(dates, signupAt, day7),
@@ -120,12 +122,24 @@ export const FUNNEL_WEEK_ACCUMULATORS = {
   // Every activated learner started a quiz, so activated <= startedQuiz.
   startedQuiz: { $sum: { $cond: [{ $or: ['$activated', '$inProgress'] }, 1, 0] } },
   byClaimedGuest: { $sum: { $cond: ['$byClaimedGuest', 1, 0] } },
+  byClaimedGuestDraft: { $sum: { $cond: ['$byClaimedGuestDraft', 1, 0] } },
   returnedWeek1: { $sum: { $cond: ['$returnedWeek1', 1, 0] } },
 } as const;
 
 /** `time` for an attempt a guest made and then claimed into the account (RIN-918); absent otherwise. */
 function claimedAttemptTime(time: unknown): Record<string, unknown> {
   return { $cond: [{ $eq: [{ $type: '$claimedAt' }, 'date'] }, time, '$$REMOVE'] };
+}
+
+/** `time` for a claimed attempt taken on the guest's own-PDF quiz (RIN-1447); absent otherwise. */
+function claimedDraftAttemptTime(time: unknown): Record<string, unknown> {
+  return {
+    $cond: [
+      { $and: [{ $eq: [{ $type: '$claimedAt' }, 'date'] }, { $eq: ['$fromGuestDraft', true] }] },
+      time,
+      '$REMOVE',
+    ],
+  };
 }
 
 /**
@@ -163,6 +177,7 @@ export function attemptUnionStage(coll: string, from: Date, to: Date): PipelineS
             uid: '$user',
             takenAt: ATTEMPT_AT,
             claimedTakenAt: claimedAttemptTime(ATTEMPT_AT),
+            claimedDraftTakenAt: claimedDraftAttemptTime(ATTEMPT_AT),
             // RIN-1256: the entry point, for the activated-by-entry split.
             attemptRef: attemptEntryRef(ATTEMPT_AT),
           },

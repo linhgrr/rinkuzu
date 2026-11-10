@@ -11,7 +11,7 @@
       "material": "Signups of the week who, within 7 days of signup, authored a quiz, submitted an attempt on a quiz they did not author, or had a succeeded upload (Path B). Every activated signup is material.",
       "startedQuiz": "Signups of the week who, within 7 days of signup, submitted a quiz attempt or had an adaptive completion (every activated signup), or have an unsubmitted quiz with at least one answer saved after signup (in-progress quizzes keep only their last update time). activated <= startedQuiz <= signups.",
       "activated": "Signups of the week with at least one completed (submitted) quiz attempt or adaptive completion within 7 days of signup. Each learner is counted once.",
-      "activatedBy": "Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated. claimedGuest is a subset of activated, not a fourth path: activated signups with a qualifying attempt made as a guest and claimed into the account (0 until guest claiming ships).",
+      "activatedBy": "Split of activated by path within the 7-day window: quiz (attempt only), adaptive (adaptive completion only), both. quiz + adaptive + both = activated. claimedGuest is a subset of activated, not a fourth path: activated signups with a qualifying attempt made as a guest and claimed into the account. claimedGuestDraft is a subset of claimedGuest: that attempt was on a quiz the guest made from their own PDF, claimed with the quiz.",
       "weeklyActivatedLearners": "Distinct non-excluded users whose first ever completion, the earlier of their first completed attempt and their first adaptive completion, fell in the week, whatever their signup week. North-star series.",
       "weeklyActivatedBy": "Split of weeklyActivatedLearners by the path that gave the first ever completion: quiz, adaptive, or both when the first attempt and the first adaptive completion fall in the same week.",
       "adaptiveCompletion": "Path B: every 5th answered adaptive exercise (an answer was recorded) on one uploaded document, timed at that exercise. A learner with fewer than 5 answers on every document has none.",
@@ -43,7 +43,8 @@
           "quiz": 2,
           "adaptive": 1,
           "both": 1,
-          "claimedGuest": 0
+          "claimedGuest": 0,
+          "claimedGuestDraft": 0
         },
         "weeklyActivatedLearners": 0,
         "weeklyActivatedBy": {
@@ -83,7 +84,8 @@
           "quiz": 0,
           "adaptive": 0,
           "both": 0,
-          "claimedGuest": 0
+          "claimedGuest": 0,
+          "claimedGuestDraft": 0
         },
         "weeklyActivatedLearners": 5,
         "weeklyActivatedBy": {

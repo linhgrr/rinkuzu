@@ -33,5 +33,6 @@ export function createGuestDraftEvents(capture: Capture = captureServerEvent): G
     started: (context) => send('guest_draft_started', context),
     ready: (context) => send('guest_draft_ready', context),
     failed: (context, reason) => send('guest_draft_failed', context, { reason }),
+    claimed: (context) => send('guest_draft_claimed', context),
   };
 }

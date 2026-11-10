@@ -1,13 +1,17 @@
 import { Types } from 'mongoose';
 
 import type {
+  ClaimableGuestDraft,
+  GuestDraftQuestion,
   GuestDraftReadyUpdate,
   GuestDraftRecord,
+  IGuestDraftClaimRepository,
   IGuestQuizDraftRepository,
   NewGuestDraft,
 } from '@/interfaces/repositories/IGuestQuizDraftRepository';
 import connectDB from '@/lib/mongoose';
 import GuestQuizDraftModel, { type GuestQuizDraftDocument } from '@/models/GuestQuizDraft';
+import type { QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
 
 type StoredGuestDraft = Pick<
   GuestQuizDraftDocument,
@@ -37,7 +41,27 @@ function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
   };
 }
 
-export class GuestQuizDraftRepository implements IGuestQuizDraftRepository {
+type StoredClaimableDraft = Pick<
+  GuestQuizDraftDocument,
+  'apiDraftId' | 'title' | 'locale' | 'entry'
+> & { _id: Types.ObjectId; questions: QuizQuestionDocument[] };
+
+/** Only the fields a guest question has: no subdocument `_id`, no images. */
+function toGuestQuestion(doc: QuizQuestionDocument): GuestDraftQuestion {
+  const { question, options } = doc;
+  return doc.type === 'single'
+    ? { question, options: [...options], type: 'single', correctIndex: doc.correctIndex }
+    : {
+        question,
+        options: [...options],
+        type: 'multiple',
+        correctIndexes: [...doc.correctIndexes],
+      };
+}
+
+export class GuestQuizDraftRepository
+  implements IGuestQuizDraftRepository, IGuestDraftClaimRepository
+{
   async create(draft: NewGuestDraft): Promise<GuestDraftRecord> {
     await connectDB();
     const created = await GuestQuizDraftModel.create({ ...draft, status: 'processing' });
@@ -62,6 +86,33 @@ export class GuestQuizDraftRepository implements IGuestQuizDraftRepository {
 
   async markFailed(id: string, failureReason: string): Promise<boolean> {
     return this.transition(id, { status: 'failed', failureReason });
+  }
+
+  async findClaimable(tokenHashes: readonly string[], now: Date): Promise<ClaimableGuestDraft[]> {
+    if (tokenHashes.length === 0) return [];
+    await connectDB();
+    // The TTL monitor runs about once a minute: `expiresAt` is checked here too.
+    const docs = await GuestQuizDraftModel.find(
+      { tokenHash: { $in: [...tokenHashes] }, status: 'ready', expiresAt: { $gt: now } },
+      { apiDraftId: 1, title: 1, questions: 1, locale: 1, entry: 1 },
+    )
+      .lean<StoredClaimableDraft[]>()
+      .exec();
+    return docs.map((doc) => ({
+      id: doc._id.toString(),
+      apiDraftId: doc.apiDraftId,
+      title: doc.title ?? 'Quiz',
+      questions: doc.questions.map(toGuestQuestion),
+      locale: doc.locale,
+      entry: doc.entry,
+    }));
+  }
+
+  async deleteClaimed(id: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) return false;
+    await connectDB();
+    const result = await GuestQuizDraftModel.deleteOne({ _id: new Types.ObjectId(id) });
+    return result.deletedCount === 1;
   }
 
   private async transition(id: string, set: Record<string, unknown>): Promise<boolean> {

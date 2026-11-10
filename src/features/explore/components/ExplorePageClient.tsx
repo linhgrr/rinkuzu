@@ -13,7 +13,13 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { LibraryCardSkeleton, SubjectCard } from '@/features/adaptive/components/sections/Library';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
-import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
+import {
+  QuizCard,
+  QuizCardSkeleton,
+  type QuizCardPlayAction,
+  type QuizCardQuiz,
+} from '@/features/quiz/components/QuizCard';
+import { useQuizCardPlay } from '@/features/quiz/hooks/useQuizCardPlay';
 import type {
   QuizListItemViewModel,
   QuizListViewModel,
@@ -31,6 +37,7 @@ import {
   type SearchType,
 } from '@/features/explore/lib/search';
 import { ROUTES } from '@/shared/constants/routes';
+import { EXPLORE_ENTRY } from '@/shared/constants/starter-quiz';
 
 const SEARCH_TYPES: SearchType[] = ['all', 'mine', 'adaptive', 'quizzes'];
 const ALL_SECTION_LIMIT = 4;
@@ -106,11 +113,18 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
   );
 }
 
-function QuizResults({ quizzes }: { quizzes: QuizListItemViewModel[] }) {
+/** `play` only on community cards: the owner's own quizzes keep manage/edit (RIN-1469). */
+function QuizResults({
+  quizzes,
+  play,
+}: {
+  quizzes: QuizListItemViewModel[];
+  play?: (quiz: QuizCardQuiz) => QuizCardPlayAction | undefined;
+}) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {quizzes.map((quiz) => (
-        <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />
+        <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} play={play?.(quiz)} />
       ))}
     </div>
   );
@@ -153,6 +167,7 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
   const t = useTranslations('explore');
   const tAdaptive = useTranslations('adaptiveLearning');
   const tAdaptiveDashboard = useTranslations('adaptiveLearning.dashboard');
+  const communityPlay = useQuizCardPlay(EXPLORE_ENTRY);
   const locale = useLocale();
   const { replace } = useRouter();
   const searchParams = useSearchParams();
@@ -366,7 +381,7 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                 ) : communityError ? (
                   <SectionError onRetry={() => void retryCommunity()} />
                 ) : communityQuizzes.length > 0 ? (
-                  <QuizResults quizzes={communityQuizzes} />
+                  <QuizResults quizzes={communityQuizzes} play={communityPlay} />
                 ) : (
                   <p className="font-home text-sm text-ink-muted">{t('sections.quizzes.empty')}</p>
                 )}
@@ -396,7 +411,7 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                 ) : communityError ? (
                   <SectionError onRetry={() => void retryCommunity()} />
                 ) : communityQuizzes.length > 0 ? (
-                  <QuizResults quizzes={communityQuizzes} />
+                  <QuizResults quizzes={communityQuizzes} play={communityPlay} />
                 ) : (
                   <EmptyState hasQuery={Boolean(query)} />
                 )

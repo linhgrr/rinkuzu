@@ -19,6 +19,12 @@ export const QUIZ_LANDING_ENTRY = 'quiz_landing';
 /** Links from a topic hub page to a quiz carry this entry and `?topic=<hub slug>` (RIN-1241 E17). */
 export const HUB_ENTRY = 'hub';
 
+/** "Chơi ngay" on a community quiz card on `/explore` (RIN-1469). */
+export const EXPLORE_ENTRY = 'explore';
+
+/** "Chơi ngay" on a quiz card on `/quizzes` (RIN-1469). */
+export const QUIZZES_ENTRY = 'quizzes';
+
 /** A blog post's quiz CTA opens the quiz with this entry and `?post=<slug>` (RIN-1242). */
 export const BLOG_ENTRY = 'blog';
 
@@ -33,6 +39,8 @@ export const TRACKED_QUIZ_ENTRIES: readonly string[] = [
   QUIZ_LANDING_ENTRY,
   HUB_ENTRY,
   BLOG_ENTRY,
+  EXPLORE_ENTRY,
+  QUIZZES_ENTRY,
 ];
 
 /** A public blog post slug as `?post=` carries it; anything else is dropped (RIN-1242). */

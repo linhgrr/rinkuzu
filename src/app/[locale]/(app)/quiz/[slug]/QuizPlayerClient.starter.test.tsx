@@ -242,6 +242,22 @@ describe('QuizPlayerClient post-sign-in starter entry (RIN-913)', () => {
     ).toEqual({ entry: 'hub', topic: 'tieng-anh-lop-10' });
   });
 
+  it.each(['explore', 'quizzes'])(
+    'forwards entry=%s from a list card play button on quiz_started and the submit (RIN-1469)',
+    async (entry) => {
+      renderPlayer(entry);
+
+      await waitFor(() =>
+        expect(captureAnalyticsEvent).toHaveBeenCalledWith(
+          'quiz_started',
+          expect.objectContaining({ entry }),
+        ),
+      );
+      expect(await completeQuiz()).toMatchObject({ entry });
+      expect(submission.attribution).toEqual({ entry });
+    },
+  );
+
   it('drops a malformed hub topic but keeps entry=hub (RIN-1417)', async () => {
     renderPlayer('hub', undefined, 'Not A Slug!');
 

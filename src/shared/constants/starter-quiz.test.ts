@@ -14,6 +14,8 @@ describe('quiz entry attribution (RIN-1256)', () => {
       'quiz_landing',
       'hub',
       'blog',
+      'explore',
+      'quizzes',
     ]);
   });
 
@@ -41,6 +43,13 @@ describe('quiz entry attribution (RIN-1256)', () => {
   it('drops a post when the entry is not blog', () => {
     expect(resolveQuizEntryAttribution('landing', 'some-post')).toEqual({ entry: 'landing' });
   });
+  it('tracks the Explore and /quizzes play buttons, without a topic (RIN-1469)', () => {
+    expect(resolveQuizEntryAttribution('explore', undefined, 'sinh-hoc')).toEqual({
+      entry: 'explore',
+    });
+    expect(resolveQuizEntryAttribution('quizzes', 'some-post')).toEqual({ entry: 'quizzes' });
+  });
+
   it('keeps a well-formed hub topic next to entry=hub only (RIN-1417)', () => {
     expect(resolveQuizEntryAttribution('hub', undefined, 'tieng-anh-lop-10')).toEqual({
       entry: 'hub',

@@ -38,6 +38,11 @@ function upstreamError({ status, code, meta }: UpstreamFailure): GuestDraftResul
   return { ok: false, error: 'upstream', status, code, meta };
 }
 
+/** A 4xx means the API refused before extracting; a timeout or 5xx may have started paid work. */
+function apiRefused(status: number): boolean {
+  return status >= 400 && status < 500;
+}
+
 function isIndex(value: unknown, options: readonly string[]): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < options.length;
 }
@@ -83,8 +88,12 @@ export class GuestDraftService implements IGuestDraftService {
     }
     const created = await this.upstream.create(input.pdf);
     if (!created.ok) {
-      // No draft was made, so neither slot paid for anything.
-      await Promise.all([this.limiter.refundIp(input.ip), this.limiter.refundDaily()]);
+      // No draft for the guest: the IP slot comes back. The daily slot comes back only when
+      // the API refused outright; after a timeout or 5xx extraction may already be running.
+      await Promise.all([
+        this.limiter.refundIp(input.ip),
+        apiRefused(created.status) ? this.limiter.refundDaily() : undefined,
+      ]);
       return upstreamError(created);
     }
     const record = await this.repository.create({
@@ -99,25 +108,27 @@ export class GuestDraftService implements IGuestDraftService {
   }
 
   async status(token: string, ip: string | null): Promise<GuestDraftResult> {
-    const record = await this.repository.findByTokenHash(hashGuestClaimToken(token));
+    const tokenHash = hashGuestClaimToken(token);
+    const record = await this.repository.findByTokenHash(tokenHash);
     if (!record) return { ok: false, error: 'not_found' };
     if (record.status !== 'processing') return { ok: true, draft: viewOf(record) };
 
     const upstream = await this.upstream.get(record.apiDraftId);
     if (!upstream.ok) {
       // A draft the API no longer has will never finish.
-      if (upstream.status === 404) return this.fail(record, 'expired', ip);
+      if (upstream.status === 404) return this.fail(tokenHash, record, 'expired', ip);
       return upstreamError(upstream);
     }
     const { draft } = upstream;
-    if (draft.status === 'completed') return this.ready(record, draft, ip);
+    if (draft.status === 'completed') return this.ready(tokenHash, record, draft, ip);
     if (FAILED_UPSTREAM_STATUSES.has(draft.status)) {
-      return this.fail(record, draft.failure_reason ?? draft.status, ip);
+      return this.fail(tokenHash, record, draft.failure_reason ?? draft.status, ip);
     }
     return { ok: true, draft: viewOf(record, draft.progress.percent ?? 0) };
   }
 
   private async ready(
+    tokenHash: string,
     record: GuestDraftRecord,
     draft: UpstreamGuestDraft,
     ip: string | null,
@@ -125,12 +136,13 @@ export class GuestDraftService implements IGuestDraftService {
     const questions = (draft.questions ?? [])
       .map(toGuestQuestion)
       .filter((question): question is GuestDraftQuestion => question !== null);
-    if (questions.length === 0) return this.fail(record, 'no_questions', ip);
+    if (questions.length === 0) return this.fail(tokenHash, record, 'no_questions', ip);
 
     const title = draft.title?.trim() || 'Quiz';
     const won = await this.repository.markReady(record.id, { title, questions });
-    if (won) await this.events.ready(this.context(record));
     await this.upstream.remove(record.apiDraftId);
+    if (!won) return this.storedView(tokenHash);
+    await this.events.ready(this.context(record));
     return {
       ok: true,
       draft: viewOf({ ...record, status: 'ready', title, questionCount: questions.length }),
@@ -138,18 +150,27 @@ export class GuestDraftService implements IGuestDraftService {
   }
 
   private async fail(
+    tokenHash: string,
     record: GuestDraftRecord,
     reason: string,
     ip: string | null,
   ): Promise<GuestDraftResult> {
     const won = await this.repository.markFailed(record.id, reason);
-    if (won) {
-      // AC8: a failure gives the per-IP slot back; the global slot stays spent.
-      await this.limiter.refundIp(ip);
-      await this.events.failed(this.context(record), reason);
-    }
     await this.upstream.remove(record.apiDraftId);
+    if (!won) return this.storedView(tokenHash);
+    // AC8: a failure gives the per-IP slot back; the global slot stays spent.
+    await this.limiter.refundIp(ip);
+    await this.events.failed(this.context(record), reason);
     return { ok: true, draft: viewOf({ ...record, status: 'failed', failureReason: reason }) };
+  }
+
+  /**
+   * A concurrent poll settled the draft first (e.g. it marked it ready and deleted the API
+   * draft, so this poll saw a 404): answer with what was stored, never this poll's guess.
+   */
+  private async storedView(tokenHash: string): Promise<GuestDraftResult> {
+    const stored = await this.repository.findByTokenHash(tokenHash);
+    return stored ? { ok: true, draft: viewOf(stored) } : { ok: false, error: 'not_found' };
   }
 
   private context(record: GuestDraftRecord): GuestDraftEventContext {

@@ -7,8 +7,11 @@ export type GuestDraftEntry = (typeof GUEST_DRAFT_ENTRIES)[number];
 export const GUEST_DRAFT_STATUSES = ['processing', 'ready', 'failed'] as const;
 export type GuestDraftStatus = (typeof GUEST_DRAFT_STATUSES)[number];
 
-/** Guest upload ceiling (spec AC2); the API also caps pages and questions. */
-export const GUEST_DRAFT_MAX_PDF_BYTES = 10 * 1024 * 1024;
+/**
+ * Guest upload ceiling. The spec's 10 MB cannot hold: Vercel refuses a request body over
+ * 4.5 MB before the route runs (CTO decision on RIN-1446). The API also caps pages.
+ */
+export const GUEST_DRAFT_MAX_PDF_BYTES = 4 * 1024 * 1024;
 
 /** An unclaimed guest draft is deleted after this long (spec AC6). */
 export const GUEST_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;

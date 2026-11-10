@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { quizProgressAnswerSchema, type PlayableQuizQuestionDto } from '@/dtos/quiz';
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { GUEST_DRAFT_ENTRIES } from '@/shared/constants/guest-draft';
 
@@ -10,8 +11,30 @@ export const createGuestDraftFieldsSchema = z.object({
   entry: z.enum(GUEST_DRAFT_ENTRIES),
 });
 
-/** `POST /api/guest-drafts/status`: the token travels in the body, never in the URL. */
-export const guestDraftStatusRequestSchema = z.object({ token: guestClaimTokenSchema }).strict();
+/**
+ * `POST /api/guest-drafts/status` and `/play`: the token travels in the body, never in
+ * the URL.
+ */
+export const guestDraftTokenRequestSchema = z.object({ token: guestClaimTokenSchema }).strict();
+
+/**
+ * `POST /api/guest-drafts/attempt`: `token` names the draft; `guestClaimToken` is a fresh
+ * RIN-912 claim token for this attempt (only its hash is stored, claimed on sign-up).
+ */
+export const guestDraftAttemptRequestSchema = z
+  .object({
+    token: guestClaimTokenSchema,
+    guestClaimToken: guestClaimTokenSchema,
+    answers: z.array(quizProgressAnswerSchema).min(1).max(100),
+    idempotencyKey: z.uuid(),
+  })
+  .strict();
+
+/** A ready guest draft to play: no correct answers leave the server. */
+export interface GuestDraftPlayDto {
+  title: string;
+  questions: PlayableQuizQuestionDto[];
+}
 
 export interface GuestDraftStatusDto {
   status: 'processing' | 'ready' | 'failed';

@@ -67,6 +67,38 @@ describe('GuestQuizDraftRepository', () => {
     });
   });
 
+  it('reads only a ready draft as a playable quiz with question ids', async () => {
+    const questionId = new Types.ObjectId();
+    const exec = vi.fn().mockResolvedValueOnce({
+      _id: id,
+      title: 'Cells',
+      questions: [
+        { _id: questionId, question: 'Q1?', options: ['a', 'b'], type: 'single', correctIndex: 1 },
+      ],
+    });
+    exec.mockResolvedValueOnce(null);
+    model.findOne.mockReturnValue({ lean: () => ({ exec }) });
+
+    expect(await repository.findReadyByTokenHash('h')).toEqual({
+      id: id.toString(),
+      title: 'Cells',
+      questions: [
+        {
+          id: questionId.toString(),
+          question: 'Q1?',
+          options: ['a', 'b'],
+          type: 'single',
+          correctIndex: 1,
+        },
+      ],
+    });
+    expect(model.findOne).toHaveBeenCalledWith(
+      { tokenHash: 'h', status: 'ready' },
+      { title: 1, questions: 1 },
+    );
+    expect(await repository.findReadyByTokenHash('h')).toBeNull();
+  });
+
   it('ignores an invalid id', async () => {
     expect(await repository.markFailed('nope', 'x')).toBe(false);
     expect(model.updateOne).not.toHaveBeenCalled();

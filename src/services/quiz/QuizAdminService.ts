@@ -5,6 +5,7 @@ import {
 } from '@/interfaces/repositories/IQuizRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { QuizVisibility } from '@/entities/Quiz';
 import type {
@@ -24,6 +25,7 @@ import type {
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale, isQuizIndexable } from '@/lib/seo/quiz-indexability';
 import { logger } from '@/lib/logger';
+import { notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
@@ -56,6 +58,8 @@ export interface QuizAdminActor {
 export interface QuizAdminVisibilityDeps {
   premiumRepository: Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
   auditRepository: IAdminAuditRepository;
+  /** Queues the page for IndexNow after a hide or show (RIN-1500). */
+  quizIndexNow?: IQuizIndexNowNotifier;
 }
 
 export class QuizAdminService {
@@ -227,6 +231,7 @@ export class QuizAdminService {
         };
       }
 
+      notifyQuizSearchChange(this.visibilityDeps.quizIndexNow, quiz, updated);
       return {
         success: true,
         data: AdminQuizDtoMapper.toVisibilityChange(quiz, visibility, true),

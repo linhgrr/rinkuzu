@@ -6,6 +6,7 @@ import {
 import type { Quiz, QuizContentFlags, QuizQuestionContent } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IPremiumSubmissionWithdrawalRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type {
   CreateQuizRequestDto,
   QuizDetailDto,
@@ -14,6 +15,7 @@ import type {
 } from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale } from '@/lib/seo/quiz-indexability';
+import { notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
 import type { DeleteResultDto } from '@/dtos/common';
 import type { ServiceFailure } from '@/interfaces/services/types';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -29,6 +31,14 @@ import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
 import { isPersonalDataFlagged, resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
+
+function touchesQuizContent(updateData: UpdateQuizData): boolean {
+  return (
+    updateData.title !== undefined ||
+    updateData.description !== undefined ||
+    updateData.questions !== undefined
+  );
+}
 
 function toQuizQuestionContent(
   question: CreateQuizRequestDto['questions'][number],
@@ -65,6 +75,7 @@ export class QuizCrudService {
     private quizRepository: IQuizRepository,
     private folderRepository?: IFolderRepository,
     private premiumWithdrawal?: IPremiumSubmissionWithdrawalRepository,
+    private quizIndexNow?: IQuizIndexNowNotifier,
   ) {}
 
   async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
@@ -273,9 +284,18 @@ export class QuizCrudService {
         }),
         ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
       };
-      const contentCheck = await this.recheckContentFlags(id, updateData);
-      if (!contentCheck.success) return contentCheck;
-      if (contentCheck.data) updateData.contentFlags = contentCheck.data;
+      // The stored quiz is read for the personal-data recheck, and for the
+      // IndexNow before/after compare (RIN-1500) when a notifier is wired.
+      const touchesSearch =
+        touchesQuizContent(updateData) ||
+        (updateData.visibility !== undefined && this.quizIndexNow !== undefined);
+      const current = touchesSearch ? await this.quizRepository.findById(id) : null;
+      if (touchesSearch && !current) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
+      if (current && touchesQuizContent(updateData)) {
+        updateData.contentFlags = this.recheckContentFlags(current, updateData);
+      }
 
       if (makesPublic && withdrawal) {
         const refusal = await makePublicWithdrawingSubmissions(withdrawal, id);
@@ -291,6 +311,8 @@ export class QuizCrudService {
           statusCode: 404,
         };
       }
+
+      if (current) notifyQuizSearchChange(this.quizIndexNow, current, updatedQuiz);
 
       return {
         success: true,
@@ -309,23 +331,10 @@ export class QuizCrudService {
   /**
    * RIN-1338: re-runs the personal-data check when an edit touches the title,
    * description or questions, merging the unchanged texts from the stored quiz.
-   * Returns no flags when the edit leaves the texts alone.
    */
-  private async recheckContentFlags(
-    id: string,
-    updateData: UpdateQuizData,
-  ): Promise<ServiceResult<QuizContentFlags | null>> {
+  private recheckContentFlags(current: Quiz, updateData: UpdateQuizData): QuizContentFlags {
     const { title, description, questions } = updateData;
-    if (title === undefined && description === undefined && questions === undefined) {
-      return { success: true, data: null };
-    }
-
-    const current = await this.quizRepository.findById(id);
-    if (!current) {
-      return { success: false, error: 'Quiz not found', statusCode: 404 };
-    }
-
-    const contentFlags = resolveQuizContentFlags(
+    return resolveQuizContentFlags(
       {
         title: title ?? current.title,
         description: description ?? current.description,
@@ -334,7 +343,6 @@ export class QuizCrudService {
       current.contentFlags,
       new Date(),
     );
-    return { success: true, data: contentFlags };
   }
 
   async deleteQuiz(

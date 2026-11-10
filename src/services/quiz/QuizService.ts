@@ -29,6 +29,7 @@ import type { IFolderRepository } from '@/interfaces/repositories/IFolderReposit
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IPremiumSubmissionWithdrawalRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
 
@@ -62,8 +63,14 @@ export class QuizService implements IQuizService {
     premiumAccessPolicy?: PremiumDiscussionAccessPolicy,
     attemptRepository?: Pick<IAttemptRepository, 'findByIdWithQuiz'>,
     premiumWithdrawal?: IPremiumSubmissionWithdrawalRepository,
+    quizIndexNow?: IQuizIndexNowNotifier,
   ) {
-    this.crudService = new QuizCrudService(quizRepository, folderRepository, premiumWithdrawal);
+    this.crudService = new QuizCrudService(
+      quizRepository,
+      folderRepository,
+      premiumWithdrawal,
+      quizIndexNow,
+    );
     this.playService = new QuizPlayService(
       quizRepository,
       userRepository,

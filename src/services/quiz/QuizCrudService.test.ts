@@ -6,7 +6,7 @@ import { QuizCreationError } from '@/lib/quiz/errors';
 import { QuizCrudService } from '@/services/quiz/QuizCrudService';
 
 vi.mock('@/lib/logger', () => ({
-  logger: { error: vi.fn() },
+  logger: { error: vi.fn(), warn: vi.fn() },
 }));
 
 const authorId = '507f191e810c19729de860eb';
@@ -850,5 +850,59 @@ describe('QuizCrudService', () => {
         error: 'Failed to delete quiz',
       });
     });
+  });
+});
+
+describe('QuizCrudService.updateQuiz IndexNow (RIN-1500)', () => {
+  const access = { id: quizId, author: authorId, visibility: 'public' };
+  const stored = createQuizEntity({ questionCount: 8 });
+
+  function setup(updated: Quiz) {
+    const quizRepository = createQuizRepository({
+      findAccessById: vi.fn().mockResolvedValue(access),
+      findById: vi.fn().mockResolvedValue(stored),
+      update: vi.fn().mockResolvedValue(updated),
+    });
+    const quizIndexNow = { quizChanged: vi.fn() };
+    const premiumWithdrawal = {
+      makeQuizPublicAndWithdrawSubmissions: vi.fn().mockResolvedValue({ outcome: 'made_public' }),
+    };
+    const service = new QuizCrudService(quizRepository, undefined, premiumWithdrawal, quizIndexNow);
+    return { service, quizIndexNow };
+  }
+
+  const queued = { quizId, slug: stored.slug, cause: 'indexability' };
+
+  it('queues an indexable quiz when its title changes', async () => {
+    const { service, quizIndexNow } = setup({ ...stored, title: 'Algebra Basics, revised' });
+    await service.updateQuiz(quizId, { title: 'Algebra Basics, revised' }, authorId);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledWith(queued);
+  });
+
+  it('queues the quiz when submitting it to Premium hides it', async () => {
+    const { service, quizIndexNow } = setup({ ...stored, visibility: 'personal' });
+    await service.updateQuiz(quizId, { submitToPremium: true }, authorId);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledWith(queued);
+  });
+
+  it('queues nothing for a save that changes nothing search sees', async () => {
+    const { service, quizIndexNow } = setup({ ...stored, description: 'New description' });
+    await service.updateQuiz(
+      quizId,
+      { title: stored.title, description: 'New description' },
+      authorId,
+    );
+    await service.updateQuiz(quizId, { pdfUrl: 'https://example.com/fake.pdf' }, authorId);
+    expect(quizIndexNow.quizChanged).not.toHaveBeenCalled();
+  });
+
+  it('still saves when the notifier throws', async () => {
+    const { service, quizIndexNow } = setup({ ...stored, visibility: 'personal' });
+    quizIndexNow.quizChanged.mockImplementation(() => {
+      throw new Error('fake notifier failure');
+    });
+    await expect(
+      service.updateQuiz(quizId, { submitToPremium: true }, authorId),
+    ).resolves.toMatchObject({ success: true });
   });
 });

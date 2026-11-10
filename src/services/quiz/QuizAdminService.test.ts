@@ -441,3 +441,52 @@ describe('QuizAdminService', () => {
     });
   });
 });
+
+describe('setAdminQuizVisibility IndexNow (RIN-1500)', () => {
+  const actor = { id: '507f191e810c19729de860ff', email: 'admin@example.com' };
+  const indexable: Quiz = { ...quiz, visibility: 'public', questionCount: 8 };
+
+  function setup(audit = vi.fn().mockResolvedValue(undefined)) {
+    const repository = createRepository({
+      findById: vi.fn().mockResolvedValue(indexable),
+      update: vi.fn().mockResolvedValue({ ...indexable, visibility: 'personal' }),
+    });
+    const quizIndexNow = { quizChanged: vi.fn() };
+    const service = new QuizAdminService(repository, {
+      premiumRepository: { findActivePublicationByQuizId: vi.fn().mockResolvedValue(null) },
+      auditRepository: { record: audit },
+      quizIndexNow,
+    });
+    return { service, quizIndexNow };
+  }
+
+  it('queues the quiz when an admin hides an indexable quiz', async () => {
+    const { service, quizIndexNow } = setup();
+    await service.setAdminQuizVisibility(quiz.id, 'personal', actor);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledWith({
+      quizId: quiz.id,
+      slug: quiz.slug,
+      cause: 'indexability',
+    });
+  });
+
+  it('queues nothing for a no-op or a change rolled back after the audit fails', async () => {
+    const noop = setup();
+    await noop.service.setAdminQuizVisibility(quiz.id, 'public', actor);
+    expect(noop.quizIndexNow.quizChanged).not.toHaveBeenCalled();
+
+    const failed = setup(vi.fn().mockRejectedValue(new Error('fake audit failure')));
+    await failed.service.setAdminQuizVisibility(quiz.id, 'personal', actor);
+    expect(failed.quizIndexNow.quizChanged).not.toHaveBeenCalled();
+  });
+
+  it('still succeeds when the notifier throws', async () => {
+    const { service, quizIndexNow } = setup();
+    quizIndexNow.quizChanged.mockImplementation(() => {
+      throw new Error('fake notifier failure');
+    });
+    await expect(service.setAdminQuizVisibility(quiz.id, 'personal', actor)).resolves.toMatchObject(
+      { success: true },
+    );
+  });
+});

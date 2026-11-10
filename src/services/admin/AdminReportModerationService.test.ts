@@ -35,14 +35,16 @@ describe('AdminReportModerationService', () => {
     countPendingIndexHoldReports: vi.fn<(quizId?: string) => Promise<number>>(),
   };
   const indexHold = {
-    holdForReport: vi.fn<(quizId: string, since: Date) => Promise<void>>(),
-    releaseReportHold: vi.fn<(quizId: string) => Promise<void>>(),
+    holdForReport: vi.fn<(quizId: string, since: Date) => Promise<boolean>>(),
+    releaseReportHold: vi.fn<(quizId: string) => Promise<boolean>>(),
   };
   const quizVisibility = { setAdminQuizVisibility: vi.fn() };
+  const quizIndexNow = { quizChanged: vi.fn() };
   const service = new AdminReportModerationService({
     reports,
     indexHold,
     quizVisibility,
+    quizIndexNow,
     now: () => now,
   });
 
@@ -52,6 +54,8 @@ describe('AdminReportModerationService', () => {
     reports.update.mockResolvedValue(report({ status: 'resolved' }));
     reports.countPendingIndexHoldReports.mockResolvedValue(0);
     quizVisibility.setAdminQuizVisibility.mockResolvedValue({ success: true, data: {} });
+    indexHold.holdForReport.mockResolvedValue(true);
+    indexHold.releaseReportHold.mockResolvedValue(true);
   });
 
   describe('syncIndexHold', () => {
@@ -176,5 +180,28 @@ describe('AdminReportModerationService', () => {
 
     await expect(service.countPendingIndexHold()).resolves.toBe(4);
     expect(reports.countPendingIndexHoldReports).toHaveBeenCalledWith();
+  });
+
+  describe('syncIndexHold IndexNow (RIN-1500)', () => {
+    const change = { quizId: 'quiz-1', slug: 'algebra', cause: 'index-hold' };
+
+    it('queues the quiz when the last hold report is settled and the hold lifts', async () => {
+      await service.syncIndexHold(report(), 'resolved');
+      expect(quizIndexNow.quizChanged).toHaveBeenCalledWith(change);
+    });
+
+    it('queues the quiz when a reopened report sets the hold again', async () => {
+      await service.syncIndexHold(report({ status: 'resolved' }), 'pending');
+      expect(quizIndexNow.quizChanged).toHaveBeenCalledWith(change);
+    });
+
+    it('queues nothing when the hold did not change', async () => {
+      indexHold.releaseReportHold.mockResolvedValue(false);
+      await service.syncIndexHold(report(), 'dismissed');
+      reports.countPendingIndexHoldReports.mockResolvedValue(1);
+      await service.syncIndexHold(report(), 'resolved');
+      await service.syncIndexHold(report({ reason: 'wrong_content' }), 'resolved');
+      expect(quizIndexNow.quizChanged).not.toHaveBeenCalled();
+    });
   });
 });

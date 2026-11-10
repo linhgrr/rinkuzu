@@ -57,7 +57,7 @@ export const ResultEmptyState = ({
           {t('result.backToSubject')}
         </Button>
         <Button
-          className="min-h-11 bg-brand-action font-semibold text-brand-action-text hover:bg-brand-action-hover"
+          className="min-h-11 bg-brand-action-strong font-semibold text-white hover:bg-brand-action-strong-hover"
           onClick={onChooseSubject}
         >
           {t('result.chooseAnotherSubject')}
@@ -220,7 +220,7 @@ export const ResultContent = ({
             {t('result.dashboard')}
           </Button>
           <Button
-            className="h-12 rounded-xl bg-brand-action sm:flex-[2] font-semibold text-brand-action-text shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
+            className="h-12 rounded-xl bg-brand-action-strong sm:flex-[2] font-semibold text-white shadow-md transition-[background-color,transform] hover:bg-brand-action-strong-hover focus:ring-brand-trust active:scale-[0.98]"
             onClick={onHandleNext}
           >
             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}

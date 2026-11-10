@@ -391,6 +391,17 @@ Do not use orange for:
 - Score metrics or completion statistics (use green)
 - Decorative blobs, gradients, or background glows
 
+Orange as text: `text-accent` (`--accent`, #ff7c23) is 2.57:1 on white and 2.13:1 on the
+peach `bg-accent-soft` fill, so it fails AA for text. Text in the orange family, such as the
+active app-shell nav label, uses `text-accent-ink` (`--accent-ink`) (RIN-1503):
+
+| Theme | `--accent-ink` | on `--accent-soft` | on `--surface` |
+| ----- | -------------- | ------------------ | -------------- |
+| Light | `#9a3412`      | 6.07:1             | 7.31:1         |
+| Dark  | `#ff7c23`      | ≥4.5:1             | ≥4.5:1         |
+
+Icons and focus rings may keep `--accent` (non-text, 3:1 floor).
+
 ### Green Usage
 
 Use green for:
@@ -631,8 +642,10 @@ Examples:
   padding: 0 18px;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
-  background: var(--brand-action);
-  color: var(--text-inverse);
+  /* White label on the theme-stable strong step: 5.18:1 rest, 7.31:1 hover,
+     about 9.4:1 active, in light and dark (RIN-1492). */
+  background: var(--brand-action-strong);
+  color: var(--neutral-white);
   font-size: 15px;
   font-weight: 650;
   line-height: 1;
@@ -644,13 +657,13 @@ Examples:
 }
 
 .btn-primary:hover {
-  background: var(--brand-action-hover);
+  background: var(--brand-action-strong-hover);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  background: var(--brand-action-active);
+  background: var(--brand-action-strong-active);
   transform: translateY(0);
 }
 
@@ -989,7 +1002,7 @@ Knowledge graph visuals should be structured, not chaotic.
 
 ```css
 .graph-node-current {
-  background: var(--brand-action);
+  background: var(--brand-action-strong);
   color: white;
   box-shadow: var(--shadow-orange-glow);
 }
@@ -1649,14 +1662,15 @@ Example:
   --brand-primary-hover: var(--green-600);
   --brand-primary-text: var(--text-inverse);
 
-  --button-primary-bg: var(--brand-action);
-  --button-primary-bg-hover: var(--brand-action-hover);
-  --button-primary-text: var(--text-inverse);
+  --button-primary-bg: var(--brand-action-strong);
+  --button-primary-bg-hover: var(--brand-action-strong-hover);
+  --button-primary-bg-active: var(--brand-action-strong-active);
+  --button-primary-text: var(--neutral-white);
 
   --quiz-answer-selected-bg: rgba(255, 122, 26, 0.08);
   --quiz-answer-correct-bg: rgba(0, 157, 140, 0.1);
 
-  --graph-node-current-bg: var(--brand-action);
+  --graph-node-current-bg: var(--brand-action-strong);
   --graph-node-mastered-bg: var(--brand-trust);
 }
 ```

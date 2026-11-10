@@ -88,6 +88,7 @@ const SEMANTIC_TOKENS = [
   '--accent-warm',
   '--accent-pale',
   '--accent-text',
+  '--accent-ink',
   '--line',
   '--line-blue',
   '--divider-warm',
@@ -151,6 +152,8 @@ describe('dark theme token contract', () => {
     ['--ink-muted', '--surface-warm'],
     ['--info', '--info-surface'],
     ['--accent', '--surface'],
+    ['--accent-ink', '--surface'],
+    ['--accent-ink', '--accent-soft'],
     ['--success', '--success-surface'],
     ['--purple', '--purple-surface'],
     ['--accent-text', '--accent'],
@@ -161,6 +164,29 @@ describe('dark theme token contract', () => {
     const background = over(token(dark, bg), token(dark, '--surface'));
     const ratio = contrast(over(token(dark, fg), background), background);
     expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('active nav label contrast (RIN-1503)', () => {
+  // The active sidebar, mobile-menu and bottom-nav label sits on the peach
+  // --accent-soft fill or on white. Plain --accent was 2.13:1 and 2.57:1.
+  const light = block(':root {');
+  const themes = { light: [light], dark: [darkBlock(), light] };
+
+  it.each([
+    ['light', '--accent-soft'],
+    ['light', '--surface'],
+    ['dark', '--accent-soft'],
+    ['dark', '--surface'],
+  ] as const)('--accent-ink clears 4.5:1 in %s on %s', (theme, bg) => {
+    const surface = parseColor(resolve(themes[theme], '--surface'));
+    const background = over(parseColor(resolve(themes[theme], bg)), surface);
+    const ratio = contrast(parseColor(resolve(themes[theme], '--accent-ink')), background);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps the dark active label the orange it was', () => {
+    expect(resolve(themes.dark, '--accent-ink')).toBe(resolve(themes.dark, '--accent'));
   });
 });
 

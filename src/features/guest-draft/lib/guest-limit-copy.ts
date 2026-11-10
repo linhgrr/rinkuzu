@@ -1,4 +1,9 @@
-import { GUEST_DRAFT_MAX_PAGES, GUEST_DRAFT_MAX_PDF_BYTES } from '@/shared/constants/guest-draft';
+import {
+  GUEST_DRAFT_MAX_PAGES,
+  GUEST_DRAFT_MAX_PDF_BYTES,
+  GUEST_DRAFT_MAX_QUESTIONS,
+  GUEST_DRAFT_TTL_MS,
+} from '@/shared/constants/guest-draft';
 
 /**
  * The trial limits as the copy names them. The size is the server's real ceiling (4 MB:
@@ -7,4 +12,6 @@ import { GUEST_DRAFT_MAX_PAGES, GUEST_DRAFT_MAX_PDF_BYTES } from '@/shared/const
 export const GUEST_DRAFT_LIMIT_COPY = {
   pages: GUEST_DRAFT_MAX_PAGES,
   mb: GUEST_DRAFT_MAX_PDF_BYTES / (1024 * 1024),
+  questions: GUEST_DRAFT_MAX_QUESTIONS,
+  hours: GUEST_DRAFT_TTL_MS / (60 * 60 * 1000),
 } as const;

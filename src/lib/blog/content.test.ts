@@ -166,3 +166,34 @@ describe('blogFrontmatterSchema tags', () => {
     expect(blogFrontmatterSchema.safeParse({ ...base, tags: nine }).success).toBe(false);
   });
 });
+
+describe('blogFrontmatterSchema updated (RIN-1499)', () => {
+  const base = {
+    title: 'T',
+    description: 'D',
+    date: '2026-01-15',
+    category: 'Guides',
+    readTimeMinutes: 5,
+    heroImage: '/h.jpg',
+    heroImageAlt: 'A',
+    locale: 'en',
+    author: 'rinkuzu-team',
+  };
+
+  it('is optional and accepts a date on or after `date`', () => {
+    expect(blogFrontmatterSchema.parse(base).updated).toBeUndefined();
+    expect(blogFrontmatterSchema.parse({ ...base, updated: '2026-01-15' }).updated).toBe(
+      '2026-01-15',
+    );
+    expect(blogFrontmatterSchema.parse({ ...base, updated: '2026-03-02' }).updated).toBe(
+      '2026-03-02',
+    );
+  });
+
+  it('rejects an `updated` before `date` and a non-ISO value', () => {
+    const early = blogFrontmatterSchema.safeParse({ ...base, updated: '2026-01-14' });
+    expect(early.success).toBe(false);
+    expect(early.error?.issues[0]?.path).toEqual(['updated']);
+    expect(blogFrontmatterSchema.safeParse({ ...base, updated: '15/03/2026' }).success).toBe(false);
+  });
+});

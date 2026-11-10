@@ -10,7 +10,7 @@ export default function DraftNotFound() {
       <p className="mb-6 max-w-md text-sm text-neutral-600">{t('description')}</p>
       <Link
         href={ROUTES.DASHBOARD}
-        className="rounded-full bg-brand-action px-6 py-2.5 text-sm font-semibold text-brand-action-text transition-colors hover:bg-brand-action-hover"
+        className="rounded-full bg-brand-action-strong px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-action-strong-hover"
       >
         {t('backToDashboard')}
       </Link>

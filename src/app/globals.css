@@ -91,6 +91,9 @@
        --brand-action-hover is #fdba74 in dark, where white reaches only 1.7:1
        (RIN-810). */
     --brand-action-strong-hover: #9a3412;
+    /* Its pressed step (orange-900, about 9.4:1). Theme-stable: the dark
+       --brand-trust-active is mint, where white fails (RIN-1492). */
+    --brand-action-strong-active: #7c2d12;
     /* Trust stays in the orange family in light (Figma reskin), but at the
        strong step: var(--accent) was 2.57:1 as text on white and 2.44:1 on
        bg-green-50 (RIN-682). These clear 4.5:1 as text and under a white
@@ -156,6 +159,9 @@
     --accent-warm: var(--primary-3);
     --accent-pale: var(--primary-2);
     --accent-text: var(--neutral-white);
+    /* Orange as text: the active nav label on --accent-soft (6.07:1) and on
+       white (7.31:1). Plain --accent is 2.13:1 and 2.57:1 there (RIN-1503). */
+    --accent-ink: #9a3412;
     --line: var(--secondary-2);
     --line-blue: var(--secondary-4);
     --progress-track: var(--neutral-warm-31);
@@ -345,6 +351,8 @@
     /* Text on --accent: white is 2.5:1 here. White labels on a filled orange
        control belong on --brand-action-strong, which does not vary by theme. */
     --accent-text: #10110f;
+    /* Already clears 4.5:1 on the dark surface and its 16% tint (RIN-1503). */
+    --accent-ink: #ff7c23;
     --line: rgba(255, 255, 255, 0.12);
     --line-blue: rgba(255, 255, 255, 0.24);
     --divider-warm: rgba(255, 124, 35, 0.3);
@@ -394,6 +402,7 @@
     --brand-action-text: #1c1917;
     --brand-action-strong: #c2410c;
     --brand-action-strong-hover: #9a3412;
+    --brand-action-strong-active: #7c2d12;
 
     --brand-trust: #34d399;
     --brand-trust-hover: #6ee7b7;
@@ -556,8 +565,10 @@
     padding: 0 18px;
     border-radius: var(--radius-md);
     border: 1px solid transparent;
-    background: var(--brand-action);
-    color: var(--brand-action-text);
+    /* White on the strong step: 5.18:1 in both themes. --brand-action under
+       white was 2.57:1 (RIN-1492). */
+    background: var(--brand-action-strong);
+    color: var(--neutral-white);
     font-size: 15px;
     font-weight: 650;
     line-height: 1;
@@ -565,13 +576,13 @@
   }
 
   .btn-primary:hover {
-    background: var(--brand-action-hover);
+    background: var(--brand-action-strong-hover);
     box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
   }
 
   .btn-primary:active {
-    background: var(--brand-action-active);
+    background: var(--brand-action-strong-active);
     transform: translateY(0);
   }
 
@@ -794,7 +805,7 @@
 
   /* Knowledge Graph */
   .graph-node-current {
-    background: var(--brand-action);
+    background: var(--brand-action-strong);
     color: white;
     box-shadow: var(--shadow-orange-glow);
   }

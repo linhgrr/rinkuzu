@@ -22,6 +22,16 @@ const doctorConfig = {
     // campaign is running; scanning them creates non-deterministic false reds.
     files: ['.gitnexus/**', '.stryker-tmp/**'],
     overrides: [
+      // /explore is rendered per request (the (app) layout reads the session),
+      // so useSearchParams does not suspend there and the page never falls back
+      // to client rendering. A Suspense around it is what hurt: React 19.2
+      // streams that boundary as a hidden div after the shell and kept the
+      // heading and tabs out of the first paint (RIN-1518). ExplorePageClient's
+      // first-HTML test pins the server output.
+      {
+        files: ['src/app/**/explore/page.tsx'],
+        rules: ['react-doctor/nextjs-no-use-search-params-without-suspense'],
+      },
       // Portal's server snapshot is false; document is reached only after the
       // client snapshot changes. Rewriting this CRITICAL shared primitive to
       // satisfy a syntax heuristic would weaken hydration safety.

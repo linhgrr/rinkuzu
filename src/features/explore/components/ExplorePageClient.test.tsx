@@ -4,6 +4,7 @@ import '@testing-library/jest-dom/vitest';
 
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { render, screen, within } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const session = vi.hoisted(() => ({ status: 'unauthenticated' as string }));
@@ -238,5 +239,22 @@ describe('ExplorePageClient All tab: one row per signed-in section (RIN-1406)', 
     const skeletons = screen.getAllByTestId('quiz-skeleton');
     expect(skeletons).toHaveLength(6);
     expect(skeletons[5]?.parentElement).toHaveClass('grid-cols-1');
+  });
+});
+
+describe('ExplorePageClient first HTML (RIN-1518)', () => {
+  it('server-renders the heading, search and tabs outside any Suspense boundary', () => {
+    session.status = 'unauthenticated';
+    swrKeys.length = 0;
+    search.params = new URLSearchParams();
+    const html = renderToString(<ExplorePageClient hubLinks={<nav id="hub-links" />} />);
+
+    // React marks every Suspense boundary with <!--$-->. Since React 19.2 a
+    // boundary after a large shell streams as a hidden div shown later by script.
+    expect(html).not.toContain('<!--$');
+    expect(html).toContain('<h1');
+    expect(html).toContain('id="hub-links"');
+    expect(html).toContain('aria-label="filterLabel"');
+    expect(html).toContain('tabs.quizzes');
   });
 });

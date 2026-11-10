@@ -1,4 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import type { ReactNode } from 'react';
 import { createTranslator, NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -90,5 +92,13 @@ describe('/explore topic hub links (B6)', () => {
       { error: expect.any(Error) },
       'explore: topic hub links failed',
     );
+  });
+});
+
+describe('/explore first HTML (RIN-1518)', () => {
+  it('has no route loading.tsx holding the heading and tabs behind a streamed fallback', () => {
+    const route = path.join(process.cwd(), 'src/app/[locale]/(app)/explore');
+    expect(existsSync(path.join(route, 'page.tsx'))).toBe(true);
+    expect(existsSync(path.join(route, 'loading.tsx'))).toBe(false);
   });
 });

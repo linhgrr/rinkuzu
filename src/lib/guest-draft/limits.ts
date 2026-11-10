@@ -24,7 +24,8 @@ function positiveInt(raw: string | undefined): number | null {
   return raw !== undefined && Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
 }
 
-/** Spec AC3: 2 guest drafts per IP per 24 h and 30 per UTC day, both env-configurable. */
+/** Spec AC3: 2 guest drafts per IP per 24 h and 30 per UTC day, both env-configurable.
+ * @public Unit tests pin the env overrides. */
 export function resolveGuestDraftLimits(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): GuestDraftLimits {

@@ -46,10 +46,17 @@ function upstreamDraft(overrides: Partial<UpstreamGuestDraft> = {}): UpstreamGue
   };
 }
 
-const readyQuestions: UpstreamGuestDraft['questions'] = [
+type UpstreamQuestions = NonNullable<UpstreamGuestDraft['questions']>;
+const brokenQuestion: UpstreamQuestions[number] = {
+  question: 'broken',
+  type: 'single',
+  options: ['a', 'b'],
+  correctIndex: 5,
+};
+const readyQuestions: UpstreamQuestions = [
   { question: 'Q1?', type: 'single', options: ['a', 'b'], correctIndex: 1 },
   { question: 'Q2?', type: 'multiple', options: ['a', 'b', 'c'], correctIndexes: [0, 2] },
-  { question: 'broken', type: 'single', options: ['a', 'b'], correctIndex: 5 },
+  brokenQuestion,
 ];
 
 function setup(existing: GuestDraftRecord | null = null) {
@@ -238,7 +245,7 @@ describe('GuestDraftService.status', () => {
     const { service, repository, upstream } = setup(record());
     upstream.get.mockResolvedValue({
       ok: true,
-      draft: upstreamDraft({ status: 'completed', questions: [readyQuestions[2]!] }),
+      draft: upstreamDraft({ status: 'completed', questions: [brokenQuestion] }),
     });
 
     await service.status(TOKEN, IP);

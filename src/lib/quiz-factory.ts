@@ -11,6 +11,7 @@ import { QuizService } from '@/services/quiz/QuizService';
 import { QuizPageReportService } from '@/services/quiz/QuizPageReportService';
 import { QuizIndexHoldRepository } from '@/repositories/QuizIndexHoldRepository';
 import { getPremiumQuizService } from '@/lib/premium-quiz-factory';
+import { quizIndexNowNotifier } from '@/lib/indexnow-factory';
 
 let quizService: QuizService | undefined;
 
@@ -26,6 +27,7 @@ export function getQuizService(): QuizService {
     getPremiumQuizService(),
     new AttemptRepository(),
     new PremiumQuizRepository(),
+    quizIndexNowNotifier,
   );
   return quizService;
 }
@@ -37,6 +39,8 @@ export function getQuizPageReportService(): QuizPageReportService {
     new QuizRepository(),
     new ReportRepository(),
     new QuizIndexHoldRepository(),
+    undefined,
+    quizIndexNowNotifier,
   );
   return quizPageReportService;
 }

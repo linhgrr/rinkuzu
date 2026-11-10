@@ -14,6 +14,7 @@ import { AdminService } from '@/services/admin/AdminService';
 import { AdminReportModerationService } from '@/services/admin/AdminReportModerationService';
 import { QuizIndexHoldRepository } from '@/repositories/QuizIndexHoldRepository';
 import { getAdminQuizService } from '@/lib/admin-quiz-factory';
+import { quizIndexNowNotifier } from '@/lib/indexnow-factory';
 import { ReviewEmailStatsService } from '@/services/admin/ReviewEmailStatsService';
 import { ReviewEmailStatsRepository } from '@/repositories/ReviewEmailStatsRepository';
 import { reviewReminderQaRecipients } from '@/lib/communication/review-reminder-policy';
@@ -25,6 +26,7 @@ export function getAdminReportModerationService(): AdminReportModerationService 
     reports: new ReportRepository(),
     indexHold: new QuizIndexHoldRepository(),
     quizVisibility: getAdminQuizService(),
+    quizIndexNow: quizIndexNowNotifier,
   });
   return adminReportModerationService;
 }

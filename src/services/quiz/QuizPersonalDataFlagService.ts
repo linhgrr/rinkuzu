@@ -1,8 +1,10 @@
 import type { AdminQuizPersonalDataFlagClearDto } from '@/dtos/admin-quiz';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 
 interface PersonalDataFlagActor {
@@ -31,6 +33,7 @@ export class QuizPersonalDataFlagService {
     private readonly quizRepository: PersonalDataFlagQuizRepository,
     private readonly auditRepository: IAdminAuditRepository,
     private readonly now: () => Date = () => new Date(),
+    private readonly quizIndexNow?: IQuizIndexNowNotifier,
   ) {}
 
   async clear(
@@ -48,15 +51,14 @@ export class QuizPersonalDataFlagService {
         return { success: true, data: AdminQuizDtoMapper.toPersonalDataFlagClear(quiz, false) };
       }
 
-      await this.quizRepository.update(quiz.id, {
-        contentFlags: {
-          personalData: false,
-          kinds: [...flags.kinds],
-          checkedAt: flags.checkedAt,
-          clearedBy: actor.id,
-          clearedAt: this.now(),
-        },
-      });
+      const contentFlags = {
+        personalData: false,
+        kinds: [...flags.kinds],
+        checkedAt: flags.checkedAt,
+        clearedBy: actor.id,
+        clearedAt: this.now(),
+      };
+      await this.quizRepository.update(quiz.id, { contentFlags });
 
       try {
         await this.auditRepository.record({
@@ -76,6 +78,7 @@ export class QuizPersonalDataFlagService {
         return CLEAR_FAILED;
       }
 
+      notifyQuizSearchChange(this.quizIndexNow, quiz, { ...quiz, contentFlags });
       return { success: true, data: AdminQuizDtoMapper.toPersonalDataFlagClear(quiz, true) };
     } catch (error) {
       logger.error({ error, quizId: id }, 'Clear personal-data flag error');

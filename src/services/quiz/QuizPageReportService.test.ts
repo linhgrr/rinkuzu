@@ -42,20 +42,22 @@ function storedReport(): Report {
 describe('QuizPageReportService', () => {
   const findSummaryBySlug = vi.fn<(slug: string) => Promise<Quiz | null>>();
   const createQuizPageReport = vi.fn();
-  const holdForReport = vi.fn<(quizId: string, since: Date) => Promise<void>>();
-  const releaseReportHold = vi.fn<(quizId: string) => Promise<void>>();
+  const holdForReport = vi.fn<(quizId: string, since: Date) => Promise<boolean>>();
+  const releaseReportHold = vi.fn<(quizId: string) => Promise<boolean>>();
+  const quizIndexNow = { quizChanged: vi.fn() };
   const service = new QuizPageReportService(
     { findSummaryBySlug },
     { createQuizPageReport },
     { holdForReport, releaseReportHold },
     () => now,
+    quizIndexNow,
   );
 
   beforeEach(() => {
     vi.clearAllMocks();
     findSummaryBySlug.mockResolvedValue(quiz());
     createQuizPageReport.mockResolvedValue(storedReport());
-    holdForReport.mockResolvedValue(undefined);
+    holdForReport.mockResolvedValue(true);
   });
 
   it('stores an anonymous report with the hash and no reporter fields', async () => {
@@ -126,5 +128,31 @@ describe('QuizPageReportService', () => {
     const result = await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
 
     expect(result).toMatchObject({ success: false, statusCode: 500 });
+  });
+
+  describe('IndexNow (RIN-1500)', () => {
+    it('queues the quiz when a copyright report sets its hold', async () => {
+      await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
+      expect(quizIndexNow.quizChanged).toHaveBeenCalledWith({
+        quizId: '507f191e810c19729de860ea',
+        slug: 'algebra',
+        cause: 'index-hold',
+      });
+    });
+
+    it('queues nothing when the quiz was already held or the reason holds nothing', async () => {
+      holdForReport.mockResolvedValue(false);
+      await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
+      await service.report('algebra', { reason: 'wrong_content', ipHash: 'h1' });
+      expect(quizIndexNow.quizChanged).not.toHaveBeenCalled();
+    });
+
+    it('still stores the report when the notifier throws', async () => {
+      quizIndexNow.quizChanged.mockImplementationOnce(() => {
+        throw new Error('fake notifier failure');
+      });
+      const result = await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
+      expect(result).toEqual({ success: true, data: { reportId: 'report-1' } });
+    });
   });
 });

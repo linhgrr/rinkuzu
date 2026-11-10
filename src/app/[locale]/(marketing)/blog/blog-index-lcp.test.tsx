@@ -24,6 +24,9 @@ vi.mock('next/image', async (importOriginal) => {
   };
 });
 
+// The index reads the quiz card copy from the `blog` messages (RIN-1258).
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/blog-intl-mock'));
+
 describe.each(locales)('blog index on /%s', (locale) => {
   it('loads only the first thumbnail eagerly', async () => {
     const { container } = render(

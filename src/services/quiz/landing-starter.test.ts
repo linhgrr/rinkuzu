@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { StarterQuizCandidateRecord } from '@/interfaces/repositories/IStarterQuizReadRepository';
-import { LandingStarterResolver } from '@/services/quiz/landing-starter';
+import { BlogTryResolver, LandingStarterResolver } from '@/services/quiz/landing-starter';
 
 vi.mock('@/lib/logger', () => ({ logger: { warn: vi.fn() } }));
 
@@ -19,6 +19,8 @@ function candidate(slug: string, extra: Partial<StarterQuizCandidateRecord> = {}
     visibility: 'public',
     questionCount: 7,
     isPremium: false,
+    personalDataFlagged: false,
+    indexHold: false,
     ...extra,
   };
 }
@@ -74,5 +76,58 @@ describe('LandingStarterResolver (RIN-1178, RIN-1177)', () => {
     });
 
     await expect(resolver.resolveHref('en')).resolves.toBeNull();
+  });
+});
+
+describe('BlogTryResolver (RIN-1258)', () => {
+  function createBlogResolver(found: StarterQuizCandidateRecord | null | Error) {
+    const findQuizCandidateBySlug = vi.fn(() =>
+      found instanceof Error ? Promise.reject(found) : Promise.resolve(found),
+    );
+    const { resolver: starters } = createResolver();
+    return {
+      resolver: new BlogTryResolver({ findQuizCandidateBySlug }, starters),
+      findQuizCandidateBySlug,
+    };
+  }
+
+  it('opens a playable quiz with entry=blog and the post', async () => {
+    const { resolver, findQuizCandidateBySlug } = createBlogResolver(candidate('blog-quiz'));
+
+    await expect(
+      resolver.resolveHref('en', { post: 'fake-post', quiz: 'blog-quiz' }),
+    ).resolves.toBe('/quiz/blog-quiz?entry=blog&post=fake-post');
+    expect(findQuizCandidateBySlug).toHaveBeenCalledWith('blog-quiz');
+  });
+
+  it('opens a long quiz as a quick round, under its current slug', async () => {
+    const { resolver } = createBlogResolver(candidate('renamed-quiz', { questionCount: 40 }));
+
+    await expect(resolver.resolveHref('vi', { post: 'p', quiz: 'old-quiz' })).resolves.toBe(
+      '/quiz/renamed-quiz?mode=quick&entry=blog&post=p',
+    );
+  });
+
+  it.each([
+    ['missing', null],
+    ['private', candidate('blog-quiz', { visibility: 'private' })],
+    ['premium', candidate('blog-quiz', { isPremium: true })],
+    ['empty', candidate('blog-quiz', { questionCount: 0 })],
+    ['personal-data-flagged', candidate('blog-quiz', { personalDataFlagged: true })],
+    ['report-held', candidate('blog-quiz', { indexHold: true })],
+    ['unreadable', new Error('db down')],
+  ])('falls back to the locale starter for a %s quiz', async (_reason, found) => {
+    const { resolver } = createBlogResolver(found);
+
+    await expect(resolver.resolveHref('vi', { post: 'p', quiz: 'blog-quiz' })).resolves.toBe(
+      '/quiz/vi-one?entry=blog&post=p',
+    );
+  });
+
+  it('opens the starter without a post from the /blog index', async () => {
+    const { resolver, findQuizCandidateBySlug } = createBlogResolver(null);
+
+    await expect(resolver.resolveHref('en', {})).resolves.toBe('/quiz/en-one?entry=blog');
+    expect(findQuizCandidateBySlug).not.toHaveBeenCalled();
   });
 });

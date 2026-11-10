@@ -1231,6 +1231,36 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('opens the starter from the /blog quiz card as a guest @critical-quiz-landing', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1258: the /blog index card -> /try?entry=blog -> the starter with entry=blog and
+    // no post; a post's card with an unplayable quiz falls back to the starter, keeping post.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      await recordAnalyticsEvents(page);
+      await page.goto('/en/blog');
+      const start = page.getByTestId('try-quiz-card').getByRole('link', { name: 'Start the quiz' });
+      await expect
+        .poll(() =>
+          start.evaluate((node) =>
+            Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+          ),
+        )
+        .toBe(true);
+      await start.click();
+      await expect(page).toHaveURL(new RegExp(`/en/quiz/${starterSlug}\\?entry=blog$`));
+      await expect
+        .poll(() => analyticsEventProperties(page, 'landing_cta_clicked'))
+        .toMatchObject({ cta: 'play_first', position: 'blog_index', locale: 'en' });
+
+      await page.goto('/en/try?entry=blog&post=fake-post&quiz=no-such-quiz-e2e');
+      await expect(page).toHaveURL(
+        new RegExp(`/en/quiz/${starterSlug}\\?entry=blog&post=fake-post$`),
+      );
+    });
+  });
+
   test('claims a guest result when the verification link opens in another browser @critical-quiz-guest-claim-cross-browser', async ({
     page,
     browser,

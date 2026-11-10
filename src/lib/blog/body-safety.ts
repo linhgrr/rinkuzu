@@ -7,13 +7,17 @@
  * of silently dropping it from the page.
  *
  * Fenced code blocks and inline code spans are exempt: a post may show code.
+ * So is a whole-line `<TryQuiz />` marker (RIN-1258): the page renders the quiz
+ * card there itself, the Markdown renderer never sees it.
  */
+
+import { closesFence, openingFence, type Fence } from './body-fences';
+import { isTryQuizLine } from './try-quiz-marker';
 
 type UnsafeBodyConstruct = { line: number; reason: string };
 
 const ALLOWED_URL_SCHEMES = new Set(['http', 'https', 'mailto']);
 
-const FENCE_PATTERN = /^\s*(`{3,}|~{3,})/;
 // MDX ESM: `import x from '...'`, `import '...'`, `export const ...`.
 const ESM_PATTERN =
   /^\s*(?:import\s+(?:[\w*{][^'"]*\s+from\s+)?['"]|export\s+(?:const|let|var|function|class|default|async|\{|\*))/;
@@ -67,23 +71,6 @@ const checkProseLine = (prose: string): string | undefined => {
   return undefined;
 };
 
-type Fence = { char: string; length: number };
-
-const openingFence = (line: string): Fence | undefined => {
-  const marker = FENCE_PATTERN.exec(line)?.[1];
-  return marker ? { char: marker.charAt(0), length: marker.length } : undefined;
-};
-
-const closesFence = (line: string, fence: Fence): boolean => {
-  const marker = FENCE_PATTERN.exec(line)?.[1];
-  return (
-    marker !== undefined &&
-    marker.charAt(0) === fence.char &&
-    marker.length >= fence.length &&
-    line.trim() === marker
-  );
-};
-
 /**
  * Returns the first construct in a Markdown body that is code rather than
  * content, with its 1-based line number within the body, or `undefined`.
@@ -98,7 +85,7 @@ export const findUnsafeBodyConstruct = (body: string): UnsafeBodyConstruct | und
       continue;
     }
     fence = openingFence(line);
-    if (fence) {
+    if (fence || isTryQuizLine(line)) {
       continue;
     }
     const reason = checkProseLine(proseOf(line));

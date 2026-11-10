@@ -28,3 +28,41 @@ describe('LandingCtaLink (RIN-1178)', () => {
     });
   });
 });
+
+describe('LandingCtaLink on the blog quiz card (RIN-1258)', () => {
+  it.each([
+    ['blog_inline', 'fake-post'],
+    ['blog_end', 'fake-post'],
+  ] as const)('adds the post slug at %s', (position, post) => {
+    render(
+      <LandingCtaLink href="/try" cta="play_first" position={position} locale="en" post={post}>
+        Start
+      </LandingCtaLink>,
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Start' }));
+
+    expect(captureAnalyticsEvent).toHaveBeenLastCalledWith('landing_cta_clicked', {
+      cta: 'play_first',
+      position,
+      locale: 'en',
+      post,
+    });
+  });
+
+  it('sends no post from the /blog index', () => {
+    render(
+      <LandingCtaLink href="/try" cta="play_first" position="blog_index" locale="vi">
+        Index
+      </LandingCtaLink>,
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Index' }));
+
+    expect(captureAnalyticsEvent).toHaveBeenLastCalledWith('landing_cta_clicked', {
+      cta: 'play_first',
+      position: 'blog_index',
+      locale: 'vi',
+    });
+  });
+});

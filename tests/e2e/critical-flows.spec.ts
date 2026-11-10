@@ -1102,6 +1102,8 @@ test.describe('production critical paths', () => {
 
       const dialog = page.getByRole('dialog', { name: 'Report this quiz' });
       await expect(dialog).toBeVisible();
+      // The dialog chunk loads on this first click (RIN-1428); focus still moves into it.
+      await expect(dialog.getByRole('radio', { name: 'Copyright' })).toBeFocused();
       const submit = dialog.getByRole('button', { name: 'Send report' });
       await expect(submit).toBeDisabled();
 

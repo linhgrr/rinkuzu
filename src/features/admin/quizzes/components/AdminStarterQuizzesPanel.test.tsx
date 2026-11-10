@@ -192,6 +192,8 @@ describe('AdminQuizzesPageClient starter panel (RIN-1183)', () => {
       starter('a', 1),
       starter('b', 2, { title: null, dropReason: 'missing' }),
       starter('c', 3, { dropReason: 'premium' }),
+      starter('d', 4, { dropReason: 'personal-data' }),
+      starter('e', 5, { dropReason: 'held' }),
     ]);
     render(<AdminQuizzesPageClient />);
 
@@ -204,6 +206,9 @@ describe('AdminQuizzesPageClient starter panel (RIN-1183)', () => {
     expect(within(missing).getByText('droppedLabel(dropMissing)')).toBeInTheDocument();
     expect(within(missing).getByText('droppedNote')).toBeInTheDocument();
     expect(within(premium).getByText('droppedLabel(dropPremium)')).toBeInTheDocument();
+    // RIN-1408: flagged and held starters read as hidden, not live.
+    expect(within(nth(rows, 3)).getByText('droppedLabel(dropPersonalData)')).toBeInTheDocument();
+    expect(within(nth(rows, 4)).getByText('droppedLabel(dropHeld)')).toBeInTheDocument();
   });
 
   it('collapses to 3 starters on small screens with a Show all toggle (RIN-1229)', async () => {

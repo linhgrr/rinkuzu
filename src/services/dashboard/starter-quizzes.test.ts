@@ -78,8 +78,8 @@ describe('resolveStarterQuizzes', () => {
   });
 
   // RIN-1341: the landing, dashboard and nudge starters never promote a quiz
-  // flagged for personal data or under a report hold.
-  it('leaves out flagged and held starters', async () => {
+  // flagged for personal data or under a report hold; RIN-1408 reports them as dropped.
+  it('leaves out flagged and held starters and reports them as dropped', async () => {
     const result = await resolveStarterQuizzes({
       entries: [
         entry('fake-flagged', 'vi', 1),
@@ -94,6 +94,10 @@ describe('resolveStarterQuizzes', () => {
     });
 
     expect(result.starterQuizzes.map(({ slug }) => slug)).toEqual(['slug-fake-ok']);
+    expect(result.dropped).toEqual([
+      { quizId: 'fake-flagged', reason: 'personal-data' },
+      { quizId: 'fake-held', reason: 'held' },
+    ]);
   });
 
   it('returns no starters when every entry is dropped', async () => {

@@ -8,6 +8,11 @@
     "faqPrompt": "Questions about uploads or plans?",
     "faqLink": "Read the FAQ"
   },
+  "tryQuiz": {
+    "heading": "Test yourself on this",
+    "meta": "10 questions · no sign-up",
+    "button": "Start the quiz"
+  },
   "share": {
     "label": "Share this post:",
     "shareOn": "Share on {network}",

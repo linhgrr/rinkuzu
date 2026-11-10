@@ -94,6 +94,8 @@ const DROP_REASONS: readonly AdminStarterQuizDropReason[] = [
   'not-public',
   'premium',
   'empty',
+  'personal-data',
+  'held',
 ];
 
 /** The API's mark refusal as a reason we can put in words: 409 already marked, 422 a drop rule. */
@@ -109,6 +111,8 @@ export const STARTER_DROP_REASON_KEYS = {
   'not-public': 'dropNotPublic',
   premium: 'dropPremium',
   empty: 'dropEmpty',
+  'personal-data': 'dropPersonalData',
+  held: 'dropHeld',
 } as const satisfies Record<AdminStarterQuizDropReason, string>;
 
 export interface AdminStarterQuizzesController {

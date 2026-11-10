@@ -30,7 +30,13 @@ export const adminStarterQuizUpdateBodySchema = z
 
 export type AdminStarterQuizUpdateBodyDto = z.infer<typeof adminStarterQuizUpdateBodySchema>;
 
-type AdminStarterQuizDropReason = 'missing' | 'not-public' | 'premium' | 'empty';
+type AdminStarterQuizDropReason =
+  | 'missing'
+  | 'not-public'
+  | 'premium'
+  | 'empty'
+  | 'personal-data'
+  | 'held';
 
 export interface AdminStarterQuizItemDto {
   /** The starter row id, used in PATCH/DELETE paths. */

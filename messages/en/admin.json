@@ -745,6 +745,8 @@
     "dropNotPublic": "Not public",
     "dropPremium": "Premium",
     "dropEmpty": "No questions",
+    "dropPersonalData": "Flagged for personal data",
+    "dropHeld": "On hold after a report",
     "moveUp": "Move “{title}” up",
     "moveDown": "Move “{title}” down",
     "localeFor": "Language for “{title}”",

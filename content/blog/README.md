@@ -52,6 +52,39 @@ shows no related block. Give a translation the same tags as its `en` post.
 A missing or invalid required field fails validation (and the build) rather
 than rendering a broken page — see `src/lib/blog/content.test.ts`.
 
+## "Try this quiz" card
+
+An optional `quiz` block turns on a card that sends readers into a quiz
+(RIN-1258). Both keys are optional:
+
+```yaml
+quiz:
+  slug: how-to-remember-what-you-study # a public quiz slug: a-z, 0-9, hyphens, max 80
+  teaser: 'Ten questions on spaced repetition. How much stuck?' # max 140 characters
+```
+
+Write `quiz: {}` to show the card with neither. The card shows "Test yourself
+on this", the teaser, "10 questions · no sign-up" and a "Start the quiz"
+button linking to `/try?entry=blog&post=<post-slug>&quiz=<slug>`. `/try` opens
+the quiz when a guest can play it free (public, not Premium, not empty; a quick
+round when it is long), otherwise the locale's starter quiz, otherwise the
+public quiz list. A bad slug or a teaser over 140 characters fails the build;
+unknown keys in the block fail it too.
+
+The card goes **after the article body, before the share buttons**. To place
+it yourself, put this on a line of its own, with blank lines around it:
+
+```mdx
+<TryQuiz />
+<TryQuiz teaser="Optional teaser for this spot only" />
+```
+
+A post that uses `<TryQuiz />` gets no automatic end card, and `<TryQuiz />`
+works without a `quiz` block (it then opens the starter). It is the only tag a
+body may contain: the marker must be the whole line, and the teaser may not
+hold quotes, braces or angle brackets. A post with neither shows no card. The
+`/blog` index always shows one card, without a post.
+
 ## The body is Markdown, not code
 
 Posts are data. The body is rendered by react-markdown (GFM, raw HTML skipped)
@@ -70,6 +103,7 @@ when the body contains, **outside fenced code blocks and inline code**:
 - a link, image, reference or autolink URL whose scheme is not `http`, `https`
   or `mailto`. Relative links (`/en/faq`, `#section`) are fine.
 
+The one exception is a whole-line `<TryQuiz />` marker (see above).
 Everything else is fine: headings, lists, emphasis, GFM tables and task lists,
 images, links, `<https://...>` autolinks, and any of the constructs above inside
 a code block or code span. The check runs in

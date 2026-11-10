@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
@@ -396,6 +396,63 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
   } finally {
     await fixture.client.close();
   }
+}
+
+const E2E_GUEST_DRAFT_QUESTION = 'Which organelle makes ATP in this fake guest draft?';
+
+interface SeededGuestDraft {
+  id: ObjectId;
+  token: string;
+  apiDraftId: string;
+}
+
+/** A ready guest draft, as the status poll leaves it (RIN-1447): no OCR in e2e. */
+async function seedReadyGuestDraft(db: Db): Promise<SeededGuestDraft> {
+  const token = randomBytes(32).toString('base64url');
+  const id = new ObjectId();
+  const apiDraftId = `e2e-guest-${randomUUID()}`;
+  const now = new Date();
+  await db.collection('guestquizdrafts').insertOne({
+    _id: id,
+    tokenHash: createHash('sha256').update(token, 'utf8').digest('hex'),
+    apiDraftId,
+    status: 'ready',
+    title: 'E2E guest draft quiz',
+    questions: [
+      {
+        _id: new ObjectId(),
+        question: E2E_GUEST_DRAFT_QUESTION,
+        options: ['Mitochondria', 'Ribosome'],
+        type: 'single',
+        correctIndex: 0,
+      },
+    ],
+    locale: 'en',
+    entry: 'landing',
+    expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
+    createdAt: now,
+    updatedAt: now,
+  });
+  return { id, token, apiDraftId };
+}
+
+/** What the guest upload page leaves in the browser (`guest-draft-claims.ts`), set once. */
+async function storeGuestDraftToken(page: Page, token: string): Promise<void> {
+  await page.addInitScript((value) => {
+    if (window.sessionStorage.getItem('e2e-guest-draft-seeded')) return;
+    window.sessionStorage.setItem('e2e-guest-draft-seeded', '1');
+    window.localStorage.setItem(
+      'rinkuzu.guestDrafts.v1',
+      JSON.stringify([{ token: value, createdAt: Date.now() }]),
+    );
+  }, token);
+}
+
+async function cleanupGuestDraft(db: Db, draft: SeededGuestDraft): Promise<void> {
+  await Promise.all([
+    db.collection('guestquizdrafts').deleteMany({ _id: draft.id }),
+    db.collection('quizzes').deleteMany({ sourceDraftId: draft.apiDraftId }),
+  ]);
 }
 
 async function withDatabaseFixture<T>(
@@ -1355,6 +1412,118 @@ test.describe('production critical paths', () => {
             .deleteMany({ key: /^auth:(?:register_ip|verify_email_ip):/ }),
         ]);
         await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
+  test('claims a guest draft when the verification link opens in another browser @critical-quiz-guest-draft-claim', async ({
+    page,
+    browser,
+    baseURL,
+  }, testInfo) => {
+    // RIN-1447: the guest's own-PDF quiz lives in browser A as a draft token; the email
+    // is verified in browser B. The server turns the draft into a public quiz then.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const draft = await seedReadyGuestDraft(fixture.db);
+      const email = `e2e-draft-${randomUUID().slice(0, 12)}@example.com`;
+      const origin = new URL(baseURL ?? 'http://localhost:3000').origin;
+      const other = await browser.newContext({ baseURL: origin });
+      try {
+        await storeGuestDraftToken(page, draft.token);
+        await page.goto('/en/register');
+        // A cold load: on WebKit the fills can land before hydration, React Hook Form never
+        // sees them and `Create Account` stays disabled. Fill only once React owns the form.
+        const emailInput = page.getByLabel('Email Address');
+        await expect
+          .poll(() =>
+            emailInput.evaluate((node) =>
+              Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+            ),
+          )
+          .toBe(true);
+        await emailInput.fill(email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await page.getByLabel('Confirm password').fill(E2E_PASSWORD);
+        await page.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+        await expect(page.getByText('Check your email')).toBeVisible();
+
+        const verificationToken = randomUUID().replace(/-/g, '').repeat(2);
+        await fixture.db.collection('users').updateOne(
+          { email },
+          {
+            $set: {
+              emailVerificationTokenHash: createHash('sha256')
+                .update(verificationToken, 'utf8')
+                .digest('hex'),
+            },
+          },
+        );
+        const otherPage = await other.newPage();
+        const verified = await otherPage.request.post('/api/auth/verify-email', {
+          data: { token: verificationToken },
+          headers: { origin },
+        });
+        expect(verified.status()).toBe(200);
+
+        const user = await fixture.db.collection('users').findOne({ email });
+        const quiz = await fixture.db
+          .collection('quizzes')
+          .findOne({ sourceDraftId: draft.apiDraftId });
+        expect(quiz).toMatchObject({ author: user?.['_id'], visibility: 'public' });
+        expect(
+          await fixture.db.collection('guestquizdrafts').countDocuments({ _id: draft.id }),
+        ).toBe(0);
+        // The quiz now follows the normal public rule: anyone can open it.
+        await otherPage.goto(`/en/quiz/${String(quiz?.['slug'])}`);
+        await expect(otherPage.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+      } finally {
+        await other.close();
+        await cleanupGuestDraft(fixture.db, draft);
+        await Promise.all([
+          fixture.db.collection('auditlogs').deleteMany({ email }),
+          fixture.db.collection('auth_rate_limits').deleteMany({
+            key: /^auth:(?:register_ip|verify_email_ip):/,
+          }),
+        ]);
+        await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
+  test('claims a guest draft the browser holds on email sign-in @critical-quiz-guest-draft-claim', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1447: same browser, existing account: the claimer posts the token after sign-in.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const draft = await seedReadyGuestDraft(fixture.db);
+      const authorOf = async () => {
+        const quiz = await fixture.db
+          .collection('quizzes')
+          .findOne({ sourceDraftId: draft.apiDraftId });
+        return quiz ? String(quiz['author']) : null;
+      };
+      try {
+        await storeGuestDraftToken(page, draft.token);
+        await login(page, fixture.target);
+        await expect.poll(authorOf, { timeout: 15_000 }).toBe(fixture.target.id.toHexString());
+        await expect
+          .poll(() => page.evaluate(() => window.localStorage.getItem('rinkuzu.guestDrafts.v1')))
+          .toBeNull();
+        expect(
+          await fixture.db.collection('guestquizdrafts').countDocuments({ _id: draft.id }),
+        ).toBe(0);
+      } finally {
+        await cleanupGuestDraft(fixture.db, draft);
+        await fixture.db.collection('auth_rate_limits').deleteMany({
+          key: {
+            $in: [
+              `auth:guest_draft_claim_user:${fixture.target.id.toHexString()}`,
+              ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+            ],
+          },
+        });
       }
     });
   });

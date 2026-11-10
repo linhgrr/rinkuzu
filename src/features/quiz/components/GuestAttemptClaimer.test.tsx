@@ -3,6 +3,10 @@
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GUEST_CLAIMS_STORAGE_KEY, addGuestClaim } from '@/features/quiz/lib/guest-claims';
+import {
+  GUEST_DRAFTS_STORAGE_KEY,
+  addGuestDraftClaim,
+} from '@/features/quiz/lib/guest-draft-claims';
 
 const { captureMock, session } = vi.hoisted(() => ({
   captureMock: vi.fn(),
@@ -140,5 +144,44 @@ describe('GuestAttemptClaimer (RIN-921)', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(window.localStorage.getItem(GUEST_CLAIMS_STORAGE_KEY)).not.toBeNull();
+  });
+
+  it('claims the guest drafts before the guest attempts (RIN-1447)', async () => {
+    addGuestDraftClaim({ token: TOKEN_B, createdAt: Date.now() });
+    storeClaim('attempt-1', TOKEN_A);
+    signIn();
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, { success: true, data: { claimedQuizSlugs: ['fake-quiz'] } }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { success: true, data: { claimedAttemptIds: [] } }));
+
+    await renderClaimer();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      '/api/guest-drafts/claim',
+      '/api/attempts/claim',
+    ]);
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ tokens: [TOKEN_B] });
+    expect(window.localStorage.getItem(GUEST_DRAFTS_STORAGE_KEY)).toBeNull();
+  });
+
+  it('keeps the draft tokens on a 5xx and still claims the attempts', async () => {
+    addGuestDraftClaim({ token: TOKEN_B, createdAt: Date.now() });
+    storeClaim('attempt-1', TOKEN_A);
+    signIn();
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(500, { success: false, error: { code: 'internal_error', message: 'x' } }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, { success: true, data: { claimedAttemptIds: ['attempt-1'] } }),
+      );
+
+    await renderClaimer();
+
+    await waitFor(() => expect(window.localStorage.getItem(GUEST_CLAIMS_STORAGE_KEY)).toBeNull());
+    expect(window.localStorage.getItem(GUEST_DRAFTS_STORAGE_KEY)).not.toBeNull();
   });
 });

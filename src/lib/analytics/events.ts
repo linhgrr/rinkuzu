@@ -32,6 +32,8 @@ export type AnalyticsEventName =
   | 'guest_draft_started'
   | 'guest_draft_ready'
   | 'guest_draft_failed'
+  /** Server side, a guest draft became a quiz in the new account (RIN-1447); props `locale`, `entry`. */
+  | 'guest_draft_claimed'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed'
   /** Homepage CTA click (RIN-1178); props only `cta`, `position` and `locale`. */

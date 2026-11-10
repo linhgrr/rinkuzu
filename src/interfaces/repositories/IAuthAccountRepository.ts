@@ -25,11 +25,15 @@ export interface CreatePendingAccountData {
   verificationExpires: Date;
   /** SHA-256 hashes of the guest claim tokens the browser held at sign-up (RIN-1310). */
   guestClaimHashes?: string[];
+  /** SHA-256 hashes of the guest draft tokens the browser held at sign-up (RIN-1447). */
+  guestDraftHashes?: string[];
 }
 
 export interface VerifiedEmailAccount extends AuthAccountIdentity {
   /** Guest claim token hashes stored at sign-up, removed by this verification. */
   guestClaimHashes?: string[];
+  /** Guest draft token hashes stored at sign-up, removed by this verification. */
+  guestDraftHashes?: string[];
 }
 
 export interface FailedLoginPolicy {

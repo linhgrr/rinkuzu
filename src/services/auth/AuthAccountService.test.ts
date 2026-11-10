@@ -283,6 +283,67 @@ describe('AuthAccountService', () => {
     });
   });
 
+  it('stores guest draft hashes at sign-up and claims them before the attempts (RIN-1447)', async () => {
+    const order: string[] = [];
+    const guestDrafts = {
+      claimHashed: vi.fn(async () => {
+        order.push('drafts');
+        return ['fake-quiz'];
+      }),
+    };
+    guestAttempts.claimHashed.mockImplementation(async () => {
+      order.push('attempts');
+      return [];
+    });
+    const withDrafts = new AuthAccountService(
+      repository,
+      notifier,
+      audit,
+      scheduler,
+      guestAttempts,
+      guestDrafts,
+    );
+    const token = 'D'.repeat(43);
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+
+    await withDrafts.register(
+      { email: identity.email, password: 'password', guestDraftTokens: [token, token] },
+      context,
+    );
+    const data = repository.createPending.mock.calls[0]?.[0];
+    expect(data?.guestDraftHashes).toEqual([hashGuestClaimToken(token)]);
+    expect(JSON.stringify(data)).not.toContain(token);
+
+    repository.verifyEmail.mockResolvedValue({
+      ...identity,
+      guestClaimHashes: ['hash-1'],
+      guestDraftHashes: ['draft-hash-1'],
+    });
+    await expect(withDrafts.verifyEmail('valid', context)).resolves.toMatchObject({
+      success: true,
+    });
+    expect(guestDrafts.claimHashed).toHaveBeenCalledWith(identity.id, ['draft-hash-1']);
+    expect(order).toEqual(['drafts', 'attempts']);
+  });
+
+  it('still verifies the email when the guest draft claim fails', async () => {
+    const guestDrafts = { claimHashed: vi.fn(async () => Promise.reject(new Error('db down'))) };
+    const withDrafts = new AuthAccountService(
+      repository,
+      notifier,
+      audit,
+      scheduler,
+      guestAttempts,
+      guestDrafts,
+    );
+    repository.verifyEmail.mockResolvedValue({ ...identity, guestDraftHashes: ['draft-hash-1'] });
+
+    await expect(withDrafts.verifyEmail('valid', context)).resolves.toMatchObject({
+      success: true,
+    });
+  });
+
   it('skips the guest claim when the account stored none', async () => {
     repository.verifyEmail.mockResolvedValue(identity);
 

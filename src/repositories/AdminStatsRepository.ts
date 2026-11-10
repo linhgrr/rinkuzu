@@ -68,6 +68,7 @@ interface CohortAggregate extends ActivationPathAggregate {
   startedQuiz: number;
   activated: number;
   byClaimedGuest: number;
+  byClaimedGuestDraft: number;
   w1Retained: number;
   returnedWeek1: number;
   entryRefs: (ActivationEntryRef | null)[];
@@ -219,7 +220,11 @@ export class AdminStatsRepository implements IAdminStatsRepository {
         signups: row.signups,
         material: row.material,
         activated: row.activated,
-        activatedBy: { ...toPathCounts(row), claimedGuest: row.byClaimedGuest },
+        activatedBy: {
+          ...toPathCounts(row),
+          claimedGuest: row.byClaimedGuest,
+          claimedGuestDraft: row.byClaimedGuestDraft,
+        },
         w1Retained: row.w1Retained,
         signedIn: row.signedIn,
         startedQuiz: row.startedQuiz,

@@ -9,13 +9,14 @@ const context = {
 };
 
 describe('createGuestDraftEvents', () => {
-  it('sends started / ready / failed with locale, entry and reason only', async () => {
+  it('sends started / ready / failed / claimed with locale, entry and reason only', async () => {
     const capture = vi.fn(async () => true);
     const events = createGuestDraftEvents(capture);
 
     await events.started(context);
     await events.ready(context);
     await events.failed(context, 'ocr_failed');
+    await events.claimed(context);
 
     const base = {
       locale: 'vi',
@@ -31,6 +32,7 @@ describe('createGuestDraftEvents', () => {
         'guest_draft:6730a0000000000000000001',
         { ...base, reason: 'ocr_failed' },
       ],
+      ['guest_draft_claimed', 'guest_draft:6730a0000000000000000001', base],
     ]);
     const sentKeys = capture.mock.calls.flatMap((call) => Object.keys(call.at(2) ?? {}));
     for (const forbidden of ['ip', 'token', 'fileName', 'title']) {

@@ -15,6 +15,7 @@ export interface AuthAccountPersistenceRecord {
   emailVerificationTokenHash?: string | null;
   emailVerificationExpires?: Date | null;
   guestClaimHashes?: string[];
+  guestDraftHashes?: string[];
   passwordResetTokenHash?: string | null;
   passwordResetExpires?: Date | null;
   avatar?: string | null;

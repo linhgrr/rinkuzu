@@ -43,3 +43,15 @@ export interface GuestDraftStatusDto {
   questionCount: number;
   failureReason: string | null;
 }
+
+/** Guest drafts a signed-in learner claims (RIN-1447); the browser keeps at most 5. */
+const GUEST_DRAFT_CLAIM_MAX_TOKENS = 10;
+
+export const claimGuestDraftsRequestSchema = z
+  .object({ tokens: z.array(guestClaimTokenSchema).min(1).max(GUEST_DRAFT_CLAIM_MAX_TOKENS) })
+  .strict();
+
+/** Slugs of the quizzes now in the learner's account; never which token failed. */
+export interface ClaimGuestDraftsResponseDto {
+  claimedQuizSlugs: string[];
+}

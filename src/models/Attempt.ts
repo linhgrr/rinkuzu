@@ -19,6 +19,8 @@ interface AttemptDocument {
   /** SHA-256 hex of the guest's claim token (RIN-912). Never returned or logged. */
   guestClaimTokenHash?: string;
   claimedAt?: Date;
+  /** Taken on a guest draft, then moved to the quiz made from it (RIN-1447). */
+  fromGuestDraft?: boolean;
   idempotencyKey: string;
   submissionDigest: string;
   quiz: Types.ObjectId;
@@ -115,6 +117,9 @@ const AttemptSchema = new Schema<AttemptDocument>({
   },
   claimedAt: {
     type: Date,
+  },
+  fromGuestDraft: {
+    type: Boolean,
   },
   idempotencyKey: {
     type: String,

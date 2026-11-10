@@ -6,6 +6,8 @@ export interface RegisterAccountDto {
   callbackUrl?: string;
   /** Guest claim tokens this browser holds, so verifying elsewhere still saves the result. */
   guestClaimTokens?: string[];
+  /** Guest draft tokens this browser holds: the quiz from their own PDF (RIN-1447). */
+  guestDraftTokens?: string[];
   /** UI locale of the signup page (`vi` | `en`), stored on the account (RIN-1263). */
   locale?: 'vi' | 'en';
   /** Edge country of the signup request, already sanitised to ISO alpha-2 (RIN-1268). */

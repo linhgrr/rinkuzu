@@ -157,14 +157,18 @@ describe('RegisterForm callbackUrl', () => {
   // result's claim token goes to the server with the sign-up.
   it('sends the guest claim tokens this browser holds with the sign-up', async () => {
     const { addGuestClaim } = await import('@/features/quiz/lib/guest-claims');
+    const { addGuestDraftClaim } = await import('@/features/quiz/lib/guest-draft-claims');
     const token = 'A'.repeat(43);
+    const draftToken = 'D'.repeat(43);
     addGuestClaim({ attemptId: 'attempt-1', token, quizSlug: 'nhap-mon-ai', takenAt: Date.now() });
+    addGuestDraftClaim({ token: draftToken, createdAt: Date.now() });
     try {
       await renderVi();
       await submitValidForm();
       expect(registerAccountMock).toHaveBeenCalledWith({
         ...credentials,
         guestClaimTokens: [token],
+        guestDraftTokens: [draftToken],
       });
     } finally {
       window.localStorage.clear();

@@ -64,7 +64,7 @@ function makeService() {
             signups: 10,
             material: 7,
             activated: 4,
-            activatedBy: { quiz: 2, adaptive: 1, both: 1, claimedGuest: 0 },
+            activatedBy: { quiz: 2, adaptive: 1, both: 1, claimedGuest: 0, claimedGuestDraft: 0 },
             w1Retained: 1,
             signedIn: 9,
             startedQuiz: 5,

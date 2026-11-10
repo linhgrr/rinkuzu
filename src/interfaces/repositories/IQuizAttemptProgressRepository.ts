@@ -80,3 +80,24 @@ export interface IGuestAttemptClaimRepository {
     claimableSince: Date,
   ): Promise<string[]>;
 }
+
+/** The quiz a guest draft became. */
+export interface GuestDraftQuizTarget {
+  id: string;
+  slug: string;
+}
+
+export interface IGuestDraftAttemptRepository {
+  /**
+   * Moves the attempts taken on a guest draft to the quiz made from it (RIN-1447):
+   * `quiz`, the snapshot slug and `fromGuestDraft`. Returns the claim-token hashes of
+   * the moved attempts no account owns yet, for the guest-attempt claim; never log them.
+   * Also re-keys the review-queue progress of the claimer and of every earlier owner of
+   * an attempt on the draft from the draft's snapshot slug to the quiz's slug.
+   */
+  moveGuestDraftAttempts(
+    draftId: string,
+    quiz: GuestDraftQuizTarget,
+    claimerId: string,
+  ): Promise<string[]>;
+}

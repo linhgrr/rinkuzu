@@ -168,7 +168,7 @@ describe('guest attempt claim', () => {
         signups: 2,
         material: 1,
         activated: 1,
-        activatedBy: { quiz: 1, adaptive: 0, both: 0, claimedGuest: 1 },
+        activatedBy: { quiz: 1, adaptive: 0, both: 0, claimedGuest: 1, claimedGuestDraft: 0 },
         startedQuiz: 1,
       }),
     ]);

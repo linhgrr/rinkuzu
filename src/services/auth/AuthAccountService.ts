@@ -14,6 +14,7 @@ import type { AuthAuditIdentity, IAuthAudit } from '@/interfaces/services/IAuthA
 import type { IAuthNotifier } from '@/interfaces/services/IAuthNotifier';
 import type { IDeferredTaskScheduler } from '@/interfaces/services/IDeferredTaskScheduler';
 import type { IGuestAttemptClaimService } from '@/interfaces/services/IGuestAttemptClaimService';
+import type { IGuestDraftClaimService } from '@/interfaces/services/IGuestDraftClaimService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { createSecureToken, hashToken, wasIssuedRecently } from '@/lib/auth-tokens';
 import { hashPassword } from '@/lib/password';
@@ -33,6 +34,7 @@ export class AuthAccountService implements IAuthAccountService {
     private readonly audit: IAuthAudit,
     private readonly scheduler: IDeferredTaskScheduler,
     private readonly guestAttempts: IGuestAttemptClaimService,
+    private readonly guestDrafts?: Pick<IGuestDraftClaimService, 'claimHashed'>,
   ) {}
 
   async register(
@@ -68,6 +70,7 @@ export class AuthAccountService implements IAuthAccountService {
       const passwordHash = await hashPassword(input.password);
       const verification = createSecureToken();
       const guestClaimHashes = [...new Set(input.guestClaimTokens ?? [])].map(hashGuestClaimToken);
+      const guestDraftHashes = [...new Set(input.guestDraftTokens ?? [])].map(hashGuestClaimToken);
       const account = await this.repository.createPending({
         email: input.email,
         passwordHash,
@@ -80,6 +83,7 @@ export class AuthAccountService implements IAuthAccountService {
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
         ...(guestClaimHashes.length > 0 ? { guestClaimHashes } : {}),
+        ...(guestDraftHashes.length > 0 ? { guestDraftHashes } : {}),
       });
       if (!account) {
         this.scheduleAudit('register', context, {
@@ -132,6 +136,10 @@ export class AuthAccountService implements IAuthAccountService {
           error: 'Verification link is invalid or has expired',
           statusCode: 400,
         };
+      }
+      // Drafts first: their claim moves the draft's attempts onto the new quiz (RIN-1447).
+      if (account.guestDraftHashes?.length) {
+        await this.claimGuestDrafts(account.id, account.guestDraftHashes);
       }
       if (account.guestClaimHashes?.length) {
         await this.claimGuestAttempts(account.id, account.guestClaimHashes);
@@ -315,6 +323,17 @@ export class AuthAccountService implements IAuthAccountService {
    * result and history survive a link opened in another browser (RIN-1310). A failure
    * never fails the verification; only the error class is logged, never a hash.
    */
+  private async claimGuestDrafts(userId: string, hashes: readonly string[]): Promise<void> {
+    try {
+      await this.guestDrafts?.claimHashed(userId, hashes);
+    } catch (error) {
+      logger.error(
+        { errorName: error instanceof Error ? error.name : 'unknown' },
+        'Guest draft claim at verification failed',
+      );
+    }
+  }
+
   private async claimGuestAttempts(userId: string, hashes: readonly string[]): Promise<void> {
     try {
       await this.guestAttempts.claimHashed(userId, hashes);

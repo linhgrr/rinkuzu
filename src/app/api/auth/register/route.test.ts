@@ -60,11 +60,13 @@ describe('POST /api/auth/register', () => {
   // RIN-1310: the browser's guest claim tokens travel with the sign-up.
   it('forwards the guest claim tokens to the account service', async () => {
     const token = 'A'.repeat(43);
-    const response = await POST(request({ ...validBody, guestClaimTokens: [token] }));
+    const response = await POST(
+      request({ ...validBody, guestClaimTokens: [token], guestDraftTokens: [token] }),
+    );
 
     expect(response.status).toBe(201);
     expect(registerMock).toHaveBeenCalledWith(
-      expect.objectContaining({ guestClaimTokens: [token] }),
+      expect.objectContaining({ guestClaimTokens: [token], guestDraftTokens: [token] }),
       expect.anything(),
     );
   });

@@ -745,6 +745,8 @@
     "dropNotPublic": "Không công khai",
     "dropPremium": "Premium",
     "dropEmpty": "Không có câu hỏi",
+    "dropPersonalData": "Bị gắn cờ dữ liệu cá nhân",
+    "dropHeld": "Đang tạm giữ sau báo cáo",
     "moveUp": "Chuyển “{title}” lên",
     "moveDown": "Chuyển “{title}” xuống",
     "localeFor": "Ngôn ngữ của “{title}”",

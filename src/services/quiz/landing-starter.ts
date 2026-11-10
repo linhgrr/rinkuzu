@@ -3,7 +3,6 @@ import type {
   IStarterQuizReadRepository,
 } from '@/interfaces/repositories/IStarterQuizReadRepository';
 import { logger } from '@/lib/logger';
-import { isQuizContentIndexable } from '@/lib/seo/quiz-indexability';
 import {
   getStarterQuizDropReason,
   loadStarterQuizzes,
@@ -66,9 +65,8 @@ export class BlogTryResolver {
   private async playableQuizHref(slug: string, params: QueryParams): Promise<string | null> {
     try {
       const candidate = await this.quizzes.findQuizCandidateBySlug(slug);
+      // A drop reason also covers a flagged or held quiz: playable at its URL, never promoted (RIN-1341).
       if (!candidate || getStarterQuizDropReason(candidate)) return null;
-      // A flagged or held quiz stays playable at its URL but is not promoted (RIN-1341).
-      if (!isQuizContentIndexable(candidate)) return null;
       const quick = isQuickRoundEligible(candidate.questionCount);
       return starterQuizHref({ slug: candidate.slug, quick }, params);
     } catch (error) {

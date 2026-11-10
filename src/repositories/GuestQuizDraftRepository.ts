@@ -124,6 +124,8 @@ export class GuestQuizDraftRepository
       { tokenHash: { $in: [...tokenHashes] }, status: 'ready', expiresAt: { $gt: now } },
       { apiDraftId: 1, title: 1, questions: 1, locale: 1, entry: 1 },
     )
+      // Newest first, so the claim's first slug is the draft the guest played (RIN-1485).
+      .sort({ _id: -1 })
       .lean<StoredClaimableDraft[]>()
       .exec();
     return docs.map((doc) => ({

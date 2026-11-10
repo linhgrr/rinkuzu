@@ -17,8 +17,11 @@ describe('guest quiz draft repository', () => {
     await GuestQuizDraftModel.syncIndexes();
   }, 20_000);
 
+  const olderHash = 'b'.repeat(64);
+  const newerHash = 'c'.repeat(64);
+
   afterAll(async () => {
-    await GuestQuizDraftModel.deleteMany({ tokenHash });
+    await GuestQuizDraftModel.deleteMany({ tokenHash: { $in: [tokenHash, olderHash, newerHash] } });
   }, 10_000);
 
   it('has a TTL index on expiresAt and a unique token hash', async () => {
@@ -57,5 +60,27 @@ describe('guest quiz draft repository', () => {
     expect(
       await mongoose.connection.collection('quizzes').countDocuments({ title: 'Fake quiz' }),
     ).toBe(0);
+  }, 20_000);
+
+  it('returns claimable drafts newest first, so the claim names the played one first (RIN-1485)', async () => {
+    const questions = [
+      { question: 'Fake?', options: ['a', 'b'], type: 'single' as const, correctIndex: 0 },
+    ];
+    for (const [hash, title] of [
+      [olderHash, 'Older fake quiz'],
+      [newerHash, 'Newer fake quiz'],
+    ] as const) {
+      const draft = await repository.create({
+        tokenHash: hash,
+        apiDraftId: `api-draft-${title}`,
+        locale: 'en',
+        entry: 'landing',
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      await repository.markReady(draft.id, { title, questions });
+    }
+
+    const claimable = await repository.findClaimable([olderHash, newerHash], new Date());
+    expect(claimable.map((draft) => draft.title)).toEqual(['Newer fake quiz', 'Older fake quiz']);
   }, 20_000);
 });

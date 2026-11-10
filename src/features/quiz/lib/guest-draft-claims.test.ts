@@ -2,10 +2,13 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  CLAIMED_GUEST_DRAFT_STORAGE_KEY,
   GUEST_DRAFTS_STORAGE_KEY,
   addGuestDraftClaim,
   clearGuestDraftClaims,
+  readClaimedGuestDraftQuiz,
   readGuestDraftClaims,
+  rememberClaimedGuestDraftQuiz,
 } from '@/features/quiz/lib/guest-draft-claims';
 import { GUEST_CLAIM_PENDING_COOKIE } from '@/shared/constants/starter-quiz';
 
@@ -54,5 +57,23 @@ describe('guest draft claims (RIN-1447)', () => {
     addGuestDraftClaim({ token: 'token-a', createdAt: NOW }, NOW);
     clearGuestDraftClaims();
     expect(window.localStorage.getItem(GUEST_DRAFTS_STORAGE_KEY)).toBeNull();
+  });
+
+  it('remembers the quiz a claim made for 24 hours (RIN-1485)', () => {
+    expect(readClaimedGuestDraftQuiz(NOW)).toBeNull();
+    rememberClaimedGuestDraftQuiz('fake-claimed-quiz', NOW);
+
+    expect(readClaimedGuestDraftQuiz(NOW + HOUR)).toBe('fake-claimed-quiz');
+    expect(readClaimedGuestDraftQuiz(NOW + 25 * HOUR)).toBeNull();
+  });
+
+  it('treats an unreadable claimed quiz entry as none (RIN-1485)', () => {
+    window.localStorage.setItem(CLAIMED_GUEST_DRAFT_STORAGE_KEY, '{not json');
+    expect(readClaimedGuestDraftQuiz(NOW)).toBeNull();
+    window.localStorage.setItem(
+      CLAIMED_GUEST_DRAFT_STORAGE_KEY,
+      JSON.stringify({ slug: 7, claimedAt: NOW }),
+    );
+    expect(readClaimedGuestDraftQuiz(NOW)).toBeNull();
   });
 });

@@ -52,6 +52,7 @@
     "expiredTitle": "This quiz has expired",
     "expiredBody": "Trial quizzes are kept for 24 hours. Make it again from your PDF.",
     "makeAgain": "Make it again",
+    "goToLibrary": "Go to my library",
     "loading": "Loading your quiz…"
   }
 }

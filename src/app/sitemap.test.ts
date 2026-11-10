@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { findNonIndexableOwnerCandidates, findPublicSitemapEntries, loggerError, hubData } =
   vi.hoisted(() => ({
@@ -58,6 +58,9 @@ import type {
   IQuizTopicHubRepository,
   QuizTopicHubQuizRecord,
 } from '@/interfaces/repositories/IQuizTopicHubRepository';
+import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
+import { STATIC_ROUTE_LASTMOD } from '@/lib/seo/static-lastmod';
+import { canonicalFor } from '@/lib/seo';
 import { PUBLIC_CATALOG_OWNER_EMAILS } from '@/shared/constants/analytics-exclusions';
 import sitemap from './sitemap';
 import { GET as localeSitemapGET } from './[locale]/sitemap.xml/route';
@@ -244,6 +247,71 @@ describe('sitemap', () => {
     expect(xml).not.toContain('/explore/toan');
     expect(xml).not.toContain('/en/explore/sinh-hoc');
     expect(loggerError).not.toHaveBeenCalled();
+  });
+
+  // RIN-1499: lastmod is the last real content change, never the request time.
+  describe('lastmod', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const sitemapAt = async (iso: string) => {
+      vi.setSystemTime(new Date(iso));
+      return new Map(
+        (await sitemap()).map((entry) => [
+          entry.url,
+          new Date(entry.lastModified ?? Number.NaN).toISOString(),
+        ]),
+      );
+    };
+
+    it('returns the same lastmod for every URL a minute and a day later', async () => {
+      serveQuizzes([
+        {
+          slug: 'on-tap-sinh-hoc-000020',
+          authorId: 'learner-1',
+          createdAt: new Date('2026-10-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-10-05T08:30:00.000Z'),
+        },
+      ]);
+      vi.useFakeTimers({ toFake: ['Date'] });
+
+      const now = '2030-01-01T10:00:00.000Z';
+      const first = await sitemapAt(now);
+      const minuteLater = await sitemapAt('2030-01-01T10:01:00.000Z');
+      const dayLater = await sitemapAt('2030-01-02T10:00:00.000Z');
+
+      expect(first.size).toBeGreaterThan(INDEXABLE_STATIC_PUBLIC_ROUTES.length);
+      expect(minuteLater).toEqual(first);
+      for (const [url, lastModified] of first) {
+        expect(dayLater.get(url), url).toBe(lastModified);
+        // Content in the repo and the fake DB predates the faked "now".
+        expect(lastModified < now, `${url} ${lastModified}`).toBe(true);
+      }
+      const quizUrl = [...first.keys()].find((url) => url.includes('/quiz/'));
+      expect(quizUrl && first.get(quizUrl)).toBe('2026-10-05T08:30:00.000Z');
+    });
+
+    it('dates every static page by its constant; blog pages by their newest post', async () => {
+      serveQuizzes([]);
+      const byUrl = await sitemapAt(new Date().toISOString());
+
+      expect(Object.keys(STATIC_ROUTE_LASTMOD).sort()).toEqual(
+        [...INDEXABLE_STATIC_PUBLIC_ROUTES].sort(),
+      );
+      for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
+        const constant = `${STATIC_ROUTE_LASTMOD[route]}T00:00:00.000Z`;
+        expect(new Date(constant).toISOString(), route).toBe(constant);
+        for (const locale of ['vi', 'en']) {
+          const lastModified = byUrl.get(canonicalFor(locale, route));
+          if (route.startsWith('/blog')) {
+            expect(lastModified && lastModified >= constant, route).toBe(true);
+          } else {
+            expect(lastModified, route).toBe(constant);
+          }
+        }
+      }
+    });
   });
 
   // RIN-1497: the guest PDF tool is indexable with a constant lastmod; its player is not.

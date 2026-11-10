@@ -465,6 +465,8 @@ const GUEST_UPLOAD_COPY = {
     finish: /finish \(1\/1 answered\)/i,
     submit: 'Submit Quiz',
     saveTitle: 'Sign up to save this quiz and your result',
+    expiredTitle: 'This quiz has expired',
+    library: 'Go to my library',
   },
   vi: {
     create: 'Tạo quiz',
@@ -472,6 +474,8 @@ const GUEST_UPLOAD_COPY = {
     finish: /hoàn thành \(1\/1 đã trả lời\)/i,
     submit: 'Nộp bài',
     saveTitle: 'Đăng ký để lưu quiz này và kết quả',
+    expiredTitle: 'Quiz này đã hết hạn',
+    library: 'Tới thư viện của tôi',
   },
 } as const;
 
@@ -1651,6 +1655,25 @@ test.describe('production critical paths', () => {
               { timeout: 15_000 },
             )
             .toEqual([null, null]);
+
+          // RIN-1485: Retake on the draft result (its href) opens the claimed quiz in the
+          // signed-in player, not the expired card.
+          const claimedQuiz = await fixture.db
+            .collection('quizzes')
+            .findOne({ sourceDraftId: seeded.draft?.apiDraftId });
+          const claimedSlug = String(claimedQuiz?.['slug']);
+          await page.goto(`/${locale}/quiz/guest-draft-play`);
+          await expect(page).toHaveURL(new RegExp(`/${locale}/quiz/${claimedSlug}$`));
+          await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+
+          // Without the claimed quiz, a signed-in visitor's expired card points to the library.
+          await page.evaluate(() => window.localStorage.removeItem('rinkuzu.claimedGuestDraft.v1'));
+          await page.goto(`/${locale}/try/pdf/play`);
+          await expect(page.getByRole('heading', { name: copy.expiredTitle })).toBeVisible();
+          await expect(page.getByRole('link', { name: copy.library })).toHaveAttribute(
+            'href',
+            `/${locale}/my-quizzes`,
+          );
         } finally {
           if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
           await fixture.db.collection('auth_rate_limits').deleteMany({

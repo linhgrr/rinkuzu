@@ -10,6 +10,9 @@ export const ROUTES = {
   START: '/start',
   /** Homepage play-first button (RIN-1178): redirects to a guest starter quiz, else /quizzes. */
   TRY: '/try',
+  /** Guest quiz from the visitor's own PDF (RIN-1448): upload, then play on `TRY_PDF_PLAY`. */
+  TRY_PDF: '/try/pdf',
+  TRY_PDF_PLAY: '/try/pdf/play',
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',

@@ -17,6 +17,11 @@
       "patterns": ["^/\\[locale\\]/(?:login|register)$"]
     },
     {
+      "name": "guest-try-pdf",
+      "limit": "340 KiB",
+      "patterns": ["^/\\[locale\\]/try/pdf(?:/.*)?$"]
+    },
+    {
       "name": "auth-recovery",
       "limit": "290 KiB",
       "patterns": ["^/\\[locale\\]/(?:check-email|forgot-password|reset-password|verify-email)$"]

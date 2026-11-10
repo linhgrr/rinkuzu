@@ -14,6 +14,8 @@ const {
   resolveAdaptiveProxyTimeoutMsMock,
   assertCanContributeMock,
   submitSavedQuizMock,
+  updateQuizMock,
+  restorePublicWithoutSubmissionMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   createQuizFromDraftMock: vi.fn(),
@@ -28,6 +30,8 @@ const {
   resolveAdaptiveProxyTimeoutMsMock: vi.fn(() => 5_000),
   assertCanContributeMock: vi.fn(),
   submitSavedQuizMock: vi.fn(),
+  updateQuizMock: vi.fn(),
+  restorePublicWithoutSubmissionMock: vi.fn(),
 }));
 
 vi.mock('@/auth', () => ({ auth: authMock }));
@@ -44,12 +48,14 @@ vi.mock('@/lib/quiz-factory', () => ({
   getQuizService: () => ({
     createQuizFromDraft: createQuizFromDraftMock,
     getQuizById: getQuizByIdMock,
+    updateQuiz: updateQuizMock,
   }),
 }));
 vi.mock('@/lib/premium-quiz-factory', () => ({
   getPremiumQuizService: () => ({
     assertCanContribute: assertCanContributeMock,
     submitSavedQuiz: submitSavedQuizMock,
+    restorePublicWithoutSubmission: restorePublicWithoutSubmissionMock,
   }),
 }));
 
@@ -111,6 +117,8 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
     });
     submitSavedQuizMock.mockResolvedValue({ id: 'premium-submission-1' });
     assertCanContributeMock.mockResolvedValue(undefined);
+    updateQuizMock.mockResolvedValue({ success: true, data: { id: QUIZ_ID, slug: 'arithmetic' } });
+    restorePublicWithoutSubmissionMock.mockResolvedValue(true);
     getQuizByIdMock.mockResolvedValue({
       success: true,
       data: { id: QUIZ_ID, slug: 'arithmetic' },
@@ -391,6 +399,84 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         });
       }
       expect(createQuizFromDraftMock).not.toHaveBeenCalled();
+    });
+
+    describe('Premium retry on an already submitted draft (RIN-1413)', () => {
+      const premiumBody = { ...validBody, submitToPremium: true, rightsAttested: true };
+
+      beforeEach(() => {
+        fetchQuizDraftServerMock.mockResolvedValue({
+          id: DRAFT_ID,
+          status: 'submitted',
+          submittedQuizId: QUIZ_ID,
+          pdf: {
+            s3Key: `uploads/premium_sources/${DRAFT_ID}/source.pdf`,
+            retainedForPremium: true,
+            fileHash: 'a'.repeat(64),
+          },
+        });
+      });
+
+      it('sets the quiz private again before it submits it, so the submission can be approved', async () => {
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(200);
+        expect(updateQuizMock).toHaveBeenCalledWith(
+          QUIZ_ID,
+          { submitToPremium: true },
+          USER_ID,
+          'user',
+        );
+        expect(submitSavedQuizMock).toHaveBeenCalledWith(USER_ID, {
+          quizId: QUIZ_ID,
+          rightsAttested: true,
+          documentFingerprint: 'a'.repeat(64),
+          sourceObjectKey: `uploads/premium_sources/${DRAFT_ID}/source.pdf`,
+        });
+        const [privatized] = updateQuizMock.mock.invocationCallOrder;
+        const [submitted] = submitSavedQuizMock.mock.invocationCallOrder;
+        expect(privatized).toBeLessThan(submitted ?? 0);
+        expect(createQuizFromDraftMock).not.toHaveBeenCalled();
+      });
+
+      it('reports the quiz public again when the retried submission fails too', async () => {
+        submitSavedQuizMock.mockRejectedValueOnce(
+          new PremiumSubmissionFailedError(QUIZ_ID, new Error('storage copy failed')),
+        );
+
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(502);
+        await expect(response.json()).resolves.toMatchObject({
+          success: false,
+          error: {
+            code: 'premium_submission_failed',
+            meta: { visibility: 'public', quizId: QUIZ_ID },
+          },
+        });
+      });
+
+      it('does not submit when the quiz could not be set private', async () => {
+        updateQuizMock.mockResolvedValue({
+          success: false,
+          code: 'internal_error',
+          error: 'Failed to update quiz',
+          statusCode: 500,
+        });
+
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(500);
+        expect(submitSavedQuizMock).not.toHaveBeenCalled();
+      });
+
+      it('leaves the quiz alone when the retry does not ask for Premium', async () => {
+        const response = await POST(submitRequest(), routeContext());
+
+        expect(response.status).toBe(200);
+        expect(updateQuizMock).not.toHaveBeenCalled();
+        expect(submitSavedQuizMock).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -709,6 +795,88 @@ describe('POST /api/quiz-drafts/[id]/submit', () => {
         'Submit draft error',
       );
       expect(createQuizFromDraftMock).not.toHaveBeenCalled();
+    });
+
+    describe('draft step fails after a Premium save (RIN-1413)', () => {
+      const premiumBody = { ...validBody, submitToPremium: true, rightsAttested: true };
+
+      it('sets the quiz public again when the draft cannot be marked submitted', async () => {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue(new Response('upstream failed', { status: 503 })),
+        );
+
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(502);
+        await expect(response.json()).resolves.toMatchObject({
+          success: false,
+          error: { code: 'upstream_error', meta: { quizId: QUIZ_ID, upstreamStatus: 503 } },
+        });
+        expect(restorePublicWithoutSubmissionMock).toHaveBeenCalledWith(QUIZ_ID);
+        expect(submitSavedQuizMock).not.toHaveBeenCalled();
+      });
+
+      it('sets the quiz public again when the retained PDF is missing', async () => {
+        fetchQuizDraftServerMock
+          .mockResolvedValueOnce({ id: DRAFT_ID, status: 'ready', submittedQuizId: null })
+          .mockResolvedValueOnce({
+            id: DRAFT_ID,
+            status: 'submitted',
+            submittedQuizId: QUIZ_ID,
+            pdf: { s3Key: null, retainedForPremium: false },
+          });
+
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(502);
+        await expect(response.json()).resolves.toMatchObject({
+          success: false,
+          error: { code: 'upstream_error', meta: { draftId: DRAFT_ID, quizId: QUIZ_ID } },
+        });
+        expect(restorePublicWithoutSubmissionMock).toHaveBeenCalledWith(QUIZ_ID);
+        expect(submitSavedQuizMock).not.toHaveBeenCalled();
+      });
+
+      it('keeps the 500 when the draft lookup after the save throws', async () => {
+        fetchQuizDraftServerMock
+          .mockResolvedValueOnce({ id: DRAFT_ID, status: 'ready', submittedQuizId: null })
+          .mockRejectedValueOnce(new Error('adaptive down'));
+
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(500);
+        expect(restorePublicWithoutSubmissionMock).toHaveBeenCalledWith(QUIZ_ID);
+      });
+
+      it('leaves recovery to the Premium service when the submission itself fails', async () => {
+        fetchQuizDraftServerMock
+          .mockResolvedValueOnce({ id: DRAFT_ID, status: 'ready', submittedQuizId: null })
+          .mockResolvedValueOnce({
+            id: DRAFT_ID,
+            status: 'submitted',
+            submittedQuizId: QUIZ_ID,
+            pdf: {
+              s3Key: `uploads/premium_sources/${DRAFT_ID}/source.pdf`,
+              retainedForPremium: true,
+            },
+          });
+        submitSavedQuizMock.mockRejectedValueOnce(new Error('db write failed'));
+
+        const response = await POST(submitRequest(premiumBody), routeContext());
+
+        expect(response.status).toBe(500);
+        expect(restorePublicWithoutSubmissionMock).not.toHaveBeenCalled();
+      });
+
+      it('does not touch visibility on a draft sync failure without Premium', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+        const response = await POST(submitRequest(), routeContext());
+
+        expect(response.status).toBe(502);
+        expect(restorePublicWithoutSubmissionMock).not.toHaveBeenCalled();
+      });
     });
 
     it('maps unexpected createQuizFromDraft failures to 500', async () => {

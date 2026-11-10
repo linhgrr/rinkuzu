@@ -93,7 +93,7 @@ function Pagination({
               onClick={() => onPageChange(page)}
               className={`h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full font-home text-sm font-semibold flex items-center justify-center transition-colors ${
                 currentPage === page
-                  ? '!border-brand-action !bg-brand-action !text-brand-action-text shadow-sm'
+                  ? '!border-brand-action-strong !bg-brand-action-strong !text-white shadow-sm'
                   : 'font-home text-ink hover:bg-surface-blue'
               }`}
             >

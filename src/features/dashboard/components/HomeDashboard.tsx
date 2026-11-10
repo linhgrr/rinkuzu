@@ -202,7 +202,7 @@ function HomeHero({ title, description, cta, uploadLabel }: HomeHeroProps) {
         {cta ? (
           <Link
             href={cta.href}
-            className="inline-flex rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold leading-[1.4] text-brand-action-text hover:bg-brand-action-hover sm:text-lg"
+            className="inline-flex rounded-full bg-brand-action-strong px-5 py-3 font-home text-base font-semibold leading-[1.4] text-white hover:bg-brand-action-strong-hover sm:text-lg"
             data-testid="home-hero-cta"
           >
             {cta.label}

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('checkout design contract', () => {
-  it('keeps the approved bright-orange action treatment with white text', () => {
+  it('keeps the brand action tokens and puts the .btn-primary white label on the strong step', () => {
     const css = fs.readFileSync('src/app/globals.css', 'utf8');
 
     expect(css).toContain('--cta: var(--primary);');
@@ -10,7 +10,10 @@ describe('checkout design contract', () => {
     expect(css).toContain('--brand-action-hover: var(--primary-5);');
     expect(css).toContain('--brand-action-active: var(--primary-7);');
     expect(css).toContain('--brand-action-text: var(--neutral-white);');
-    expect(css).toMatch(/\.btn-primary[\s\S]*?color:\s*var\(--brand-action-text\)/u);
+    // RIN-1492: white on --brand-action was 2.57:1.
+    expect(css).toMatch(
+      /\.btn-primary \{[^}]*background: var\(--brand-action-strong\);[^}]*color: var\(--neutral-white\)/u,
+    );
   });
 
   it('uses a solid focus token for buttons instead of the translucent token', () => {

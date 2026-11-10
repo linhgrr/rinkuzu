@@ -86,7 +86,11 @@ describe('AppChrome', () => {
       'href',
       '#app-main-content',
     );
-    expect(screen.getByRole('link', { name: 'home' })).toHaveAttribute('aria-current', 'page');
+    const home = screen.getByRole('link', { name: 'home' });
+    expect(home).toHaveAttribute('aria-current', 'page');
+    // RIN-1503: text-accent on the peach fill was 2.13:1.
+    expect(home).toHaveClass('bg-accent-soft', 'text-accent-ink');
+    expect(home).not.toHaveClass('text-accent');
     const creditLinks = screen.getAllByRole('link', { name: '7 credits' });
     expect(creditLinks).toHaveLength(2);
     creditLinks.forEach((link) => expect(link).toHaveAttribute('href', '/premium-quizzes'));

@@ -125,6 +125,7 @@ module.exports = {
           warm: 'var(--accent-warm)',
           pale: 'var(--accent-pale)',
           text: 'var(--accent-text)',
+          ink: 'var(--accent-ink)',
         },
         line: {
           DEFAULT: 'var(--line)',

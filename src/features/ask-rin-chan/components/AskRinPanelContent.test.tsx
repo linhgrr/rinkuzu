@@ -8,6 +8,8 @@ import { AskRinPanelContent } from './AskRinPanelContent';
 const mocks = vi.hoisted(() => ({
   fetchAskRinAgent: vi.fn(),
   getAskRinConversation: vi.fn(),
+  registerAskRinContext: vi.fn(),
+  locale: 'vi',
 }));
 
 // Stable `t` per namespace: the panel's hooks list it as an effect/memo dependency.
@@ -21,13 +23,11 @@ vi.mock('next-intl', () => ({
     }
     return translate;
   },
+  useLocale: () => mocks.locale,
 }));
 
 vi.mock('@/lib/ask-rin-chan/client', () => ({
-  registerAskRinContext: vi.fn(async () => ({
-    exerciseContextId: 'ctx-test-1',
-    exerciseContextToken: 'fake-context-token',
-  })),
+  registerAskRinContext: mocks.registerAskRinContext,
   getAskRinConversation: mocks.getAskRinConversation,
   deleteAskRinConversation: vi.fn(async () => undefined),
 }));
@@ -126,6 +126,12 @@ describe('AskRinPanelContent run states', () => {
     mocks.fetchAskRinAgent.mockReset();
     mocks.getAskRinConversation.mockReset();
     mocks.getAskRinConversation.mockResolvedValue({ messages: [] });
+    mocks.registerAskRinContext.mockReset();
+    mocks.registerAskRinContext.mockResolvedValue({
+      exerciseContextId: 'ctx-test-1',
+      exerciseContextToken: 'fake-context-token',
+    });
+    mocks.locale = 'vi';
     HTMLDialogElement.prototype.showModal = vi.fn(function showModal(this: HTMLDialogElement) {
       this.setAttribute('open', '');
     });
@@ -147,6 +153,27 @@ describe('AskRinPanelContent run states', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it.each(['vi', 'en'])(
+    'registers the context with the UI locale %s so replies follow it (RIN-1270)',
+    async (locale) => {
+      mocks.locale = locale;
+      render(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
+      await waitFor(() => expect(mocks.registerAskRinContext).toHaveBeenCalledTimes(1), SLOW);
+      expect(mocks.registerAskRinContext).toHaveBeenCalledWith({ ...QUIZ_CONTEXT, locale });
+    },
+  );
+
+  it('registers a new context when the UI locale changes (RIN-1270)', async () => {
+    const view = render(
+      <AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />,
+    );
+    await waitFor(() => expect(mocks.registerAskRinContext).toHaveBeenCalledTimes(1), SLOW);
+    mocks.locale = 'en';
+    view.rerender(<AskRinPanelContent isOpen onClose={() => undefined} context={QUIZ_CONTEXT} />);
+    await waitFor(() => expect(mocks.registerAskRinContext).toHaveBeenCalledTimes(2), SLOW);
+    expect(mocks.registerAskRinContext).toHaveBeenLastCalledWith({ ...QUIZ_CONTEXT, locale: 'en' });
   });
 
   it('shows the thinking bubble while Rin-chan is streaming', async () => {

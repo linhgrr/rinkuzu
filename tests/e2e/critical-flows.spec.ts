@@ -751,7 +751,16 @@ test.describe('production critical paths', () => {
           new URL(response.url()).pathname.startsWith('/api/ask-rin-chan/conversations/') &&
           response.request().method() === 'GET',
       );
+      const contextRegistered = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/ask-rin-chan/contexts' &&
+          response.request().method() === 'POST',
+      );
       await page.getByRole('button', { name: 'Ask Rin-chan', exact: true }).click();
+      // The UI locale picks the reply language, and the proxy must pass it through (RIN-1270).
+      const registration = await contextRegistered;
+      expect(registration.request().postDataJSON()).toMatchObject({ locale: 'en' });
+      expect(registration.status()).toBe(200);
       await historyLoaded;
       const panel = page.getByRole('dialog');
       await expect(

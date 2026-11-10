@@ -13,7 +13,7 @@ import {
 import { HttpAgent } from '@ag-ui/client';
 import { fromAgUiMessages, useAgUiRuntime } from '@assistant-ui/react-ag-ui';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   HiArrowUp,
@@ -456,7 +456,10 @@ export function AskRinPanelContent({
   contextPreview,
   onHistoryChange,
 }: AskRinPanelProps) {
-  const serializedContext = JSON.stringify(context);
+  // The UI locale travels in the signed context token and picks the reply language, so a
+  // locale switch must register a new context (RIN-1270).
+  const locale = useLocale();
+  const serializedContext = JSON.stringify({ ...context, locale });
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="wide" className="overflow-hidden sm:max-w-2xl">

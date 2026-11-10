@@ -11,13 +11,13 @@ const COPY = {
     heroPill: 'Thử với PDF của bạn – không cần tài khoản',
     hubCta: 'Thử với PDF của bạn – không cần tài khoản',
     hubTitle: 'Tạo quiz',
-    tryPdfTitle: 'Biến PDF của bạn thành quiz, làm ngay',
+    tryPdfTitle: 'Tạo câu hỏi trắc nghiệm từ PDF, làm ngay',
   },
   en: {
     heroPill: 'Try it with your own PDF, no account needed',
     hubCta: 'Try it with your own PDF, no account needed',
     hubTitle: 'Create a quiz',
-    tryPdfTitle: 'Turn your PDF into a quiz and play it now',
+    tryPdfTitle: 'PDF to quiz generator: turn your PDF into a quiz now',
   },
 } as const;
 

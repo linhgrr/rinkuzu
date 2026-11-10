@@ -1,11 +1,11 @@
 {
   "meta": {
-    "title": "Turn your PDF into a quiz, no account needed",
-    "description": "Upload a short PDF and play a quiz from it right away, no account needed."
+    "title": "Free PDF to Quiz Generator, No Account | RinKuzu",
+    "description": "Free PDF to quiz generator: upload a short PDF, Rin writes up to 10 multiple-choice questions and you play them right away. No account needed."
   },
   "upload": {
     "badge": "No account needed",
-    "title": "Turn your PDF into a quiz and play it now",
+    "title": "PDF to quiz generator: turn your PDF into a quiz now",
     "subtitle": "Up to {pages} pages and {mb} MB. Rin writes up to 10 questions and you play them straight away, no editing.",
     "dropzoneLabel": "PDF document",
     "clickToUpload": "Click to upload",

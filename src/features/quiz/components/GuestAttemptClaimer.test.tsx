@@ -6,6 +6,7 @@ import { GUEST_CLAIMS_STORAGE_KEY, addGuestClaim } from '@/features/quiz/lib/gue
 import {
   GUEST_DRAFTS_STORAGE_KEY,
   addGuestDraftClaim,
+  readClaimedGuestDraftQuiz,
 } from '@/features/quiz/lib/guest-draft-claims';
 
 const { captureMock, session } = vi.hoisted(() => ({
@@ -165,6 +166,8 @@ describe('GuestAttemptClaimer (RIN-921)', () => {
     ]);
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ tokens: [TOKEN_B] });
     expect(window.localStorage.getItem(GUEST_DRAFTS_STORAGE_KEY)).toBeNull();
+    // Retake on the draft result now opens this quiz (RIN-1485).
+    expect(readClaimedGuestDraftQuiz()).toBe('fake-quiz');
   });
 
   it('keeps the draft tokens on a 5xx and still claims the attempts', async () => {

@@ -6,7 +6,12 @@ import {
   isGuestDraftGone,
   submitGuestDraftAttempt,
 } from '@/features/guest-draft/api/guest-draft-api';
-import { readGuestDraftClaims } from '@/features/quiz/lib/guest-draft-claims';
+import {
+  readClaimedGuestDraftQuiz,
+  readGuestDraftClaims,
+} from '@/features/quiz/lib/guest-draft-claims';
+import { useRouter } from '@/i18n/navigation';
+import { ROUTES } from '@/shared/constants/routes';
 import type { QuizAttemptSubmitter } from '@/features/quiz/hooks/useQuizSubmission';
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
@@ -21,10 +26,12 @@ const NO_TOKEN = Symbol('no guest draft token');
 /**
  * The newest guest draft this browser holds (RIN-1448), loaded for the player. The token
  * comes from localStorage only, never the URL; no token or a 404 means the draft is gone.
+ * A draft gone because sign-in claimed it opens the quiz the claim made (RIN-1485).
  */
 export function useGuestDraftPlay() {
   const [load, setLoad] = useState<GuestDraftPlayLoad>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -43,17 +50,19 @@ export function useGuestDraftPlay() {
       },
       (error: unknown) => {
         if (cancelled) return;
-        setLoad(
-          error === NO_TOKEN || isGuestDraftGone(error)
-            ? { status: 'expired' }
-            : { status: 'error', error },
-        );
+        if (error !== NO_TOKEN && !isGuestDraftGone(error)) {
+          setLoad({ status: 'error', error });
+          return;
+        }
+        const claimedSlug = readClaimedGuestDraftQuiz();
+        if (claimedSlug) router.replace(ROUTES.QUIZ.VIEW(encodeURIComponent(claimedSlug)));
+        else setLoad({ status: 'expired' });
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [attempt]);
+  }, [attempt, router]);
 
   return {
     load,

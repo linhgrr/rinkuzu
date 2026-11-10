@@ -4,6 +4,7 @@ import { clearGuestClaims, readGuestClaims } from '@/features/quiz/lib/guest-cla
 import {
   clearGuestDraftClaims,
   readGuestDraftClaims,
+  rememberClaimedGuestDraftQuiz,
 } from '@/features/quiz/lib/guest-draft-claims';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { ApiResponseError, fetchApiData } from '@/lib/api/client';
@@ -18,11 +19,17 @@ async function postStoredGuestDrafts(): Promise<void> {
   const tokens = readGuestDraftClaims().map((claim) => claim.token);
   if (tokens.length === 0) return;
   try {
-    await fetchApiData<ClaimGuestDraftsResponseDto>('/api/guest-drafts/claim', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tokens }),
-    });
+    const { claimedQuizSlugs } = await fetchApiData<ClaimGuestDraftsResponseDto>(
+      '/api/guest-drafts/claim',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokens }),
+      },
+    );
+    // Newest draft first: the one the draft player and its Retake open (RIN-1485).
+    const [newestSlug] = claimedQuizSlugs;
+    if (newestSlug) rememberClaimedGuestDraftQuiz(newestSlug);
     // The server already dropped wrong, expired or used tokens: forget them all.
     clearGuestDraftClaims();
   } catch (error) {

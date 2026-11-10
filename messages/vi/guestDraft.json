@@ -52,6 +52,7 @@
     "expiredTitle": "Quiz này đã hết hạn",
     "expiredBody": "Quiz từ PDF dùng thử chỉ được giữ 24 giờ. Tạo lại từ PDF của bạn.",
     "makeAgain": "Tạo lại",
+    "goToLibrary": "Tới thư viện của tôi",
     "loading": "Đang tải quiz…"
   }
 }

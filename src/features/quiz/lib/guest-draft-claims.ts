@@ -78,3 +78,46 @@ export function clearGuestDraftClaims(): void {
     // Disabled storage: nothing was stored.
   }
 }
+
+/** @public Tests read the raw entry. */
+export const CLAIMED_GUEST_DRAFT_STORAGE_KEY = 'rinkuzu.claimedGuestDraft.v1';
+
+interface ClaimedGuestDraftQuiz {
+  slug: string;
+  /** Epoch milliseconds of the claim. */
+  claimedAt: number;
+}
+
+function isClaimedGuestDraftQuiz(value: unknown): value is ClaimedGuestDraftQuiz {
+  if (typeof value !== 'object' || value === null) return false;
+  const entry = value as Record<keyof ClaimedGuestDraftQuiz, unknown>;
+  return typeof entry.slug === 'string' && typeof entry.claimedAt === 'number';
+}
+
+/**
+ * The quiz the sign-in claim made from the newest draft (RIN-1485): the draft is gone,
+ * so Retake on its result and the draft player open this quiz instead. A slug only.
+ */
+export function rememberClaimedGuestDraftQuiz(slug: string, now: number = Date.now()): void {
+  try {
+    getStorage()?.setItem(
+      CLAIMED_GUEST_DRAFT_STORAGE_KEY,
+      JSON.stringify({ slug, claimedAt: now } satisfies ClaimedGuestDraftQuiz),
+    );
+  } catch {
+    // Quota or disabled storage: Retake shows the expired card with its library link.
+  }
+}
+
+/** The claimed quiz's slug for 24 h after the claim, else null. */
+export function readClaimedGuestDraftQuiz(now: number = Date.now()): string | null {
+  try {
+    const parsed: unknown = JSON.parse(
+      getStorage()?.getItem(CLAIMED_GUEST_DRAFT_STORAGE_KEY) ?? 'null',
+    );
+    if (!isClaimedGuestDraftQuiz(parsed)) return null;
+    return now - parsed.claimedAt <= GUEST_DRAFT_MAX_AGE_MS ? parsed.slug : null;
+  } catch {
+    return null;
+  }
+}

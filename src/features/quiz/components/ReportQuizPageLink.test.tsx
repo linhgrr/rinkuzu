@@ -1,5 +1,7 @@
 /** @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -12,6 +14,8 @@ import { ApiResponseError } from '@/lib/api/client';
 
 const { reportQuizPageMock } = vi.hoisted(() => ({ reportQuizPageMock: vi.fn() }));
 
+// vitest resolves next/dynamic to the Pages loader; the app loader matches production.
+vi.mock('next/dynamic', () => import('next/dist/api/app-dynamic'));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/features/quiz/api/quiz-interaction-api', () => ({
   reportQuizPage: reportQuizPageMock,
@@ -40,6 +44,8 @@ function renderLink(props: { viewerEmail?: string | null; ownedByViewer?: boolea
 async function openDialog() {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: 'Report' }));
+  // The dialog chunk loads on the first click (RIN-1428).
+  await screen.findByRole('dialog');
   return user;
 }
 
@@ -149,6 +155,31 @@ describe('ReportQuizPageLink (RIN-1344)', () => {
     await user.click(screen.getByRole('radio', { name: 'Copyright' }));
     await user.click(screen.getByRole('button', { name: 'Send report' }));
     expect(reportQuizPageMock).toHaveBeenCalledWith('biology-10', { reason: 'copyright' });
+  });
+
+  it('loads the dialog only after the first click and keeps it open', async () => {
+    renderLink();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await openDialog();
+    expect(screen.getByRole('dialog', { name: 'Report this quiz' })).toBeTruthy();
+  });
+
+  it('keeps the form libraries out of the trigger module (RIN-1428)', () => {
+    const source = readFileSync(
+      path.join(process.cwd(), 'src/features/quiz/components/ReportQuizPageLink.tsx'),
+      'utf8',
+    );
+    const imports = [...source.matchAll(/from '([^']+)'/g)].map((match) => match[1]);
+    expect(imports).toContain('react');
+    for (const heavy of [
+      'react-hook-form',
+      '@hookform/resolvers/zod',
+      'zod',
+      '@/components/ui/Modal',
+      '@/components/ui/Input',
+    ]) {
+      expect(imports).not.toContain(heavy);
+    }
   });
 
   it('keeps the honeypot out of the tab order', async () => {

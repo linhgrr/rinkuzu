@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import enReport from '../../../../messages/en/report.json';
 import enErrors from '../../../../messages/en/errors.json';
 import { ReportQuizPageLink } from '@/features/quiz/components/ReportQuizPageLink';
@@ -41,15 +41,26 @@ function renderLink(props: { viewerEmail?: string | null; ownedByViewer?: boolea
   );
 }
 
+/** Wait for the lazy dialog well past the default 1 s `findBy*` (RIN-1513). */
+const DIALOG_TIMEOUT_MS = 5_000;
+
 async function openDialog() {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: 'Report' }));
-  // The dialog chunk loads on the first click (RIN-1428).
-  await screen.findByRole('dialog');
+  // The dialog chunk loads on the first click (RIN-1428); beforeAll has it in
+  // the module cache, the timeout covers a slow render under gate load.
+  await screen.findByRole('dialog', undefined, { timeout: DIALOG_TIMEOUT_MS });
   return user;
 }
 
 describe('ReportQuizPageLink (RIN-1344)', () => {
+  // The first `import()` of the dialog transforms react-hook-form, zod, Modal
+  // and Input; under coverage on a loaded gate that outlasted the 1 s default
+  // wait (RIN-1513). Loading it once here makes every open hit the module cache.
+  beforeAll(async () => {
+    await import('@/features/quiz/components/ReportQuizPageDialog');
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     reportQuizPageMock.mockResolvedValue(undefined);

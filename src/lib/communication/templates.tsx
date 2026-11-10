@@ -31,7 +31,7 @@ interface MailFrameProps {
   footer?: ReactNode;
 }
 
-function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
+export function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
   return (
     <Html lang={lang}>
       <Head />
@@ -62,6 +62,16 @@ function MailFrame({ preview, children, footer, lang = 'vi' }: MailFrameProps) {
     </Html>
   );
 }
+
+/** Shared transactional styles, for templates kept in their own files (RIN-1348). */
+export const MAIL_BODY_TEXT = { color: '#403832', fontSize: '15px', lineHeight: '24px' } as const;
+export const MAIL_FOOTER_TEXT = { color: '#736b63', fontSize: '12px', lineHeight: '18px' } as const;
+export const MAIL_BUTTON = {
+  backgroundColor: '#9a5c32',
+  borderRadius: '8px',
+  color: '#fff',
+  padding: '12px 20px',
+} as const;
 
 const CONVERSATION_TEXT = { color: '#222222', fontSize: '15px', lineHeight: '24px' } as const;
 const CONVERSATION_FOOTNOTE = { color: '#666666', fontSize: '13px', lineHeight: '20px' } as const;
@@ -104,7 +114,9 @@ function FeedbackPreferencesNote({ url, lead }: { url: string; lead: string }) {
   );
 }
 
-async function renderElement(element: React.ReactElement): Promise<RenderedCommunicationMail> {
+export async function renderElement(
+  element: React.ReactElement,
+): Promise<RenderedCommunicationMail> {
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
   return { html, text };
 }

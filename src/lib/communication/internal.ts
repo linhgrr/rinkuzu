@@ -82,9 +82,15 @@ export function digest(value: string): string {
 
 export async function queueMail(
   input: {
-    kind: 'support_notification' | 'feedback_invitation' | 'feedback_reply' | 'feedback_reminder';
-    entityType: 'support_ticket' | 'feedback_conversation';
+    kind:
+      | 'support_notification'
+      | 'feedback_invitation'
+      | 'feedback_reply'
+      | 'feedback_reminder'
+      | 'premium_decision';
+    entityType: 'support_ticket' | 'feedback_conversation' | 'premium_submission';
     entityId: Types.ObjectId;
+    userId?: Types.ObjectId;
     to: string;
     from: string;
     replyTo?: string;

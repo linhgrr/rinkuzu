@@ -2,16 +2,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './support/auth-rate-limit-keys';
 import { createE2EUserEmail } from './support/fixture-identifiers';
 import { skipPostSignInStarter } from './support/post-signin';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
-const E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS = [
-  'auth:credentials_ip:127.0.0.1',
-  'auth:credentials_ip:::1',
-  'auth:credentials_ip:unknown',
-] as const;
 const passwordHashPromise = hash(E2E_PASSWORD, 4);
 
 type SeededUser = {
@@ -1102,6 +1098,8 @@ test.describe('production critical paths', () => {
 
       const dialog = page.getByRole('dialog', { name: 'Report this quiz' });
       await expect(dialog).toBeVisible();
+      // The dialog chunk loads on this first click (RIN-1428); focus still moves into it.
+      await expect(dialog.getByRole('radio', { name: 'Copyright' })).toBeFocused();
       const submit = dialog.getByRole('button', { name: 'Send report' });
       await expect(submit).toBeDisabled();
 

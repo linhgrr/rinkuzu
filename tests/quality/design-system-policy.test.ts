@@ -244,3 +244,49 @@ describe('design-system policy file', () => {
     expect(repoPolicy.scanExcludedPaths).toEqual(['solid-orange-white-text']);
   });
 });
+
+describe('solid-orange-white-text in CSS', () => {
+  const scanCss = (content: string, path = 'src/app/globals.css') =>
+    evaluateDesignSystem([{ path, content }], policy());
+
+  it.each([
+    '.btn-primary {\n  height: 44px;\n  background: var(--brand-action);\n  color: var(--brand-action-text);\n}',
+    '.graph-node-current {\n  background: var(--brand-action);\n  color: white;\n}',
+    '.x { color: #fff; background-color: var(--cta); }',
+    '.x { background: var(--accent); color: var(--neutral-white); }',
+  ])('flags a CSS block with white text on a bright orange fill: %s', (css) => {
+    const result = scanCss(css);
+
+    expect(result.counts['solid-orange-white-text']).toBe(1);
+    expect(result.errors).toContainEqual(expect.stringContaining('src/app/globals.css:'));
+  });
+
+  it.each([
+    '.btn-primary { background: var(--brand-action-strong); color: var(--neutral-white); }',
+    '.x { background: var(--brand-action); border-color: white; }',
+    '.x { background: var(--brand-action); color: var(--ink); }',
+    '.a { background: var(--brand-action); }\n.b { color: white; }',
+  ])('passes a contrast-safe CSS block: %s', (css) => {
+    expect(scanCss(css).counts['solid-orange-white-text']).toBe(0);
+  });
+
+  it('keeps the class-string rules off CSS files', () => {
+    const result = scanCss('.x { color: #123456; border-color: rgba(0, 0, 0, 0.1); }');
+
+    expect(result.counts['consumer-hardcoded-color']).toBe(0);
+  });
+
+  it('keeps the CSS rule off component files', () => {
+    const result = evaluateDesignSystem(
+      [
+        {
+          path: 'src/x.tsx',
+          content: 'const css = `{ background: var(--accent); color: white; }`',
+        },
+      ],
+      policy(),
+    );
+
+    expect(result.counts['solid-orange-white-text']).toBe(0);
+  });
+});

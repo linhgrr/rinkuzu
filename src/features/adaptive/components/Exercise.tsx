@@ -22,7 +22,7 @@ const BLOOM_LEVEL_COLORS: Record<BloomLevel, string> = {
   Understand: 'bg-emerald-600 text-white',
   Apply: 'bg-teal-600 text-white',
   Analyze: 'bg-amber-500 text-white',
-  Evaluate: 'bg-orange-600 text-white',
+  Evaluate: 'bg-brand-action-strong text-white',
   Create: 'bg-rose-600 text-white',
 };
 

@@ -256,7 +256,7 @@ export default async function ContactPage({ params }: Props) {
               </p>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-full bg-brand-action px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-action-hover"
+                className="inline-flex items-center justify-center rounded-full bg-brand-action-strong px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-action-strong-hover"
               >
                 {isVi ? 'Bắt đầu miễn phí' : 'Get Started Free'}
               </Link>

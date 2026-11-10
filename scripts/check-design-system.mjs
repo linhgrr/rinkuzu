@@ -15,6 +15,12 @@ const BRIGHT_ORANGE_FILL = String.raw`${AT_REST}bg-(?:\[(?:#(?:ff541b|fd761a)|va
 // White label colours, including the tokens that resolve to white in light mode.
 const WHITE_TEXT = String.raw`${AT_REST}text-(?:white|brand-action-text|accent-text)(?:/\d+)?(?![-\w])`;
 const SAME_CLASS_STRING = '[^"\'`\\n]*';
+// The same pairing as declarations inside one CSS rule block (`.btn-primary`,
+// `.graph-node-current` in globals.css). Only a block that sets both is seen:
+// a `:hover` block that changes the fill alone inherits its colour unseen.
+const CSS_ORANGE_FILL = String.raw`(?<![-\w])background(?:-color)?:\s*var\(--(?:brand-action|cta|primary|accent)\)`;
+const CSS_WHITE_TEXT = String.raw`(?<![-\w])color:\s*(?:white|#fff(?:fff)?|var\(--(?:brand-action-text|accent-text|neutral-white|text-inverse)\))`;
+const SAME_CSS_BLOCK = '[^{}]*?';
 
 const RULES = [
   {
@@ -58,7 +64,21 @@ const RULES = [
       'gi',
     ),
   },
+  {
+    id: 'solid-orange-white-text',
+    files: 'css',
+    pattern: new RegExp(
+      `${CSS_ORANGE_FILL}${SAME_CSS_BLOCK}${CSS_WHITE_TEXT}|${CSS_WHITE_TEXT}${SAME_CSS_BLOCK}${CSS_ORANGE_FILL}`,
+      'gi',
+    ),
+  },
 ];
+
+// Class-string rules read components; a rule marked `files: 'css'` reads
+// stylesheets only.
+function ruleReadsFile(rule, filePath) {
+  return filePath.toLowerCase().endsWith('.css') === (rule.files === 'css');
+}
 
 function normalizePath(value) {
   return value.replaceAll('\\', '/');
@@ -77,7 +97,7 @@ function matchesGlob(filePath, glob) {
 
 function sourceFiles(root, directory = path.join(root, 'src')) {
   if (!existsSync(directory)) return [];
-  return listFiles('**/*.{tsx,jsx}', { cwd: directory }).map((absolute) => ({
+  return listFiles('**/*.{tsx,jsx,css}', { cwd: directory }).map((absolute) => ({
     path: toRepoPath(absolute, root),
     content: readFileSync(absolute, 'utf8'),
   }));
@@ -94,7 +114,7 @@ function ruleExcluded(filePath, ruleId, policy) {
 function scanRule(files, rule, policy) {
   const occurrences = [];
   for (const file of files) {
-    if (ruleExcluded(file.path, rule.id, policy)) continue;
+    if (!ruleReadsFile(rule, file.path) || ruleExcluded(file.path, rule.id, policy)) continue;
     const pattern = new RegExp(rule.pattern.source, rule.pattern.flags);
     for (const match of file.content.matchAll(pattern)) {
       occurrences.push({

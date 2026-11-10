@@ -2,16 +2,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './support/auth-rate-limit-keys';
 import { createE2EUserEmail } from './support/fixture-identifiers';
 import { skipPostSignInStarter } from './support/post-signin';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
-const E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS = [
-  'auth:credentials_ip:127.0.0.1',
-  'auth:credentials_ip:::1',
-  'auth:credentials_ip:unknown',
-] as const;
 const passwordHashPromise = hash(E2E_PASSWORD, 4);
 
 type SeededUser = {

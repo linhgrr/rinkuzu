@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { MongoClient, ObjectId, type Db } from 'mongodb';
 import type { Page, TestInfo } from '@playwright/test';
+import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './auth-rate-limit-keys';
 import { createE2EUserEmail } from './fixture-identifiers';
 import { skipPostSignInStarter } from './post-signin';
 
@@ -26,18 +27,6 @@ function requireCiDatabase(): { databaseName: string; uri: string } {
   return { databaseName, uri };
 }
 
-/**
- * Every E2E login comes from the same loopback IP, so the shared 20-per-15-minutes
- * `credentials_ip` limit is spent across specs and a later admin login sees
- * "Please wait a moment" (PR #387). Each admin flow starts and ends with it cleared,
- * as the critical flows do.
- */
-const E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS = [
-  'auth:credentials_ip:127.0.0.1',
-  'auth:credentials_ip:::1',
-  'auth:credentials_ip:unknown',
-];
-
 function credentialsRateLimitKey(email: string): string {
   return `auth:credentials_identity:${createHash('sha256').update(email.toLowerCase()).digest('hex')}`;
 }
@@ -60,7 +49,7 @@ export async function withAccounts(
     const now = new Date();
     await db
       .collection('auth_rate_limits')
-      .deleteMany({ key: { $in: E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } });
+      .deleteMany({ key: { $in: [...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] } });
     await db.collection('users').insertMany(
       [
         { ...admin, displayName: 'E2E Admin User', role: 'admin' },

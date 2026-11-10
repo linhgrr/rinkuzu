@@ -648,6 +648,8 @@ function AppTopbar({
 }: AppTopbarProps) {
   return (
     <header
+      // Read by the html scroll-padding-top rule in globals.css (RIN-1423).
+      data-app-topbar=""
       className={`${styles['topbar']} fixed inset-x-0 top-0 z-50 flex border-b border-line bg-surface`}
     >
       {focusMode ? (

@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "Turn your PDF into a quiz, no account needed",
+    "description": "Upload a short PDF and play a quiz from it right away, no account needed."
+  },
+  "upload": {
+    "badge": "No account needed",
+    "title": "Turn your PDF into a quiz and play it now",
+    "subtitle": "Up to {pages} pages and {mb} MB. Rin writes up to 10 questions and you play them straight away, no editing.",
+    "dropzoneLabel": "PDF document",
+    "clickToUpload": "Click to upload",
+    "dragAndDrop": "or drag and drop",
+    "limitHint": "PDF, up to {pages} pages and {mb} MB",
+    "dropHere": "Drop PDF here",
+    "removeFile": "Remove file",
+    "checking": "Checking your file…",
+    "submit": "Create quiz",
+    "tryAgain": "Try again",
+    "privacy": "We keep your file for 24 hours, then delete it. Only you can open it.",
+    "higherLimits": "Need higher limits? Sign up free"
+  },
+  "alerts": {
+    "tooLarge": "This PDF is over the trial limit: up to {pages} pages and {mb} MB. Sign up free for the full limits.",
+    "tooLargeLink": "Sign up free",
+    "notPdf": "Only PDF files are accepted.",
+    "uploadError": "We couldn't upload your file. Check your connection and try again."
+  },
+  "cap": {
+    "title": "Sign up to create more",
+    "body": "Today's no-account trials are used up. Sign up free to make a quiz from your PDF.",
+    "google": "Continue with Google",
+    "signInEmail": "Sign in with email",
+    "createAccount": "Create an account"
+  },
+  "progress": {
+    "uploading": "Uploading…",
+    "processing": "{percent}% done • {count, plural, one {# question} other {# questions}}",
+    "hint": "Usually about a minute. Keep this page open.",
+    "cancel": "Cancel",
+    "ready": "Quiz ready • {count, plural, one {# question} other {# questions}}",
+    "playNow": "Play now",
+    "pollError": "We can't check progress. Retrying…"
+  },
+  "failed": {
+    "title": "We couldn't make a quiz from this PDF",
+    "body": "This try doesn't count. Try again, or pick another PDF (scanned image PDFs are harder to read).",
+    "retry": "Try again",
+    "chooseAnother": "Choose another file"
+  }
+}

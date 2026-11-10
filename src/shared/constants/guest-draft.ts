@@ -29,3 +29,6 @@ export const GUEST_DRAFT_LIMIT_REASON = 'guest_draft_limit';
 export function guestDraftSnapshotSlug(draftId: string): string {
   return `guest-draft-${draftId}`;
 }
+
+/** Guest page ceiling, checked in the browser for instant feedback; the API enforces it too. */
+export const GUEST_DRAFT_MAX_PAGES = 10;

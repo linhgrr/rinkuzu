@@ -15,8 +15,10 @@ import type {
   QuizTopicRecord,
 } from '@/interfaces/repositories/IQuizTopicAdminRepository';
 import type { IStarterQuizReadRepository } from '@/interfaces/repositories/IStarterQuizReadRepository';
+import type { IIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type { ServiceFailure, ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { topicHubChangeUrls } from '@/lib/seo/topic-hub-urls';
 import {
   countIntroWords,
   isTopicIntroPublishable,
@@ -34,6 +36,8 @@ export interface QuizTopicAdminDeps {
   /** Visibility, slug, title and question count of a quiz; nothing else leaves the DB. */
   quizRepository: IStarterQuizReadRepository;
   auditRepository: IAdminAuditRepository;
+  /** Tells search engines which hub URLs changed (RIN-1500); fire-and-forget. */
+  indexNow?: IIndexNowNotifier;
 }
 
 type QuizTopicAuditAction =
@@ -246,6 +250,7 @@ export class QuizTopicAdminService {
         );
         return AUDIT_FAILED;
       }
+      this.notifyHubChange(target, next);
       return { success: true, data: await this.buildList() };
     } catch (error) {
       logger.error({ error, topicId }, 'Update quiz topic error');
@@ -293,6 +298,7 @@ export class QuizTopicAdminService {
         await topicRepository.updateAssignmentOrders(restoreOrders(rows, shifts));
         return AUDIT_FAILED;
       }
+      this.notifyHubChange(topic, topic);
       return { success: true, data: await this.buildDetail(topic) };
     } catch (error) {
       logger.error({ error, topicId, quizId: input.quizId }, 'Assign quiz to topic error');
@@ -326,6 +332,7 @@ export class QuizTopicAdminService {
         await topicRepository.updateAssignmentOrders(restoreOrders(rows, changes));
         return AUDIT_FAILED;
       }
+      this.notifyHubChange(topic, topic);
       return { success: true, data: await this.buildDetail(topic) };
     } catch (error) {
       logger.error({ error, topicId, quizId }, 'Reorder topic quiz error');
@@ -357,10 +364,24 @@ export class QuizTopicAdminService {
         await repository.insertAssignment({ ...context.target, actorId: actor.id });
         return AUDIT_FAILED;
       }
+      this.notifyHubChange(context.topic, context.topic);
       return { success: true, data: await this.buildDetail(context.topic) };
     } catch (error) {
       logger.error({ error, topicId, quizId }, 'Unassign topic quiz error');
       return WRITE_FAILED;
+    }
+  }
+
+  /**
+   * Queues the public URLs the change touched. Never awaited and never fails the
+   * admin's write: the notifier runs after the response, and a throw here is logged.
+   */
+  private notifyHubChange(before: QuizTopicRecord, after: QuizTopicRecord): void {
+    try {
+      const urls = topicHubChangeUrls(before, after);
+      if (urls.length > 0) this.deps.indexNow?.notifyChanged(urls);
+    } catch (error) {
+      logger.warn({ error, topicId: after.id }, 'IndexNow notify for a topic change failed');
     }
   }
 

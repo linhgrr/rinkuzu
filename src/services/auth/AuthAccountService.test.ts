@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   CreatePendingAccountData,
   IAuthAccountRepository,
+  VerifiedEmailAccount,
 } from '@/interfaces/repositories/IAuthAccountRepository';
 import type { AuthAccountIdentity, AuthAccountSecurityState } from '@/entities/AuthAccount';
 import type { IAuthNotifier } from '@/interfaces/services/IAuthNotifier';
 import type { IAuthAudit, AuthAuditRecord } from '@/interfaces/services/IAuthAudit';
 import type { IDeferredTaskScheduler } from '@/interfaces/services/IDeferredTaskScheduler';
+import type { IGuestAttemptClaimService } from '@/interfaces/services/IGuestAttemptClaimService';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { AuthAccountService } from '@/services/auth/AuthAccountService';
 import { createSecureToken, hashToken, wasIssuedRecently } from '@/lib/auth-tokens';
 import { hashPassword } from '@/lib/password';
@@ -42,7 +45,7 @@ function securityState(
 class AuthAccountRepositoryStub implements IAuthAccountRepository {
   findByEmail = vi.fn<(email: string) => Promise<AuthAccountSecurityState | null>>();
   createPending = vi.fn<(data: CreatePendingAccountData) => Promise<AuthAccountIdentity | null>>();
-  verifyEmail = vi.fn<(tokenHash: string, now: Date) => Promise<AuthAccountIdentity | null>>();
+  verifyEmail = vi.fn<(tokenHash: string, now: Date) => Promise<VerifiedEmailAccount | null>>();
   issuePasswordResetToken =
     vi.fn<(email: string, tokenHash: string, expiresAt: Date) => Promise<boolean>>();
   issueVerificationToken =
@@ -70,6 +73,11 @@ class AuthAuditStub implements IAuthAudit {
   record = vi.fn<(input: AuthAuditRecord) => Promise<void>>();
 }
 
+class GuestAttemptClaimStub implements IGuestAttemptClaimService {
+  claim = vi.fn<(userId: string, tokens: readonly string[]) => Promise<string[]>>();
+  claimHashed = vi.fn<(userId: string, hashes: readonly string[]) => Promise<string[]>>();
+}
+
 class DeferredTaskSchedulerStub implements IDeferredTaskScheduler {
   readonly tasks: Array<() => Promise<void>> = [];
 
@@ -87,6 +95,7 @@ describe('AuthAccountService', () => {
   let notifier: AuthNotifierStub;
   let audit: AuthAuditStub;
   let scheduler: DeferredTaskSchedulerStub;
+  let guestAttempts: GuestAttemptClaimStub;
   let service: AuthAccountService;
 
   beforeEach(() => {
@@ -95,7 +104,9 @@ describe('AuthAccountService', () => {
     notifier = new AuthNotifierStub();
     audit = new AuthAuditStub();
     scheduler = new DeferredTaskSchedulerStub();
-    service = new AuthAccountService(repository, notifier, audit, scheduler);
+    guestAttempts = new GuestAttemptClaimStub();
+    guestAttempts.claimHashed.mockResolvedValue([]);
+    service = new AuthAccountService(repository, notifier, audit, scheduler, guestAttempts);
     notifier.sendVerificationEmail.mockResolvedValue();
     notifier.sendPasswordResetEmail.mockResolvedValue();
     notifier.sendPasswordChangedEmail.mockResolvedValue();
@@ -171,7 +182,13 @@ describe('AuthAccountService', () => {
     repository.createPending.mockResolvedValue(identity);
 
     const result = await service.register(
-      { email: identity.email, password: 'password', displayName: 'Rin', locale: 'en' },
+      {
+        email: identity.email,
+        password: 'password',
+        displayName: 'Rin',
+        locale: 'en',
+        signupCountry: 'US',
+      },
       context,
     );
 
@@ -185,6 +202,7 @@ describe('AuthAccountService', () => {
         passwordHash: 'hashed-password:password',
         displayName: 'Rin',
         locale: 'en',
+        signupOrigin: { signupLocale: 'en', signupCountry: 'US' },
         verificationTokenHash: 'token-hash',
       }),
     );
@@ -192,6 +210,17 @@ describe('AuthAccountService', () => {
     await scheduler.runAll();
     expect(notifier.sendVerificationEmail).toHaveBeenCalledWith(identity.email, 'raw-token');
     expect(audit.record).toHaveBeenCalledTimes(2);
+  });
+
+  it('records a vi signup with no country when the request names neither (RIN-1268)', async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+
+    await service.register({ email: identity.email, password: 'password' }, context);
+
+    expect(repository.createPending).toHaveBeenCalledWith(
+      expect.objectContaining({ signupOrigin: { signupLocale: 'vi', signupCountry: null } }),
+    );
   });
 
   it('forwards the sign-up callbackUrl to the verification email', async () => {
@@ -207,6 +236,59 @@ describe('AuthAccountService', () => {
     expect(notifier.sendVerificationEmail).toHaveBeenCalledWith(identity.email, 'raw-token', {
       callbackUrl: '/quiz/nhap-mon-ai',
     });
+  });
+
+  // RIN-1310: the guest result must survive a verification link opened in another browser.
+  it('stores only the hashes of the guest claim tokens on the pending account', async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+    const token = 'A'.repeat(43);
+
+    await service.register(
+      { email: identity.email, password: 'password', guestClaimTokens: [token, token] },
+      context,
+    );
+
+    const data = repository.createPending.mock.calls[0]?.[0];
+    expect(data?.guestClaimHashes).toEqual([hashGuestClaimToken(token)]);
+    expect(JSON.stringify(data)).not.toContain(token);
+  });
+
+  it('stores no guest claim field when the browser holds no guest result', async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+
+    await service.register({ email: identity.email, password: 'password' }, context);
+
+    expect(repository.createPending.mock.calls[0]?.[0]).not.toHaveProperty('guestClaimHashes');
+  });
+
+  it('claims the guest attempts stored at sign-up when the email is verified', async () => {
+    repository.verifyEmail.mockResolvedValue({ ...identity, guestClaimHashes: ['hash-1'] });
+
+    await expect(service.verifyEmail('valid', context)).resolves.toEqual({
+      success: true,
+      data: { email: identity.email },
+    });
+    expect(guestAttempts.claimHashed).toHaveBeenCalledWith(identity.id, ['hash-1']);
+  });
+
+  it('still verifies the email when the guest claim fails', async () => {
+    repository.verifyEmail.mockResolvedValue({ ...identity, guestClaimHashes: ['hash-1'] });
+    guestAttempts.claimHashed.mockRejectedValue(new Error('db down'));
+
+    await expect(service.verifyEmail('valid', context)).resolves.toEqual({
+      success: true,
+      data: { email: identity.email },
+    });
+  });
+
+  it('skips the guest claim when the account stored none', async () => {
+    repository.verifyEmail.mockResolvedValue(identity);
+
+    await service.verifyEmail('valid', context);
+
+    expect(guestAttempts.claimHashed).not.toHaveBeenCalled();
   });
 
   it('verifies valid tokens atomically and rejects invalid tokens', async () => {

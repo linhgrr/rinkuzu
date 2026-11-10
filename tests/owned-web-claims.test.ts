@@ -24,6 +24,8 @@ const forbiddenOwnedWebClaims = [
 const ownedWebSources = [
   'messages/en/landing.json',
   'messages/vi/landing.json',
+  'messages/en/blog.json',
+  'messages/vi/blog.json',
   'src/app/llms.txt/route.ts',
   'src/app/[locale]/(marketing)/about/page.tsx',
   'src/app/[locale]/(marketing)/blog/page.tsx',
@@ -61,5 +63,22 @@ describe('owned-web claims contract', () => {
     expectNoForbiddenClaims(sourceCopy);
     expect(sourceCopy).toContain('supported PDF material');
     expect(sourceCopy).toContain('English and Vietnamese');
+  });
+
+  it('keeps blog post copy on "personalized", not "adaptive" (RIN-739, RIN-1281)', () => {
+    // Slugs, link targets and cited paper titles (the References list) are not our copy.
+    const offenders = ownedWebSources
+      .filter((source) => source.endsWith('.mdx'))
+      .flatMap((source) =>
+        fs
+          .readFileSync(source, 'utf8')
+          .replace(/^## (?:References|Tài liệu tham khảo)\s*$[\s\S]*/m, '')
+          .replace(/\]\([^)]*\)|https?:\/\/\S+|\/blog\/[a-z0-9-]+/g, '')
+          .split('\n')
+          .filter((line) => /adaptive|thích ứng/i.test(line))
+          .map((line) => `${source}: ${line.trim()}`),
+      );
+
+    expect(offenders).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@ import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 import { getAuthAccountService } from '@/lib/auth-account-factory';
 import { parseJsonBody } from '@/lib/api/validated';
 import { resolveAccountLocale } from '@/lib/auth/account-locale';
+import { SIGNUP_COUNTRY_HEADER, signupCountryOf } from '@/lib/auth/signup-origin';
 
 const authAccountService = getAuthAccountService();
 const neutralMessage =
@@ -25,13 +26,18 @@ export async function POST(request: NextRequest) {
     referer: request.headers.get('referer'),
     cookies: request.cookies,
   });
+  const signupCountry = signupCountryOf(request.headers.get(SIGNUP_COUNTRY_HEADER));
   const result = await authAccountService.register(
     {
       email: input.data.email,
       password: input.data.password,
       ...(input.data.displayName ? { displayName: input.data.displayName } : {}),
       ...(input.data.callbackUrl ? { callbackUrl: input.data.callbackUrl } : {}),
+      ...(input.data.guestClaimTokens?.length
+        ? { guestClaimTokens: input.data.guestClaimTokens }
+        : {}),
       ...(locale ? { locale } : {}),
+      ...(signupCountry ? { signupCountry } : {}),
     },
     context,
   );

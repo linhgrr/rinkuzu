@@ -2,13 +2,23 @@ import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import type { Quiz } from '@/entities/Quiz';
 import type { PremiumPlaySession, PremiumQuizSubmission } from '@/entities/PremiumQuiz';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type {
+  IPremiumQuizRepository,
+  IPremiumSubmissionRecoveryRepository,
+} from '@/interfaces/repositories/IPremiumQuizRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
-import { PremiumQuizError } from '@/entities/PremiumQuizError';
+import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
+import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
 
 const entitlementMocks = vi.hoisted(() => ({
   resolveEntitlements: vi.fn(),
+}));
+
+const loggerMocks = vi.hoisted(() => ({ warn: vi.fn() }));
+
+vi.mock('@/lib/logger', () => ({
+  logger: { warn: loggerMocks.warn, info: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@/lib/entitlements', () => ({
@@ -139,8 +149,16 @@ function setup() {
   const attemptRepository: Mocked<IQuizAttemptProgressRepository> = {
     recordSubmittedAttempt: vi.fn(),
   };
+  const notifier: Mocked<IPremiumDecisionNotifier> = { queueRejectEmail: vi.fn() };
   return {
-    service: new PremiumQuizService(quizRepository, premiumRepository, attemptRepository),
+    service: new PremiumQuizService(
+      quizRepository,
+      premiumRepository,
+      attemptRepository,
+      undefined,
+      notifier,
+    ),
+    notifier,
     quizRepository,
     premiumRepository,
     attemptRepository,
@@ -516,5 +534,180 @@ describe('PremiumQuizService', () => {
         idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a1',
       }),
     );
+  });
+
+  describe("decide: the author's reject email (RIN-1348)", () => {
+    const decided = (status: PremiumQuizSubmission['status']) => ({
+      submission: { ...publication(), status, reviewerNote: 'Too close to the textbook.' },
+      awardedCredits: 0,
+      rewardLocked: false,
+      quizMadePublic: true,
+    });
+
+    it('queues the email after a reject with whether the quiz went public', async () => {
+      const { service, premiumRepository, notifier } = setup();
+      const result = decided('rejected');
+      premiumRepository.decide.mockResolvedValue(result);
+
+      await expect(
+        service.decide('507f191e810c19729de860ef', result.submission.id, {
+          decision: 'reject',
+          credits: 0,
+          note: 'Too close to the textbook.',
+        }),
+      ).resolves.toBe(result);
+
+      expect(notifier.queueRejectEmail).toHaveBeenCalledTimes(1);
+      expect(notifier.queueRejectEmail).toHaveBeenCalledWith({
+        submission: result.submission,
+        quizMadePublic: true,
+      });
+    });
+
+    it.each([
+      ['approve', 'approved'],
+      ['request_changes', 'changes_requested'],
+    ] as const)('queues nothing on %s', async (decision, status) => {
+      const { service, premiumRepository, notifier } = setup();
+      premiumRepository.decide.mockResolvedValue({ ...decided(status), quizMadePublic: false });
+
+      await service.decide('507f191e810c19729de860ef', publication().id, {
+        decision,
+        credits: decision === 'approve' ? 3 : 0,
+      });
+
+      expect(notifier.queueRejectEmail).not.toHaveBeenCalled();
+    });
+
+    it('keeps the decision when the email cannot be queued, and logs it', async () => {
+      const { service, premiumRepository, notifier } = setup();
+      const result = decided('rejected');
+      premiumRepository.decide.mockResolvedValue(result);
+      notifier.queueRejectEmail.mockRejectedValue(new Error('outbox down'));
+
+      await expect(
+        service.decide('507f191e810c19729de860ef', result.submission.id, {
+          decision: 'reject',
+          credits: 0,
+        }),
+      ).resolves.toBe(result);
+
+      expect(loggerMocks.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ submissionId: result.submission.id, errorName: 'Error' }),
+        expect.any(String),
+      );
+    });
+
+    it('queues nothing when the decision itself fails', async () => {
+      const { service, premiumRepository, notifier } = setup();
+      premiumRepository.decide.mockRejectedValue(new PremiumQuizError('conflict', 'changed'));
+
+      await expect(
+        service.decide('507f191e810c19729de860ef', publication().id, {
+          decision: 'reject',
+          credits: 0,
+        }),
+      ).rejects.toMatchObject({ code: 'conflict' });
+      expect(notifier.queueRejectEmail).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
+  const ownerId = '507f191e810c19729de860eb';
+
+  function setupWithRecovery() {
+    const base = setup();
+    const recovery: Mocked<IPremiumSubmissionRecoveryRepository> = {
+      restorePublicAfterFailedSubmission: vi.fn(),
+    };
+    const service = new PremiumQuizService(
+      base.quizRepository,
+      base.premiumRepository,
+      base.attemptRepository,
+      recovery,
+    );
+    const source = quiz();
+    base.premiumRepository.isVerifiedUser.mockResolvedValue(true);
+    base.quizRepository.findById.mockResolvedValue(source);
+    base.premiumRepository.findDuplicateCandidates.mockResolvedValue([]);
+    return { ...base, service, recovery, source };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns the pending submission and leaves the quiz private on success', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.createSubmission.mockResolvedValue(publication(source));
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).resolves.toMatchObject({ sourceQuizId: source.id });
+    expect(recovery.restorePublicAfterFailedSubmission).not.toHaveBeenCalled();
+  });
+
+  it('sets the quiz back to public and reports premium_submission_failed', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.createSubmission.mockRejectedValue(new Error('db write failed'));
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    const error = await service
+      .submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true })
+      .catch((caught: unknown) => caught);
+
+    expect(recovery.restorePublicAfterFailedSubmission).toHaveBeenCalledWith(source.id);
+    expect(error).toBeInstanceOf(PremiumSubmissionFailedError);
+    expect(error).toMatchObject({
+      code: 'premium_submission_failed',
+      causeCode: null,
+      quizId: source.id,
+    });
+  });
+
+  it('keeps the Premium refusal as the cause', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.findDuplicateCandidates.mockRejectedValue(
+      new PremiumQuizError('invalid_state', 'Premium quiz assets could not be secured'),
+    );
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toMatchObject({ code: 'premium_submission_failed', causeCode: 'invalid_state' });
+  });
+
+  it('rethrows the original error when an older submission keeps the quiz private', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    const original = new Error('db write failed');
+    premiumRepository.createSubmission.mockRejectedValue(original);
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(false);
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toBe(original);
+  });
+
+  it('rethrows the original error when the flip itself fails', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    const original = new Error('db write failed');
+    premiumRepository.createSubmission.mockRejectedValue(original);
+    recovery.restorePublicAfterFailedSubmission.mockRejectedValue(new Error('still down'));
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toBe(original);
+  });
+
+  it('rethrows the original error when no recovery repository is wired', async () => {
+    const { premiumRepository, quizRepository, attemptRepository, source } = setupWithRecovery();
+    const service = new PremiumQuizService(quizRepository, premiumRepository, attemptRepository);
+    const original = new Error('db write failed');
+    premiumRepository.createSubmission.mockRejectedValue(original);
+
+    await expect(
+      service.submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true }),
+    ).rejects.toBe(original);
   });
 });

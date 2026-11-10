@@ -13,6 +13,7 @@ import {
   deleteSavedQuizProgress,
   fetchQuizDiscussionViewModels,
   loadSavedQuizProgress,
+  reportQuizPage,
   reportQuizViewModel,
   saveQuizProgress,
   submitQuizAttemptViewModel,
@@ -287,6 +288,16 @@ describe('quiz-interaction-api', () => {
         questionId: '507f1f77bcf86cd799439011',
         content: 'broken',
       }),
+    });
+  });
+
+  it('sends the quiz-page report without a question id (RIN-1344)', async () => {
+    fetchApiDataMock.mockResolvedValueOnce({ reportId: 'report-1' });
+    await reportQuizPage('quiz c', { reason: 'copyright', details: 'Copied' });
+    expect(fetchApiDataMock).toHaveBeenLastCalledWith('/api/quiz/quiz%20c/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'copyright', details: 'Copied' }),
     });
   });
 });

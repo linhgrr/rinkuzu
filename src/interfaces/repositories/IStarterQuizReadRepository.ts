@@ -13,10 +13,19 @@ export interface StarterQuizCandidateRecord {
   visibility: string;
   questionCount: number;
   isPremium: boolean;
+  /** Personal data flagged with no admin clear in force (RIN-1341). */
+  personalDataFlagged: boolean;
+  /** Under a report hold (RIN-1341). */
+  indexHold: boolean;
 }
 
 export interface IStarterQuizReadRepository {
   /** Every starter row, sorted by `order`. */
   listStarterQuizEntries(): Promise<StarterQuizEntryRecord[]>;
   findStarterQuizCandidates(quizIds: string[]): Promise<StarterQuizCandidateRecord[]>;
+}
+
+/** The quiz a blog post's card names (RIN-1258), with the same eligibility fields; null when none. */
+export interface IQuizCandidateBySlugRepository {
+  findQuizCandidateBySlug(slug: string): Promise<StarterQuizCandidateRecord | null>;
 }

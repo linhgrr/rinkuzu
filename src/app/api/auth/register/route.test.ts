@@ -57,6 +57,25 @@ describe('POST /api/auth/register', () => {
     });
   });
 
+  // RIN-1310: the browser's guest claim tokens travel with the sign-up.
+  it('forwards the guest claim tokens to the account service', async () => {
+    const token = 'A'.repeat(43);
+    const response = await POST(request({ ...validBody, guestClaimTokens: [token] }));
+
+    expect(response.status).toBe(201);
+    expect(registerMock).toHaveBeenCalledWith(
+      expect.objectContaining({ guestClaimTokens: [token] }),
+      expect.anything(),
+    );
+  });
+
+  it('rejects a malformed guest claim token', async () => {
+    const response = await POST(request({ ...validBody, guestClaimTokens: ['short'] }));
+
+    expect(response.status).toBe(400);
+    expect(registerMock).not.toHaveBeenCalled();
+  });
+
   it('validates input before rate limiting or registering', async () => {
     const response = await POST(request({ email: 'not-an-email', password: 'short' }));
 
@@ -145,6 +164,20 @@ describe('POST /api/auth/register', () => {
 
     await POST(request({ ...validBody, locale: 'fr' }));
     expect(registerMock.mock.calls[2]?.[0]).not.toHaveProperty('locale');
+  });
+
+  it('passes the edge country of the signup request (RIN-1268)', async () => {
+    await POST(request(validBody, { 'x-vercel-ip-country': 'JP' }));
+    expect(registerMock.mock.calls[0]?.[0]).toMatchObject({ signupCountry: 'JP' });
+  });
+
+  it('passes no country when the header is missing, unknown or malformed', async () => {
+    await POST(request(validBody));
+    await POST(request(validBody, { 'x-vercel-ip-country': 'XX' }));
+    await POST(request(validBody, { 'x-vercel-ip-country': 'jp' }));
+    for (const call of registerMock.mock.calls) {
+      expect(call[0]).not.toHaveProperty('signupCountry');
+    }
   });
 
   it('falls back to unknown when the request has no IP', async () => {

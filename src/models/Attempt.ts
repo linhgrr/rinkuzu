@@ -2,6 +2,7 @@ import mongoose, { Schema, Types } from 'mongoose';
 import type { SelectedAnswerPersistenceRecord } from '@/repositories/types/AnswerPersistence';
 import { SelectedAnswerSchema } from '@/models/schemas/SelectedAnswerSchema';
 import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
+import { QUIZ_TOPIC_SLUG_PATTERN } from '@/shared/constants/quiz-topic';
 import { BLOG_POST_SLUG_PATTERN, TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
 
 interface AttemptQuizSnapshotDocument {
@@ -36,6 +37,8 @@ interface AttemptDocument {
   entry?: string;
   /** RIN-1256: blog post slug, only with `entry: 'blog'`. */
   post?: string;
+  /** RIN-1417: topic hub slug, only with `entry: 'hub'`. */
+  topic?: string;
 }
 
 const AttemptQuizSnapshotSchema = new Schema<AttemptQuizSnapshotDocument>(
@@ -206,6 +209,13 @@ const AttemptSchema = new Schema<AttemptDocument>({
   post: {
     type: String,
     match: BLOG_POST_SLUG_PATTERN,
+    immutable: true,
+  },
+  // RIN-1417: additive like `post`; a slug, never anything about the learner.
+  topic: {
+    type: String,
+    match: QUIZ_TOPIC_SLUG_PATTERN,
+    maxlength: 80,
     immutable: true,
   },
 });

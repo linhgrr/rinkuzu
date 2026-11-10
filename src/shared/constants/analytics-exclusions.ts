@@ -10,9 +10,11 @@ import { ACCOUNT_DISABLE_DISABLED } from './account-disable';
  * TLDs). Nobody can sign up on those and receive mail, so every such account
  * was made by a test, a fixture or QA.
  *
- * Known QA accounts on real domains go in `ANALYTICS_EXCLUDED_EMAILS`
- * (lowercase). Keep that list to accounts the company owns; it is a constant
- * in Git, so it must never hold a real learner's address.
+ * Company QA accounts go in `ANALYTICS_EXCLUDED_EMAILS` (lowercase,
+ * company domain only). That list is a constant in a public repository, so it
+ * must never hold a personal address: exclude any other account, the
+ * Founder's own test signups included, by setting its `isTestAccount` flag
+ * (admin users page) instead (RIN-1353).
  */
 /**
  * Company accounts whose public quizzes are the public catalog (the starter
@@ -41,8 +43,6 @@ export const ANALYTICS_EXCLUDED_EMAILS: readonly string[] = [
   'rinkuzu-qa-w45b@fldubai.com',
   // QA W45 re-run account (RIN-665).
   'rinkuzu-qa-w45c@fldubai.com',
-  // Founder starter-quiz test signup (RIN-665). This one address only, not its domain.
-  'nk.toan@shirokumapower.com',
 ];
 
 export const ANALYTICS_TEST_EMAIL_PATTERN =

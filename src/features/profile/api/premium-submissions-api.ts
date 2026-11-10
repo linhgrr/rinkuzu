@@ -4,7 +4,8 @@ export type ProfilePremiumSubmissionStatus =
   | 'pending'
   | 'changes_requested'
   | 'rejected'
-  | 'approved';
+  | 'approved'
+  | 'withdrawn';
 
 export interface ProfilePremiumSubmission {
   sourceQuizId: string;

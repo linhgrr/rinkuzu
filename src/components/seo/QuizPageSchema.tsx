@@ -9,6 +9,8 @@ interface QuizPageSchemaProps {
   /** The author's real name; without one RinKuzu is the author (RIN-840). */
   authorName?: string;
   categoryName?: string;
+  /** The quiz's topic hub name (RIN-1241 C11), as `about`. */
+  topicName?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,6 +22,7 @@ export function QuizPageSchema({
   quizDescription,
   authorName,
   categoryName,
+  topicName,
   createdAt,
   updatedAt,
 }: QuizPageSchemaProps) {
@@ -41,6 +44,7 @@ export function QuizPageSchema({
     learningResourceType: 'Quiz',
     educationalUse: 'Practice',
     isAccessibleForFree: true,
+    ...(topicName ? { about: { '@type': 'Thing', name: topicName } } : {}),
     ...(createdAt ? { dateCreated: createdAt } : {}),
     ...(updatedAt ? { dateModified: updatedAt } : {}),
     author: personName
@@ -60,4 +64,40 @@ export function QuizPageSchema({
   };
 
   return <JsonLd id="quiz-schema" data={quizSchema} />;
+}
+
+interface QuizBreadcrumbSchemaProps {
+  locale: string;
+  quizSlug: string;
+  quizTitle: string;
+  /** The quiz's topic hub: name and unprefixed path, e.g. `/explore/sinh-hoc` (RIN-1249). */
+  topic?: { name: string; path: string };
+}
+
+/** Home › Explore › {topic} › quiz (RIN-1241 C11); the topic step only when the quiz has one. */
+export function QuizBreadcrumbSchema({
+  locale,
+  quizSlug,
+  quizTitle,
+  topic,
+}: QuizBreadcrumbSchemaProps) {
+  const isVietnamese = locale === 'vi';
+  const steps = [
+    { name: isVietnamese ? 'Trang chủ' : 'Home', path: '/' },
+    { name: isVietnamese ? 'Khám phá' : 'Explore', path: '/explore' },
+    ...(topic ? [topic] : []),
+    { name: quizTitle, path: `/quiz/${quizSlug}` },
+  ];
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: steps.map((step, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: step.name,
+      item: canonicalFor(locale, step.path),
+    })),
+  };
+
+  return <JsonLd id="quiz-breadcrumb-schema" data={breadcrumbSchema} />;
 }

@@ -5,7 +5,11 @@ import type { PostSignInTargetInput } from '@/interfaces/services/IDashboardServ
 import { DashboardRepository } from '@/repositories/DashboardRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { DashboardService } from '@/services/dashboard/DashboardService';
-import { LandingStarterResolver } from '@/services/quiz/landing-starter';
+import {
+  BlogTryResolver,
+  LandingStarterResolver,
+  type BlogTryInput,
+} from '@/services/quiz/landing-starter';
 
 const dashboardRepository = new DashboardRepository();
 const dashboardService = new DashboardService(
@@ -14,6 +18,7 @@ const dashboardService = new DashboardService(
   dashboardRepository,
 );
 const landingStarterResolver = new LandingStarterResolver(dashboardRepository);
+const blogTryResolver = new BlogTryResolver(dashboardRepository, landingStarterResolver);
 
 export const getDashboardBootstrapData = cache(
   async (userId: string): Promise<DashboardBootstrapDto> =>
@@ -32,4 +37,9 @@ export async function getDashboardStats(userId: string): Promise<DashboardStatsD
 /** Locale-unprefixed href of the homepage play-first starter (RIN-1178); null when none; never throws. */
 export async function getLandingStarterHref(locale: string): Promise<string | null> {
   return landingStarterResolver.resolveHref(locale);
+}
+
+/** Locale-unprefixed href behind a blog post's quiz card (RIN-1258); null when none; never throws. */
+export async function getBlogTryHref(locale: string, input: BlogTryInput): Promise<string | null> {
+  return blogTryResolver.resolveHref(locale, input);
 }

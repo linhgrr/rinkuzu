@@ -414,6 +414,7 @@ export class QuizPlayService {
         takenAt: new Date(),
         ...(attribution?.entry === undefined ? {} : { entry: attribution.entry }),
         ...(attribution?.post === undefined ? {} : { post: attribution.post }),
+        ...(attribution?.topic === undefined ? {} : { topic: attribution.topic }),
       });
 
       return {

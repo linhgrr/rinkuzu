@@ -1,8 +1,35 @@
 import { z } from 'zod';
 import { locales } from '@/i18n/config';
+import { BLOG_POST_SLUG_PATTERN } from '@/shared/constants/starter-quiz';
 
 const optionalText = z.string().trim().min(1).optional();
 const positiveInt = z.number().int().positive();
+
+/** Longest `quiz.teaser`, and of a `<TryQuiz teaser="..." />` override (RIN-1258). */
+const TRY_QUIZ_TEASER_MAX = 140;
+
+/**
+ * The post's "try this quiz" card (RIN-1258, spec RIN-1242). Its presence turns
+ * the card on; `slug` picks a public quiz (else `/try` opens the locale's
+ * starter) and `teaser` is one line of card copy.
+ */
+const quizBlockSchema = z
+  .object({
+    slug: z
+      .string()
+      .regex(
+        BLOG_POST_SLUG_PATTERN,
+        'quiz.slug must be a quiz slug: lowercase letters, numbers and hyphens, at most 80',
+      )
+      .optional(),
+    teaser: z
+      .string()
+      .trim()
+      .min(1, 'quiz.teaser must not be empty')
+      .max(TRY_QUIZ_TEASER_MAX, `quiz.teaser must be at most ${TRY_QUIZ_TEASER_MAX} characters`)
+      .optional(),
+  })
+  .strict();
 
 /**
  * Frontmatter contract for `content/blog/<locale>/<slug>.mdx`.
@@ -21,6 +48,12 @@ export const blogFrontmatterSchema = z.object({
   heroImageAlt: z.string().trim().min(1, 'heroImageAlt is required'),
   locale: z.enum(locales, { message: `locale must be one of: ${locales.join(', ')}` }),
   author: z.string().trim().min(1, 'author is required'),
+  /**
+   * `true` keeps the post off every list, the sitemap and its own route
+   * (default `false`). A `date` in the future does the same until that day
+   * (UTC); see `isPublished` in `./posts.ts`.
+   */
+  draft: z.boolean().optional(),
 
   // Optional presentation overrides. Each one falls back to a required field
   // above, so a new post needs none of them; they keep the hand-authored copy
@@ -45,6 +78,16 @@ export const blogFrontmatterSchema = z.object({
   /** Article JSON-LD `wordCount` and `timeRequired` (omitted when absent). */
   wordCount: positiveInt.optional(),
   timeRequiredMinutes: positiveInt.optional(),
+  /**
+   * Share image (1200x630) for Open Graph and X cards: an absolute URL or a
+   * site path. Without it the post gets a generated card with its title and
+   * category (`/<locale>/blog/<slug>/og.png`, RIN-1330).
+   */
+  ogImage: optionalText,
+  /** Topics for the related-posts block, compared case-insensitively (RIN-1331). */
+  tags: z.array(z.string().trim().min(1, 'tags must not be empty')).max(8).optional(),
+  /** "Try this quiz" card; `<TryQuiz />` places it in the body, else it follows the body. */
+  quiz: quizBlockSchema.optional(),
 });
 
 export type BlogFrontmatter = z.infer<typeof blogFrontmatterSchema>;

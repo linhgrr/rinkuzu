@@ -2,9 +2,17 @@ import { render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import BlogIndexPage from './page';
-import BlogPostPage, { generateStaticParams as postParams } from './[slug]/page';
-import AuthorPage, { generateStaticParams as authorParams } from './authors/[slug]/page';
+import BlogIndexPage, { revalidate as indexRevalidate } from './page';
+import BlogPostPage, {
+  generateStaticParams as postParams,
+  revalidate as postRevalidate,
+} from './[slug]/page';
+import AuthorPage, {
+  generateStaticParams as authorParams,
+  revalidate as authorRevalidate,
+} from './authors/[slug]/page';
+import { revalidate as sitemapRevalidate } from '@/app/sitemap';
+import { blogMessages } from '../../../../../tests/helpers/blog-intl-mock';
 
 // RIN-404: the blog index, post and author routes render from content/blog, and the two
 // posts migrated from hand-written routes stay at their URLs with the same copy.
@@ -16,6 +24,7 @@ vi.mock('next/navigation', async (importOriginal) => ({
   useParams: () => ({}),
 }));
 vi.mock('next/image', () => ({ default: () => null }));
+vi.mock('next-intl/server', () => import('../../../../../tests/helpers/blog-intl-mock'));
 vi.mock('@/components/blog/ReadingProgressBar', () => ({ ReadingProgressBar: () => null }));
 vi.mock('@/components/blog/ShareButtons', () => ({ ShareButtons: () => null }));
 vi.mock('@/components/blog/TableOfContents', () => ({ TableOfContents: () => null }));
@@ -58,7 +67,7 @@ describe('blog routes from content/blog', () => {
     expect(authorParams()).toEqual([{ slug: 'rinkuzu-team' }]);
   });
 
-  it.each(['en', 'vi'])(
+  it.each(['en', 'vi'] as const)(
     'renders the AI guide article on /%s from its frontmatter',
     async (locale) => {
       renderIn(locale, await BlogPostPage({ params: Promise.resolve({ locale, slug: AI_GUIDE }) }));
@@ -79,7 +88,7 @@ describe('blog routes from content/blog', () => {
       expect(
         screen.getByRole('link', { name: /Knowledge Graphs & Bloom's Taxonomy →/ }),
       ).toHaveAttribute('href', `/${locale}/blog/${KNOWLEDGE_GRAPHS}`);
-      expect(screen.getByText('No previous post')).toBeInTheDocument();
+      expect(screen.getByText(blogMessages[locale].nav.noPrevious)).toBeInTheDocument();
     },
   );
 
@@ -123,7 +132,10 @@ describe('blog routes from content/blog', () => {
   ])('lists the posts newest first on /$locale/blog', async ({ locale, titles, meta }) => {
     renderIn(locale, await BlogIndexPage({ params: Promise.resolve({ locale }) }));
 
-    const cards = screen.getAllByRole('heading', { level: 2 });
+    // Post cards are links; the quiz card above them (RIN-1258) is not.
+    const cards = screen
+      .getAllByRole('heading', { level: 2 })
+      .filter((heading) => heading.closest('a'));
     expect(cards.map((card) => card.textContent)).toEqual(titles);
     expect(screen.getByText(meta)).toBeInTheDocument();
     expect(cards[1]?.closest('a')).toHaveAttribute('href', `/${locale}/blog/${KNOWLEDGE_GRAPHS}`);
@@ -139,5 +151,13 @@ describe('blog routes from content/blog', () => {
     expect(articles).toHaveLength(2);
     expect(within(articles[0]?.closest('a') as HTMLElement).getByText(/2026/)).toBeInTheDocument();
     expect(articles[0]?.closest('a')).toHaveAttribute('href', `/${locale}/blog/${AI_GUIDE}`);
+  });
+
+  // A post scheduled by a future `date` must go live without a deploy (RIN-1329):
+  // every route that lists or renders posts re-renders at least hourly.
+  it('revalidates the blog routes and the sitemap hourly', () => {
+    expect([indexRevalidate, postRevalidate, authorRevalidate, sitemapRevalidate]).toEqual([
+      3600, 3600, 3600, 3600,
+    ]);
   });
 });

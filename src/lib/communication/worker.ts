@@ -64,7 +64,11 @@ import {
   sweepActivationNudges,
 } from './activation-nudge';
 import { activationNudgeSendingEnabled } from './activation-nudge-policy';
-import { REVIEW_REMINDER_CAMPAIGN } from './review-reminder-policy';
+import {
+  REVIEW_REMINDER_CAMPAIGN,
+  REVIEW_REMINDER_D5_CAMPAIGN,
+  REVIEW_REMINDER_KINDS,
+} from './review-reminder-policy';
 
 function configuredRate(name: string, fallback: number): number {
   const value = process.env[name]?.trim();
@@ -336,17 +340,18 @@ function webhookEmailId(event: WebhookEventPayload): string | null {
 }
 
 /**
- * Marks the first open of a `campaign=w1-review` email for the admin counts
- * (RIN-916). Only an unopened row matches, so repeat opens count once; QA
+ * Marks the first open of a `campaign=w1-review` or `w1-review-d5` email for
+ * the admin counts (RIN-916, RIN-1304). Only an unopened row matches, so repeat opens count once; QA
  * sends carry their own campaign tag and are never marked.
  */
 async function recordReviewEmailOpen(
   emailId: string,
   tags: Record<string, string> | undefined,
 ): Promise<void> {
-  if (tags?.['campaign'] !== REVIEW_REMINDER_CAMPAIGN) return;
+  const campaign = tags?.['campaign'];
+  if (campaign !== REVIEW_REMINDER_CAMPAIGN && campaign !== REVIEW_REMINDER_D5_CAMPAIGN) return;
   await EmailOutbox.updateOne(
-    { externalEmailId: emailId, kind: 'review_reminder', openedAt: null },
+    { externalEmailId: emailId, kind: { $in: [...REVIEW_REMINDER_KINDS] }, openedAt: null },
     { $set: { openedAt: new Date() } },
     // Leave updatedAt alone: an open is not a change to the send.
     { timestamps: false },
@@ -762,7 +767,7 @@ function leaseClaimUpdate(
 
 function heldBackKinds(): { kind?: { $nin: OutboxKind[] } } {
   const held: OutboxKind[] = [];
-  if (!reviewReminderSendingEnabled()) held.push('review_reminder');
+  if (!reviewReminderSendingEnabled()) held.push(...REVIEW_REMINDER_KINDS);
   if (!activationNudgeSendingEnabled()) held.push('activation_nudge');
   return held.length > 0 ? { kind: { $nin: held } } : {};
 }
@@ -802,17 +807,25 @@ async function processOutbox(
         OutboundCommunicationEmail,
         'subject' | 'html' | 'text' | 'tags' | 'headers'
       > = { subject: item.subject, html: item.html, text: item.text };
-      if (item.kind === 'review_reminder') {
+      if (item.kind === 'review_reminder' || item.kind === 'review_reminder_d5') {
         const prepared = await prepareReviewReminder(item, now);
         if (prepared.decision === 'cancel') {
           await cancelOutbox(item, leaseToken, prepared.reason);
           canceled += 1;
           continue;
         }
-        if (prepared.decision === 'wait') {
+        if (prepared.decision === 'wait' || prepared.decision === 'retry') {
+          // `retry`: the adaptive API was unavailable (RIN-1364); the window still runs
+          // from the row's `dueAt`, so a later claim past it cancels `too_late`.
           await EmailOutbox.updateOne(
             { _id: item._id, leaseToken },
-            { $set: { status: 'pending' }, $unset: { leaseToken: '', leaseUntil: '' } },
+            {
+              $set: {
+                status: 'pending',
+                ...(prepared.decision === 'retry' ? { availableAt: prepared.availableAt } : {}),
+              },
+              $unset: { leaseToken: '', leaseUntil: '' },
+            },
           );
           continue;
         }

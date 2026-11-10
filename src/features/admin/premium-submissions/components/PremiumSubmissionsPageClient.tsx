@@ -46,6 +46,8 @@ export function PremiumSubmissionsPageClient() {
   const [overrideReason, setOverrideReason] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // The reject outcome belongs to one submission: shown in its card only (RIN-1348).
+  const [notice, setNotice] = useState<{ id: string; text: string } | null>(null);
 
   const {
     data,
@@ -90,6 +92,7 @@ export function PremiumSubmissionsPageClient() {
     if (!selected) return;
     setBusy(`decision:${selected.id}`);
     setError('');
+    setNotice(null);
     try {
       const result = await decidePremiumSubmission(selected.id, {
         decision,
@@ -104,6 +107,15 @@ export function PremiumSubmissionsPageClient() {
       );
       setNote('');
       setOverrideReason('');
+      // A reject makes the quiz public unless it cannot be (RIN-1337); say which (RIN-1348).
+      if (decision === 'reject') {
+        setNotice({
+          id: result.submission.id,
+          text: t(
+            result.quizMadePublic ? 'premiumReviewRejectedPublic' : 'premiumReviewRejectedPrivate',
+          ),
+        });
+      }
     } catch (decisionError) {
       setError(describeError(decisionError, t('premiumReviewDecisionError')));
     } finally {
@@ -144,6 +156,7 @@ export function PremiumSubmissionsPageClient() {
             <option value="changes_requested">{t('premiumStatusChanges')}</option>
             <option value="approved">{t('premiumStatusApproved')}</option>
             <option value="rejected">{t('premiumStatusRejected')}</option>
+            <option value="withdrawn">{t('premiumStatusWithdrawn')}</option>
           </Select>
         </div>
       </header>
@@ -354,7 +367,16 @@ export function PremiumSubmissionsPageClient() {
                       {t('premiumReviewReject')}
                     </Button>
                   </div>
+                  <p className="text-xs text-ink-muted">{t('premiumReviewRejectNote')}</p>
                 </section>
+              ) : null}
+              {notice?.id === selected.id ? (
+                <p
+                  role="status"
+                  className="rounded-xl bg-success-surface p-4 text-sm text-green-800"
+                >
+                  {notice.text}
+                </p>
               ) : null}
             </SurfaceCard>
           ) : null}

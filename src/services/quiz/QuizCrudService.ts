@@ -3,9 +3,9 @@ import {
   type QuizAccessRecord,
   type UpdateQuizData,
 } from '@/interfaces/repositories/IQuizRepository';
-import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
+import type { Quiz, QuizContentFlags, QuizQuestionContent } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
-import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type { IPremiumSubmissionWithdrawalRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type {
   CreateQuizRequestDto,
   QuizDetailDto,
@@ -26,6 +26,7 @@ import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
+import { isPersonalDataFlagged, resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -39,13 +40,31 @@ function toQuizQuestionContent(
     : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
 }
 
-type PremiumPublicationLookup = Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>;
+/**
+ * RIN-1346: unticking Premium makes the quiz public and withdraws its open
+ * submissions in one transaction, so nothing left in the admin queue can sell
+ * a free quiz. Mirrors the admin rule (QuizAdminService.setQuizVisibility): a
+ * quiz on sale in Premium stays private.
+ */
+async function makePublicWithdrawingSubmissions(
+  withdrawal: IPremiumSubmissionWithdrawalRepository,
+  id: string,
+): Promise<ServiceFailure | null> {
+  const result = await withdrawal.makeQuizPublicAndWithdrawSubmissions(id);
+  if (result.outcome === 'made_public') return null;
+  return {
+    success: false,
+    code: 'premium_published',
+    error: 'This quiz is on sale in Premium. Ask support to remove it from Premium first.',
+    statusCode: 409,
+  };
+}
 
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
     private folderRepository?: IFolderRepository,
-    private premiumPublications?: PremiumPublicationLookup,
+    private premiumWithdrawal?: IPremiumSubmissionWithdrawalRepository,
   ) {}
 
   async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
@@ -97,6 +116,13 @@ export class QuizCrudService {
     }
 
     const baseSlug = generateSlug(title);
+    const quizQuestions = questions.map(toQuizQuestionContent);
+    // RIN-1338: kind names only; matched values are never stored or logged.
+    const contentFlags = resolveQuizContentFlags(
+      { title, description, questions: quizQuestions },
+      undefined,
+      new Date(),
+    );
 
     for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt += 1) {
       const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt}`;
@@ -108,8 +134,9 @@ export class QuizCrudService {
           slug,
           author: userId,
           folder: folderId ?? null,
-          questions: questions.map(toQuizQuestionContent),
+          questions: quizQuestions,
           visibility: submitToPremium ? 'personal' : 'public',
+          contentFlags,
           ...(pdfUrl !== undefined && { pdfUrl }),
           ...(sourceDraftId !== undefined && { sourceDraftId }),
         });
@@ -159,6 +186,8 @@ export class QuizCrudService {
     return {
       ...QuizListDtoMapper.toListItem(record.quiz),
       ownerIndexable: record.owner === null || !isNonIndexableQuizOwner(record.owner),
+      personalDataFlagged: isPersonalDataFlagged(record.quiz.contentFlags),
+      indexHold: record.quiz.indexHold !== undefined,
       leadQuestionTexts,
       contentLocale: detectQuizContentLocale(record.quiz.title, leadQuestionTexts),
     };
@@ -225,9 +254,11 @@ export class QuizCrudService {
         }
       }
 
-      if (quizData.submitToPremium === false) {
-        const refusal = await this.refuseWhilePublished(id);
-        if (refusal) return refusal;
+      const makesPublic = quizData.submitToPremium === false;
+      const withdrawal = this.premiumWithdrawal;
+      if (makesPublic && !withdrawal) {
+        logger.error('Quiz visibility change is not wired with the Premium withdrawal');
+        return { success: false, error: 'Failed to update quiz', statusCode: 500 };
       }
 
       const updateData: UpdateQuizData = {
@@ -242,6 +273,15 @@ export class QuizCrudService {
         }),
         ...(quizData.pdfUrl !== undefined && { pdfUrl: quizData.pdfUrl }),
       };
+      const contentCheck = await this.recheckContentFlags(id, updateData);
+      if (!contentCheck.success) return contentCheck;
+      if (contentCheck.data) updateData.contentFlags = contentCheck.data;
+
+      if (makesPublic && withdrawal) {
+        const refusal = await makePublicWithdrawingSubmissions(withdrawal, id);
+        if (refusal) return refusal;
+      }
+
       const updatedQuiz = await this.quizRepository.update(id, updateData);
 
       if (!updatedQuiz) {
@@ -267,23 +307,34 @@ export class QuizCrudService {
   }
 
   /**
-   * Mirrors the admin rule (QuizAdminService.setQuizVisibility): a quiz with an
-   * active Premium publication cannot be made public. Fails closed when the
-   * lookup is not wired.
+   * RIN-1338: re-runs the personal-data check when an edit touches the title,
+   * description or questions, merging the unchanged texts from the stored quiz.
+   * Returns no flags when the edit leaves the texts alone.
    */
-  private async refuseWhilePublished(id: string): Promise<ServiceFailure | null> {
-    if (!this.premiumPublications) {
-      logger.error('Quiz visibility change is not wired with the Premium publication lookup');
-      return { success: false, error: 'Failed to update quiz', statusCode: 500 };
+  private async recheckContentFlags(
+    id: string,
+    updateData: UpdateQuizData,
+  ): Promise<ServiceResult<QuizContentFlags | null>> {
+    const { title, description, questions } = updateData;
+    if (title === undefined && description === undefined && questions === undefined) {
+      return { success: true, data: null };
     }
-    const publication = await this.premiumPublications.findActivePublicationByQuizId(id);
-    if (!publication) return null;
-    return {
-      success: false,
-      code: 'conflict',
-      error: 'A quiz with a premium publication cannot be made public',
-      statusCode: 409,
-    };
+
+    const current = await this.quizRepository.findById(id);
+    if (!current) {
+      return { success: false, error: 'Quiz not found', statusCode: 404 };
+    }
+
+    const contentFlags = resolveQuizContentFlags(
+      {
+        title: title ?? current.title,
+        description: description ?? current.description,
+        questions: questions ?? current.questions,
+      },
+      current.contentFlags,
+      new Date(),
+    );
+    return { success: true, data: contentFlags };
   }
 
   async deleteQuiz(

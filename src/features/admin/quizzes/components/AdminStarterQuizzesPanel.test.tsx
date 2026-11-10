@@ -36,6 +36,13 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError, success: mocks.toastSuccess } }));
+// The topic panel (RIN-1248) loads with the page; its own tests live beside it.
+vi.mock('@/features/admin/quizzes/api/admin-quiz-topics-api', () => ({
+  fetchAdminQuizTopics: () => Promise.resolve([]),
+}));
+vi.mock('@/features/admin/quizzes/components/AdminQuizTopicsPanel', () => ({
+  AdminQuizTopicsPanel: () => null,
+}));
 vi.mock('@/features/quiz/components/QuizPreviewModal', () => ({ QuizPreviewModal: () => null }));
 vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   fetchAdminQuizListViewModel: (...args: unknown[]) => mocks.fetchList(...args),
@@ -185,6 +192,8 @@ describe('AdminQuizzesPageClient starter panel (RIN-1183)', () => {
       starter('a', 1),
       starter('b', 2, { title: null, dropReason: 'missing' }),
       starter('c', 3, { dropReason: 'premium' }),
+      starter('d', 4, { dropReason: 'personal-data' }),
+      starter('e', 5, { dropReason: 'held' }),
     ]);
     render(<AdminQuizzesPageClient />);
 
@@ -197,6 +206,47 @@ describe('AdminQuizzesPageClient starter panel (RIN-1183)', () => {
     expect(within(missing).getByText('droppedLabel(dropMissing)')).toBeInTheDocument();
     expect(within(missing).getByText('droppedNote')).toBeInTheDocument();
     expect(within(premium).getByText('droppedLabel(dropPremium)')).toBeInTheDocument();
+    // RIN-1408: flagged and held starters read as hidden, not live.
+    expect(within(nth(rows, 3)).getByText('droppedLabel(dropPersonalData)')).toBeInTheDocument();
+    expect(within(nth(rows, 4)).getByText('droppedLabel(dropHeld)')).toBeInTheDocument();
+  });
+
+  it('collapses to 3 starters on small screens with a Show all toggle (RIN-1229)', async () => {
+    const user = userEvent.setup();
+    mocks.fetchStarters.mockResolvedValue([
+      starter('a', 1),
+      starter('b', 2),
+      starter('c', 3),
+      starter('d', 4),
+      starter('e', 5),
+    ]);
+    render(<AdminQuizzesPageClient />);
+
+    const rows = within(await starterList()).getAllByRole('listitem');
+    expect(rows.map((row) => row.classList.contains('max-lg:hidden'))).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
+    const toggle = screen.getByRole('button', { name: 'showAll(5)' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', 'admin-starter-quizzes-list');
+
+    await user.click(toggle);
+    expect(rows.some((row) => row.classList.contains('max-lg:hidden'))).toBe(false);
+    const collapse = screen.getByRole('button', { name: 'showFewer' });
+    expect(collapse).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('shows no Show all toggle with 3 starters or fewer', async () => {
+    mocks.fetchStarters.mockResolvedValue([starter('a', 1), starter('b', 2), starter('c', 3)]);
+    render(<AdminQuizzesPageClient />);
+
+    const rows = within(await starterList()).getAllByRole('listitem');
+    expect(rows.some((row) => row.classList.contains('max-lg:hidden'))).toBe(false);
+    expect(screen.queryByRole('button', { name: /showAll/ })).not.toBeInTheDocument();
   });
 
   it('shows the empty state with how to add a starter', async () => {

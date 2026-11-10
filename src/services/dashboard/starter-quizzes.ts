@@ -4,11 +4,18 @@ import type {
   StarterQuizCandidateRecord,
   StarterQuizEntryRecord,
 } from '@/interfaces/repositories/IStarterQuizReadRepository';
+import { isQuizContentIndexable } from '@/lib/seo/quiz-indexability';
 import { ROUTES } from '@/shared/constants/routes';
 import { QUICK_ROUND_SIZE, isQuickRoundEligible } from '@/shared/constants/quick-round';
 
 /** @public Read by the admin starter list (RIN-1177 part 2) for its warning. */
-export type StarterQuizDropReason = 'missing' | 'not-public' | 'premium' | 'empty';
+export type StarterQuizDropReason =
+  | 'missing'
+  | 'not-public'
+  | 'premium'
+  | 'empty'
+  | 'personal-data'
+  | 'held';
 
 /** @public Read by the admin starter list (RIN-1177 part 2) for its warning. */
 export interface DroppedStarterQuiz {
@@ -51,7 +58,10 @@ export function starterQuizHref(
   return query ? `${path}?${query}` : path;
 }
 
-/** Why a learner could not take this starter free; null when it is live. Shared with the admin list. */
+/**
+ * Why a learner is not offered this starter; null when it is live. Shared with the admin
+ * list, the mark check and the blog card, so flagged or held quizzes are never promoted.
+ */
 export function getStarterQuizDropReason(
   candidate: StarterQuizCandidateRecord | undefined,
 ): StarterQuizDropReason | null {
@@ -59,7 +69,10 @@ export function getStarterQuizDropReason(
   if (candidate.visibility !== 'public') return 'not-public';
   if (candidate.isPremium) return 'premium';
   if (candidate.questionCount < 1) return 'empty';
-  return null;
+  // A flagged or held quiz stays playable at its URL but is not promoted (RIN-1341);
+  // the admin list shows why (RIN-1408).
+  if (isQuizContentIndexable(candidate)) return null;
+  return candidate.personalDataFlagged ? 'personal-data' : 'held';
 }
 
 /**

@@ -184,6 +184,7 @@ async function createAttempt(
         ...(data.mode === undefined ? {} : { mode: data.mode }),
         ...(data.entry === undefined ? {} : { entry: data.entry }),
         ...(data.post === undefined ? {} : { post: data.post }),
+        ...(data.topic === undefined ? {} : { topic: data.topic }),
         answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
         score: data.score,
         correctAnswers: data.correctAnswers,

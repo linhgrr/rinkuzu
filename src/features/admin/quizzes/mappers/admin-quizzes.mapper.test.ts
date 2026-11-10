@@ -206,6 +206,28 @@ describe('admin quizzes mapper', () => {
       expect(quiz).not.toHaveProperty('folder');
       expect(Object.hasOwn(quiz, 'description')).toBe(false);
       expect(Object.hasOwn(quiz, 'folder')).toBe(false);
+      expect(quiz).not.toHaveProperty('personalDataKinds');
+    });
+
+    it('copies the personal-data kinds of a flagged quiz (RIN-1342)', () => {
+      const result = toAdminQuizListViewModel({
+        quizzes: [
+          {
+            id: 'quiz-flagged',
+            title: 'Flagged quiz',
+            slug: 'flagged-quiz',
+            author: { id: 'author-1' },
+            visibility: 'public',
+            questionCount: 1,
+            personalDataKinds: ['phone', 'email'],
+            createdAt: '2026-07-02T00:00:00.000Z',
+            updatedAt: '2026-07-02T01:00:00.000Z',
+          },
+        ],
+        pagination: { ...pagination },
+      });
+
+      expect(result.quizzes[0]?.personalDataKinds).toEqual(['phone', 'email']);
     });
   });
 

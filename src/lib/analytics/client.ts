@@ -417,6 +417,7 @@ export function capturePendingAnalyticsSignup(): void {
       journey_id?: unknown;
       entry?: unknown;
       post?: unknown;
+      topic?: unknown;
     };
     if (
       (parsed.method === 'credentials' || parsed.method === 'google') &&
@@ -429,7 +430,7 @@ export function capturePendingAnalyticsSignup(): void {
         journey_id: parsed.journey_id,
         ...(parsed.entry === undefined
           ? readQuizFirstTouch()
-          : resolveQuizEntryAttribution(parsed.entry, parsed.post)),
+          : resolveQuizEntryAttribution(parsed.entry, parsed.post, parsed.topic)),
       });
       window.localStorage.removeItem(PENDING_SIGNUP_STORAGE_KEY);
     }

@@ -42,7 +42,8 @@
     "correct": "Correct",
     "total": "Total",
     "concepts": "Concepts",
-    "correctTotal": "Correct/Total"
+    "correctTotal": "Correct/Total",
+    "afterFirstExercise": "After your first exercise"
   },
   "activeLearningPaths": "Active Learning Paths",
   "currentTopic": "Current Topic:",
@@ -340,7 +341,7 @@
       "rankingPrerequisites": "Ranking prerequisites...",
       "verifyingRelationsWithAI": "Verifying relations with AI...",
       "buildingKnowledgeGraph": "Building knowledge graph...",
-      "optimizingDAG": "Optimizing DAG structure...",
+      "optimizingDAG": "Organizing concepts into a learning path...",
       "completed": "Ready to learn!",
       "failed": "Processing failed",
       "processing": "Processing..."
@@ -490,12 +491,14 @@
     "statsTotal": "Total",
     "statsAccuracy": "Accuracy",
     "sessionCompleteTitle": "Session Complete!",
-    "sessionCompleteDescription": "You've completed all {count} exercises. Great work!"
+    "sessionCompleteDescription": "You've completed all {count} exercises. Great work!",
+    "reviewPromptQuestion": "Want a reminder in 2 days to review what you just studied?"
   },
   "subjectDetails": {
     "backToDashboard": "Back to Dashboard",
     "tabsLabel": "Subject learning views",
     "summary": "{concepts} Concepts • {accuracy}% Accuracy",
+    "summaryNoAnswers": "{concepts} Concepts • No exercises yet",
     "summaryFallback": "Knowledge Graph and Mastery Map",
     "startLearning": "Start Learning",
     "sessionNotReady": "This learning path is still finishing setup. Please try starting again in a moment.",

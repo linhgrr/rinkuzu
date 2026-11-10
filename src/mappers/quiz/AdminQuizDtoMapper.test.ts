@@ -52,6 +52,29 @@ describe('AdminQuizDtoMapper', () => {
     });
   });
 
+  // RIN-1342: the admin badge names the kinds of an uncleared flag, never values.
+  it('carries the personal-data kinds only while the flag is set', () => {
+    const checkedAt = new Date('2026-11-01T00:00:00Z');
+    const flagged = AdminQuizDtoMapper.toListItem({
+      ...quiz,
+      contentFlags: { personalData: true, kinds: ['phone', 'email'], checkedAt },
+    });
+    const cleared = AdminQuizDtoMapper.toListItem({
+      ...quiz,
+      contentFlags: {
+        personalData: false,
+        kinds: ['phone'],
+        checkedAt,
+        clearedBy: '507f191e810c19729de860ff',
+        clearedAt: checkedAt,
+      },
+    });
+
+    expect(flagged.personalDataKinds).toEqual(['phone', 'email']);
+    expect(cleared).not.toHaveProperty('personalDataKinds');
+    expect(AdminQuizDtoMapper.toListItem(quiz)).not.toHaveProperty('personalDataKinds');
+  });
+
   it('maps quiz detail without exposing persistence _id keys in the DTO shape', () => {
     const dto = AdminQuizDtoMapper.toDetail(quiz);
 

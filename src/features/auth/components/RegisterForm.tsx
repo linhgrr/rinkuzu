@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { registerAccount } from '@/features/auth/api/auth-api';
+import { readGuestClaims } from '@/features/quiz/lib/guest-claims';
 import { ApiResponseError } from '@/lib/api/client';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { Button } from '@/components/ui/Button';
@@ -145,11 +146,15 @@ function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: Re
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
     captureAnalyticsEvent('signup_started', { method: 'credentials', locale });
+    // The verification link may open in another browser: the server claims these
+    // guest results when the email is verified (RIN-1310).
+    const guestClaimTokens = readGuestClaims().map((claim) => claim.token);
     try {
       await registerAccount({
         email: values.email,
         password: values.password,
         ...(forwardedCallback ? { callbackUrl: forwardedCallback } : {}),
+        ...(guestClaimTokens.length > 0 ? { guestClaimTokens } : {}),
         locale,
       });
       // Localized copy, not the server's English meta.message (RIN-756).

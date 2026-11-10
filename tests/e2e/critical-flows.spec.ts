@@ -2,16 +2,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './support/auth-rate-limit-keys';
 import { createE2EUserEmail } from './support/fixture-identifiers';
 import { skipPostSignInStarter } from './support/post-signin';
 
 const E2E_PASSWORD = 'Rinkuzu-E2E-Password-42!';
 const E2E_CONTROL_TOKEN = 'rinkuzu-e2e-control';
-const E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS = [
-  'auth:credentials_ip:127.0.0.1',
-  'auth:credentials_ip:::1',
-  'auth:credentials_ip:unknown',
-] as const;
 const passwordHashPromise = hash(E2E_PASSWORD, 4);
 
 type SeededUser = {
@@ -359,6 +355,7 @@ async function cleanupDatabaseFixture(fixture: DatabaseFixture): Promise<void> {
       }),
       db.collection('questionprogresses').deleteMany({ userId: { $in: userIdStrings } }),
       db.collection('userprogresses').deleteMany({ userId: { $in: userIdStrings } }),
+      db.collection('marketingpreferences').deleteMany({ userId: { $in: userIds } }),
       db.collection('auditlogs').deleteMany({
         $or: [{ userId: { $in: userIds } }, { email: { $in: emails } }],
       }),
@@ -853,8 +850,29 @@ test.describe('production critical paths', () => {
       expect(source).toMatchObject({ score: 0, totalQuestions: 1 });
       const sourceId = String(source?._id);
 
-      // AC2: the primary action and the opt-in render with the result.
-      await expect(page.getByLabel('Email me a 2-minute review in 2 days')).not.toBeChecked();
+      // AC2: the primary action and the explicit review choice render with the result
+      // (RIN-1362). "No thanks" hides it for 7 days, stored server-side, no consent event.
+      const remind = page.getByRole('button', { name: 'Remind me in 2 days', exact: true });
+      const decline = page.getByRole('button', { name: 'No thanks', exact: true });
+      await expect(remind).toBeVisible();
+      await expect(decline).toBeVisible();
+      await expect(remind).not.toBeFocused();
+      await decline.click();
+      await expect(decline).toBeHidden();
+      await expect
+        .poll(async () => {
+          const preference = await fixture.db
+            .collection('marketingpreferences')
+            .findOne({ userId: fixture.regular.id });
+          const until = preference?.['reviewPromptSnoozedUntil'] as Date | undefined;
+          return until ? Math.round((until.getTime() - Date.now()) / 86_400_000) : null;
+        })
+        .toBe(7);
+      expect(
+        await fixture.db
+          .collection('marketingconsentevents')
+          .countDocuments({ userId: fixture.regular.id }),
+      ).toBe(0);
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
         page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),
@@ -1034,6 +1052,88 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('lets a signed-out visitor report a public quiz from its page @critical-quiz-report', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1344: the quiz-level "Report" dialog on the landing of an indexable public quiz.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const reportSlug = `${fixture.quizSlug}-report`;
+      const now = new Date();
+      await fixture.db.collection('quizzes').insertOne({
+        _id: new ObjectId(),
+        _e2eRun: fixture.runId,
+        // An owner outside the test accounts keeps the quiz indexable, so the landing shows.
+        author: new ObjectId(),
+        createdAt: now,
+        questions: Array.from({ length: 6 }, (_, index) => ({
+          _id: new ObjectId(),
+          correctIndex: 0,
+          options: [`Report fixture answer ${index + 1}`, `Other answer ${index + 1}`],
+          question: `Report fixture question ${index + 1}?`,
+          type: 'single',
+        })),
+        slug: reportSlug,
+        title: 'Production Report Quiz',
+        updatedAt: now,
+        visibility: 'public',
+      });
+
+      // The report POST is mocked: the flow under test is the dialog, and the
+      // route's rate limit and storage have their own tests (RIN-1343).
+      const reportBodies: unknown[] = [];
+      let reportStatus = 201;
+      await page.route(`**/api/quiz/${reportSlug}/report`, async (route) => {
+        reportBodies.push(route.request().postDataJSON());
+        await route.fulfill(
+          reportStatus === 201
+            ? { status: 201, json: { success: true, data: { reportId: 'fake-report' } } }
+            : {
+                status: 429,
+                json: {
+                  success: false,
+                  error: { code: 'rate_limit_exceeded', message: 'Too many reports.' },
+                },
+              },
+        );
+      });
+
+      await page.addInitScript(() => {
+        window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+      });
+      await page.goto(`/en/quiz/${reportSlug}`);
+      const reportLink = page.getByRole('button', { name: 'Report', exact: true });
+      await reportLink.scrollIntoViewIfNeeded();
+      await reportLink.click();
+
+      const dialog = page.getByRole('dialog', { name: 'Report this quiz' });
+      await expect(dialog).toBeVisible();
+      // The dialog chunk loads on this first click (RIN-1428); focus still moves into it.
+      await expect(dialog.getByRole('radio', { name: 'Copyright' })).toBeFocused();
+      const submit = dialog.getByRole('button', { name: 'Send report' });
+      await expect(submit).toBeDisabled();
+
+      await dialog.getByRole('radio', { name: 'Copyright' }).check();
+      await dialog.getByLabel('Details (optional)').fill('Copied from a textbook');
+      await dialog.getByLabel('Email to reply to (optional)').fill('not-an-email');
+      await expect(dialog.getByText('Enter a valid email address.')).toBeVisible();
+      await expect(submit).toBeDisabled();
+      await dialog.getByLabel('Email to reply to (optional)').fill('reader@example.com');
+
+      reportStatus = 429;
+      await submit.click();
+      await expect(dialog.getByRole('alert')).toHaveText('Too many reports, try again later.');
+
+      reportStatus = 201;
+      await submit.click();
+      await expect(dialog.getByRole('status')).toHaveText("Thanks, we'll review it.");
+      expect(reportBodies.at(-1)).toEqual({
+        reason: 'copyright',
+        details: 'Copied from a textbook',
+        email: 'reader@example.com',
+      });
+    });
+  });
+
   test('plays the starter from the homepage as a guest and claims it on sign-up @critical-quiz-landing', async ({
     page,
   }, testInfo) => {
@@ -1045,11 +1145,17 @@ test.describe('production critical paths', () => {
       let attemptId = '';
       await recordAnalyticsEvents(page);
       try {
+        // RIN-1283: the fonts use display: optional, so whether Vina Sans lands within its
+        // ~100 ms block period was a race under load, and its wider fallback wraps the hero
+        // h1 to 3 lines. Pin the slower case: no webfont, so the hero CTA (not the
+        // bottom-CTA copy) must be wholly in the first screen with the fallback font.
+        await page.route(/\/_next\/static\/media\/.+\.woff2$/, (route) => route.abort());
         await page.goto('/en');
         const playFirst = page
-          .getByRole('link', { name: 'Try a 2-minute quiz, no account' })
-          .first();
-        await expect(playFirst).toBeInViewport();
+          .locator('#landing-main-content > section')
+          .first()
+          .getByRole('link', { name: 'Try a 2-minute quiz, no account' });
+        await expect(playFirst).toBeInViewport({ ratio: 1 });
         await expect
           .poll(() =>
             playFirst.evaluate((node) =>
@@ -1128,6 +1234,134 @@ test.describe('production critical paths', () => {
             },
           }),
           fixture.db.collection('auth_rate_limits').deleteMany({ key: /^auth:register_ip:/ }),
+        ]);
+        await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
+  test('opens the starter from the /blog quiz card as a guest @critical-quiz-landing', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1258: the /blog index card -> /try?entry=blog -> the starter with entry=blog and
+    // no post; a post's card with an unplayable quiz falls back to the starter, keeping post.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      await recordAnalyticsEvents(page);
+      await page.goto('/en/blog');
+      const start = page.getByTestId('try-quiz-card').getByRole('link', { name: 'Start the quiz' });
+      await expect
+        .poll(() =>
+          start.evaluate((node) =>
+            Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+          ),
+        )
+        .toBe(true);
+      await start.click();
+      await expect(page).toHaveURL(new RegExp(`/en/quiz/${starterSlug}\\?entry=blog$`));
+      await expect
+        .poll(() => analyticsEventProperties(page, 'landing_cta_clicked'))
+        .toMatchObject({ cta: 'play_first', position: 'blog_index', locale: 'en' });
+
+      await page.goto('/en/try?entry=blog&post=fake-post&quiz=no-such-quiz-e2e');
+      await expect(page).toHaveURL(
+        new RegExp(`/en/quiz/${starterSlug}\\?entry=blog&post=fake-post$`),
+      );
+    });
+  });
+
+  test('claims a guest result when the verification link opens in another browser @critical-quiz-guest-claim-cross-browser', async ({
+    page,
+    browser,
+    baseURL,
+  }, testInfo) => {
+    // RIN-1310: the guest's claim token lives in browser A; the email is verified and the
+    // learner signs in from browser B. The server claims the attempt at verification.
+    // Guest quiz, sign-up, verification and sign-in in two contexts: longer than 30 s.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const starterSlug = await ensureStarterQuiz(fixture.db, new Date());
+      const email = `e2e-xbrowser-${randomUUID().slice(0, 12)}@example.com`;
+      const origin = new URL(baseURL ?? 'http://localhost:3000').origin;
+      let attemptId = '';
+      // A fresh context shares nothing with the guest's: no storage, no cookies.
+      const other = await browser.newContext({ baseURL: origin });
+      try {
+        await page.goto(`/en/quiz/${starterSlug}`);
+        await submitStarterQuiz(page, starterSlug);
+        const resultUrl = new URL(page.url());
+        attemptId = resultUrl.searchParams.get('attemptId') ?? '';
+
+        await page.getByRole('link', { name: 'Create an account' }).first().click();
+        await page.waitForURL(/\/en\/register\?callbackUrl=/);
+        await page.getByLabel('Email Address').fill(email);
+        await page.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await page.getByLabel('Confirm password').fill(E2E_PASSWORD);
+        await page.getByRole('checkbox').check();
+        await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+        await expect(page.getByText('Check your email')).toBeVisible();
+
+        // The raw token only exists in the email: pin a known one on the pending account.
+        const verificationToken = randomUUID().replace(/-/g, '').repeat(2);
+        await fixture.db.collection('users').updateOne(
+          { email },
+          {
+            $set: {
+              emailVerificationTokenHash: createHash('sha256')
+                .update(verificationToken, 'utf8')
+                .digest('hex'),
+            },
+          },
+        );
+
+        const otherPage = await other.newPage();
+        const verified = await otherPage.request.post('/api/auth/verify-email', {
+          data: { token: verificationToken },
+          headers: { origin },
+        });
+        expect(verified.status()).toBe(200);
+
+        const resultPath = `${resultUrl.pathname.replace(/^\/en/, '')}${resultUrl.search}`;
+        await otherPage.goto(`/en/login?callbackUrl=${encodeURIComponent(resultPath)}`);
+        await otherPage.getByLabel('Email Address').fill(email);
+        await otherPage.getByLabel('Password', { exact: true }).fill(E2E_PASSWORD);
+        await otherPage.getByRole('button', { name: 'Sign In', exact: true }).click();
+        // A soft navigation after sign-in: no load event for waitForURL to wait on.
+        await expect(otherPage).toHaveURL(
+          new RegExp(`/en/quiz/${starterSlug}/result\\?attemptId=${attemptId}`),
+          { timeout: 20_000 },
+        );
+        const user = await fixture.db.collection('users').findOne({ email });
+        const attempt = await fixture.db
+          .collection('attempts')
+          .findOne({ _id: new ObjectId(attemptId) });
+        expect(attempt?.['user']?.toString()).toBe(String(user?.['_id']));
+        await expect(otherPage.getByRole('link', { name: 'Redo' }).first()).toBeVisible();
+        await expect(otherPage.getByText("We couldn't find this")).toHaveCount(0);
+        await expect(otherPage.getByText(/can't open the question review/)).toHaveCount(0);
+      } finally {
+        await other.close();
+        const created = await fixture.db.collection('users').findOne({ email });
+        const ownedAttempts = [
+          ...(ObjectId.isValid(attemptId) ? [{ _id: new ObjectId(attemptId) }] : []),
+          ...(created ? [{ user: created['_id'] }] : []),
+        ];
+        await Promise.all([
+          ownedAttempts.length > 0
+            ? fixture.db.collection('attempts').deleteMany({ $or: ownedAttempts })
+            : Promise.resolve(),
+          fixture.db.collection('auditlogs').deleteMany({ email }),
+          fixture.db.collection('auth_rate_limits').deleteMany({
+            key: {
+              $in: [
+                ...ownedCredentialsRateLimitKeys([email]),
+                ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+              ],
+            },
+          }),
+          fixture.db
+            .collection('auth_rate_limits')
+            .deleteMany({ key: /^auth:(?:register_ip|verify_email_ip):/ }),
         ]);
         await fixture.db.collection('users').deleteMany({ email });
       }
@@ -1329,6 +1563,78 @@ test.describe('production critical paths', () => {
         headers: { 'x-e2e-control-token': E2E_CONTROL_TOKEN },
       });
       expect((await forwarded.json()).data).toEqual({ process: 'en', createSession: 'en' });
+    });
+  });
+
+  test('offers the 2-day review on the adaptive end screen to a signed-in learner @critical-adaptive', async ({
+    page,
+  }, testInfo) => {
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const sessionId = `e2e-review-${fixture.runId}`;
+      const outcome = {
+        version: 1,
+        result: {
+          is_correct: true,
+          correct_option: 'A',
+          explanation: 'Fake explanation.',
+          concept_name: 'Fake concept',
+          bloom_level: 1,
+          mastery_after: 0.6,
+          avg_mastery: 0.5,
+          step: 5,
+          session_completed: true,
+          stats: { total_correct: 4, total_answered: 5, accuracy: 0.8 },
+        },
+        exercise: {
+          id: 'e2e-exercise-5',
+          exercise_id: 'e2e-exercise-5',
+          concept_name: 'Fake concept',
+          concept_idx: 0,
+          bloom_level: 1,
+          bloom_label: 'Remember',
+          exercise_type: 'mcq',
+          question: 'Fake question?',
+          options: { A: 'Fake answer', B: 'Other fake answer' },
+          items: [],
+          pairs: [],
+          right_items: [],
+          step: 5,
+          max_steps: 5,
+        },
+        answer: { type: 'mcq', selection: 'A' },
+      };
+      await login(page, fixture.regular);
+      await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [
+        `al_session_outcome:v1:${sessionId}`,
+        JSON.stringify(outcome),
+      ] as const);
+      await page.goto(`/en/adaptive/result/${sessionId}`);
+
+      // The fake API reports a completion an hour ago, so the prompt shows (RIN-1364).
+      await expect(page.getByText('Session Complete!')).toBeVisible();
+      await expect(
+        page.getByText('Want a reminder in 2 days to review what you just studied?'),
+      ).toBeVisible();
+      // "Remind me" needs SUPPORT_MAIL_FROM, which the e2e environment lacks; the opt-in
+      // rows are covered by unit tests. "No thanks" snoozes the prompt with no consent event.
+      const remind = page.getByRole('button', { name: 'Remind me in 2 days', exact: true });
+      const decline = page.getByRole('button', { name: 'No thanks', exact: true });
+      await expect(remind).toBeVisible();
+      await decline.click();
+      await expect(decline).toBeHidden();
+      await expect
+        .poll(async () => {
+          const preference = await fixture.db
+            .collection('marketingpreferences')
+            .findOne({ userId: fixture.regular.id });
+          return preference?.['reviewPromptSnoozedUntil'] instanceof Date;
+        })
+        .toBe(true);
+      expect(
+        await fixture.db
+          .collection('marketingconsentevents')
+          .countDocuments({ userId: fixture.regular.id }),
+      ).toBe(0);
     });
   });
 
@@ -1649,6 +1955,130 @@ test.describe('production critical paths', () => {
           action: 'quiz.visibility.changed',
           actorId: fixture.admin.id.toHexString(),
           details: { slug: fixture.quizSlug, from: 'personal', to: 'public' },
+        },
+      ]);
+    });
+  });
+
+  test('shows a quiz-page copyright report first and hides the quiz from it @critical-admin-quiz-report-hide', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1344: reason, source and the pending hold count on /admin/reports, then Hide quiz.
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const title = `E2E Reported ${fixture.runId}`;
+      await fixture.db
+        .collection('quizzes')
+        .updateOne({ _id: fixture.quizId }, { $set: { title } });
+      const now = new Date();
+      const reportId = new ObjectId();
+      await fixture.db.collection('reports').insertOne({
+        _id: reportId,
+        _e2eRun: fixture.runId,
+        quizId: fixture.quizId.toHexString(),
+        quizTitle: title,
+        quizSlug: fixture.quizSlug,
+        reason: 'copyright',
+        source: 'quiz_page',
+        content: 'Copied from a textbook',
+        ipHash: 'e2e-fake-ip-hash',
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      try {
+        await login(page, fixture.admin);
+        await page.goto('/en/admin/reports');
+        await expect(page.getByRole('heading', { name: 'Quiz Reports' })).toBeVisible();
+        await expect(page.getByText(/^[1-9]\d* pending copyright \/ personal-data$/)).toBeVisible();
+
+        const reasons = page.getByRole('group', { name: 'Filter by reason' });
+        await reasons.getByRole('button', { name: 'Copyright', exact: true }).click();
+        const card = page
+          .locator('div.p-6')
+          .filter({ has: page.getByRole('heading', { name: title }) });
+        await expect(card).toHaveCount(1);
+        await expect(card.getByText('Quiz page', { exact: true })).toBeVisible();
+        await expect(card.getByText('Copyright', { exact: true })).toBeVisible();
+
+        await card.getByRole('button', { name: 'Hide quiz', exact: true }).click();
+        const confirm = page.getByRole('dialog', { name: 'Hide quiz' });
+        await expect(confirm).toContainText(title);
+        await confirm.getByRole('button', { name: 'Hide quiz', exact: true }).click();
+        await expect(confirm).toBeHidden();
+
+        await expect
+          .poll(
+            async () =>
+              (await fixture.db.collection('reports').findOne({ _id: reportId }))?.['status'],
+          )
+          .toBe('resolved');
+        const hidden = await fixture.db.collection('quizzes').findOne({ _id: fixture.quizId });
+        expect(hidden?.['visibility']).toBe('personal');
+      } finally {
+        await fixture.db.collection('reports').deleteMany({ _e2eRun: fixture.runId });
+      }
+    });
+  });
+
+  test('filters flagged quizzes and clears a personal-data flag with an audit entry @critical-admin-quiz-personal-data-flag', async ({
+    page,
+    request,
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const quizHexId = fixture.quizId.toHexString();
+      const title = `E2E Personal Data ${fixture.runId}`;
+      await fixture.db.collection('quizzes').updateOne(
+        { _id: fixture.quizId },
+        {
+          $set: {
+            title,
+            contentFlags: { personalData: true, kinds: ['phone'], checkedAt: new Date() },
+          },
+        },
+      );
+
+      // A plain user may not clear a flag (RIN-1342); the cookie-less context is anonymous.
+      const anonymousClear = await request.post(
+        `/api/admin/quizzes/${quizHexId}/clear-personal-data-flag`,
+        { headers: { 'Sec-Fetch-Site': 'same-origin' } },
+      );
+      expect(anonymousClear.status()).toBe(401);
+
+      await login(page, fixture.admin);
+      await page.goto('/en/admin/quizzes');
+      await expect(page.getByRole('heading', { name: 'Quiz Management' })).toBeVisible();
+      await page.getByLabel('Content flag').selectOption('personal_data');
+      const search = page.getByLabel('Search quizzes...');
+      await search.fill(title);
+      await search.press('Enter');
+      const row = page.locator('article').filter({ hasText: title });
+      await expect(row).toHaveCount(1);
+      await expect(row).toContainText('Personal data: phone');
+
+      await row.getByRole('button', { name: 'Clear flag', exact: true }).click();
+      const confirm = page.getByRole('dialog');
+      await expect(confirm).toContainText(title);
+      await confirm.getByRole('button', { name: 'Clear flag', exact: true }).click();
+      await expect(row.getByRole('button', { name: 'Clear flag', exact: true })).toHaveCount(0);
+      await expect(row).not.toContainText('Personal data:');
+
+      const cleared = await fixture.db.collection('quizzes').findOne({ _id: fixture.quizId });
+      expect(cleared?.['contentFlags']).toMatchObject({ personalData: false, kinds: ['phone'] });
+      expect(String(cleared?.['contentFlags']?.['clearedBy'])).toBe(fixture.admin.id.toHexString());
+
+      const audits = await fixture.db
+        .collection('adminactionaudits')
+        .find({ entityType: 'quiz', entityId: quizHexId })
+        .toArray();
+      expect(
+        audits.map((audit) => ({ action: audit['action'], details: audit['details'] })),
+      ).toEqual([
+        {
+          action: 'quiz.personal_data_flag.cleared',
+          details: { slug: fixture.quizSlug, kinds: 'phone' },
         },
       ]);
     });

@@ -18,6 +18,7 @@ function toAdminQuizListItemViewModel(quiz: AdminQuizListItemDto): AdminQuizList
     visibility: quiz.visibility,
     visibilityLabelKey: quiz.visibility,
     questionCount: quiz.questionCount,
+    ...(quiz.personalDataKinds !== undefined && { personalDataKinds: [...quiz.personalDataKinds] }),
     createdAt: quiz.createdAt,
     updatedAt: quiz.updatedAt,
   };

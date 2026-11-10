@@ -4,7 +4,8 @@ export type PremiumSubmissionStatusViewModel =
   | 'pending'
   | 'changes_requested'
   | 'rejected'
-  | 'approved';
+  | 'approved'
+  | 'withdrawn';
 
 interface PremiumQuestionViewModel {
   id: string;
@@ -97,6 +98,8 @@ export interface PremiumDecisionResultViewModel {
   submission: PremiumSubmissionViewModel;
   awardedCredits: number;
   rewardLocked: boolean;
+  /** Set on reject: whether the quiz became public (RIN-1337). */
+  quizMadePublic?: boolean;
 }
 
 export interface PremiumSourceUrlViewModel {

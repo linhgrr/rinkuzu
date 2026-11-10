@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { getBlogAuthor, type BlogAuthor } from '@/lib/blog/authors';
+import { blogFeedAlternates } from '@/lib/blog/feed';
 import {
   formatBlogDate,
   getBlogAuthorSlugs,
@@ -12,6 +13,11 @@ import {
 } from '@/lib/blog/posts';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
+
+// Re-render at most hourly (ISR) so a post scheduled by a future `date` goes
+// live on that day without a deploy, while crawlers still get a cached static
+// page (RIN-1329, `isPublished` in src/lib/blog/posts.ts).
+export const revalidate = 3600;
 
 export function generateStaticParams(): Array<{ slug: string }> {
   return getBlogAuthorSlugs()
@@ -27,6 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: `/blog/authors/${slug}`,
+    alternateTypes: blogFeedAlternates(toBlogLocale(locale)),
     title:
       locale === 'vi'
         ? `${author.name} — Tác giả tại Blog RinKuzu`

@@ -527,6 +527,11 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
           visibility: 'public',
           'questions.4': { $exists: true },
           author: { $nin: [ownerId] },
+          // RIN-1341: flagged (no admin clear) and held quizzes never reach the sitemap.
+          indexHold: null,
+          $nor: [
+            { 'contentFlags.personalData': true, 'contentFlags.clearedBy': { $exists: false } },
+          ],
         },
       },
       { $sort: { createdAt: -1 } },
@@ -554,5 +559,11 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
 
     expect(record?.leadQuestionTexts).toEqual(['Kiểm thử là gì?', 'Mục tiêu?']);
     expect(record?.quiz).not.toHaveProperty('leadQuestionTexts');
+    // RIN-1341: the page reads the flag and the hold for its robots rule.
+    const pipeline = quizModelMocks.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[];
+    const project = pipeline.find((stage) => '$project' in stage) as {
+      $project: Record<string, unknown>;
+    };
+    expect(project.$project).toMatchObject({ contentFlags: 1, indexHold: 1 });
   });
 });

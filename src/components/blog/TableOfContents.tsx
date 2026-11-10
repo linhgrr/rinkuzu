@@ -5,9 +5,11 @@ import type { TocItem } from '@/lib/blog-utils';
 
 interface TableOfContentsProps {
   headings: TocItem[];
+  /** Localized heading, from the `blog` messages (RIN-1387). */
+  title: string;
 }
 
-export const TableOfContents = ({ headings }: TableOfContentsProps) => {
+export const TableOfContents = ({ headings, title }: TableOfContentsProps) => {
   const [activeId, setActiveId] = useState<string>('');
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export const TableOfContents = ({ headings }: TableOfContentsProps) => {
         id="toc-heading"
         className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-4"
       >
-        Table of Contents
+        {title}
       </h4>
       <ul className="space-y-3">
         {headings.map((item) => (

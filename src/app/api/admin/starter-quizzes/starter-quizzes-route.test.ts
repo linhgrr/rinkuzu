@@ -36,6 +36,8 @@ const QUIZ_NEW = 'dddddddddddddddddddddddd';
 const QUIZ_PRIVATE = 'eeeeeeeeeeeeeeeeeeeeeeee';
 const QUIZ_PREMIUM = 'ffffffffffffffffffffffff';
 const QUIZ_GONE = '111111111111111111111111';
+const QUIZ_FLAGGED = '222222222222222222222222';
+const QUIZ_HELD = '333333333333333333333333';
 const ROW_A = '0000000000000000000000a1';
 const ROW_B = '0000000000000000000000b1';
 const ROW_C = '0000000000000000000000c1';
@@ -89,6 +91,8 @@ function candidate(
     visibility: 'public',
     questionCount: 8,
     isPremium: false,
+    personalDataFlagged: false,
+    indexHold: false,
     ...overrides,
   };
 }
@@ -100,6 +104,8 @@ const CANDIDATES = [
   candidate(QUIZ_NEW),
   candidate(QUIZ_PRIVATE, { visibility: 'personal' }),
   candidate(QUIZ_PREMIUM, { isPremium: true }),
+  candidate(QUIZ_FLAGGED, { personalDataFlagged: true }),
+  candidate(QUIZ_HELD, { indexHold: true }),
 ];
 
 const candidateRepository: IStarterQuizReadRepository = {
@@ -230,6 +236,23 @@ describe('GET /api/admin/starter-quizzes', () => {
       expect.objectContaining({ quizId: QUIZ_PREMIUM, status: 'dropped', dropReason: 'premium' }),
     ]);
   });
+
+  // RIN-1408: the dashboard and landing skip these since RIN-1341; the list must not call them live.
+  it('returns dropped for a starter flagged for personal data or under a report hold', async () => {
+    starters.rows = [
+      { id: ROW_A, quizId: QUIZ_FLAGGED, locale: 'vi', order: 1 },
+      { id: ROW_B, quizId: QUIZ_HELD, locale: 'en', order: 2 },
+    ];
+    const body = await (await GET(jsonRequest('GET', ''), noParams)).json();
+    expect(body.data.items).toEqual([
+      expect.objectContaining({
+        quizId: QUIZ_FLAGGED,
+        status: 'dropped',
+        dropReason: 'personal-data',
+      }),
+      expect.objectContaining({ quizId: QUIZ_HELD, status: 'dropped', dropReason: 'held' }),
+    ]);
+  });
 });
 
 describe('POST /api/admin/starter-quizzes', () => {
@@ -274,6 +297,8 @@ describe('POST /api/admin/starter-quizzes', () => {
     ['missing', QUIZ_GONE],
     ['not public', QUIZ_PRIVATE],
     ['premium', QUIZ_PREMIUM],
+    ['flagged', QUIZ_FLAGGED],
+    ['held', QUIZ_HELD],
   ])('returns 422 for a %s quiz and writes nothing', async (_label, quizId) => {
     const response = await POST(jsonRequest('POST', '', { quizId, locale: 'vi' }), noParams);
     expect(response.status).toBe(422);

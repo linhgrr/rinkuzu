@@ -41,9 +41,92 @@ Optional fields override copy that otherwise falls back to a required field:
 | `ctaTitle`, `ctaBody`    | a generic upload CTA | Call to action below the article.          |
 | `wordCount`              | omitted              | Article JSON-LD `wordCount`.               |
 | `timeRequiredMinutes`    | omitted              | Article JSON-LD `timeRequired` (`PT<n>M`). |
+| `draft`                  | `false`              | `true` hides the post everywhere (below).  |
+
+`tags` (optional, up to 8 non-empty strings, e.g. `["personalized-learning", "pdf"]`)
+picks the related posts shown under each article: posts in the same locale that
+share a tag (compared case-insensitively) or the `category`, most shared tags
+first, then same category, then newest; at most 3. A post that shares neither
+shows no related block. Give a translation the same tags as its `en` post.
 
 A missing or invalid required field fails validation (and the build) rather
 than rendering a broken page — see `src/lib/blog/content.test.ts`.
+
+## "Try this quiz" card
+
+An optional `quiz` block turns on a card that sends readers into a quiz
+(RIN-1258). Both keys are optional:
+
+```yaml
+quiz:
+  slug: how-to-remember-what-you-study # a public quiz slug: a-z, 0-9, hyphens, max 80
+  teaser: 'Ten questions on spaced repetition. How much stuck?' # max 140 characters
+```
+
+Write `quiz: {}` to show the card with neither. The card shows "Test yourself
+on this", the teaser, "10 questions · no sign-up" and a "Start the quiz"
+button linking to `/try?entry=blog&post=<post-slug>&quiz=<slug>`. `/try` opens
+the quiz when a guest can play it free (public, not Premium, not empty; a quick
+round when it is long), otherwise the locale's starter quiz, otherwise the
+public quiz list. A bad slug or a teaser over 140 characters fails the build;
+unknown keys in the block fail it too.
+
+The card goes **after the article body, before the share buttons**. To place
+it yourself, put this on a line of its own, with blank lines around it:
+
+```mdx
+<TryQuiz />
+<TryQuiz teaser="Optional teaser for this spot only" />
+```
+
+A post that uses `<TryQuiz />` gets no automatic end card, and `<TryQuiz />`
+works without a `quiz` block (it then opens the starter). It is the only tag a
+body may contain: the marker must be the whole line, and the teaser may not
+hold quotes, braces or angle brackets. A post with neither shows no card. The
+`/blog` index always shows one card, without a post.
+
+## The body is Markdown, not code
+
+Posts are data. The body is rendered by react-markdown (GFM, raw HTML skipped)
+in `src/components/ui/MarkdownRenderer.tsx`; it is **never compiled as MDX**,
+so there is no MDX runtime and no component allowlist to maintain. The `.mdx`
+extension is kept only for editor highlighting.
+
+Loading posts (`src/lib/blog/body-safety.ts`, called from
+`src/lib/blog/content.ts`) fails with `BlogContentError: <file>:<line>: ...`
+when the body contains, **outside fenced code blocks and inline code**:
+
+- an `import` or `export` statement line;
+- a JSX/MDX expression: any `{` or `}` (write `\{` and `\}` to show a brace);
+- a raw HTML or JSX tag: `<div>`, `</span>`, `<Foo />`, `<script>`, `<!-- -->`
+  (write `\<` to show a literal `<` before a letter);
+- a link, image, reference or autolink URL whose scheme is not `http`, `https`
+  or `mailto`. Relative links (`/en/faq`, `#section`) are fine.
+
+The one exception is a whole-line `<TryQuiz />` marker (see above).
+Everything else is fine: headings, lists, emphasis, GFM tables and task lists,
+images, links, `<https://...>` autolinks, and any of the constructs above inside
+a code block or code span. The check runs in
+`src/lib/blog/content.test.ts` (it loads the real `content/blog` tree), so a PR
+that adds such a post turns the `test:unit` step of `local/ci` red, and
+`next build` fails on it too.
+
+## Drafts and scheduled posts
+
+`isPublished` in `src/lib/blog/posts.ts` decides, for every list, the author
+pages, previous/next links, the sitemap and the post route:
+
+- `draft: true` keeps the post out of all of them, and its URL is a 404, in
+  every environment (dev, preview and production alike; there is no draft
+  preview mode). To check a draft locally, set `draft: false` in your working
+  copy and run `next dev`; do not commit that.
+- A `date` after today (UTC) works like a draft until that day. The blog pages
+  and `sitemap.xml` are statically cached and re-rendered at most hourly
+  (`export const revalidate = 3600`, ISR), so the post appears within an hour
+  of 00:00 UTC on its date, with no new deploy.
+
+The file is still validated (frontmatter and body) while it is a draft or
+scheduled, so a broken draft fails CI just like a published post.
 
 ## Publishing a new post
 

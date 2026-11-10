@@ -10,6 +10,7 @@ import {
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 import { QUICK_ROUND_SIZE } from '@/shared/constants/quick-round';
+import { REPORT_REASONS } from '@/shared/constants/report-reason';
 import type { QuizQuestionDisplay, QuizQuestionWithAnswerKey } from '@/shared/types/quiz-question';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
@@ -30,6 +31,17 @@ export const quizListQuerySchema = z.strictObject({
 export const reportQuizRequestSchema = z.strictObject({
   questionId: objectIdSchema,
   content: z.string().trim().min(1, 'Report content is required').max(2000),
+});
+
+/**
+ * The quiz-level "Report this quiz" form (RIN-1343): open to anyone. `website`
+ * is a honeypot that people never see; a filled one is accepted and dropped.
+ */
+export const reportQuizPageRequestSchema = z.strictObject({
+  reason: z.enum(REPORT_REASONS),
+  details: z.string().trim().max(2000).optional(),
+  email: z.string().trim().max(254).pipe(z.email()).optional(),
+  website: z.string().max(500).optional(),
 });
 
 /**
@@ -137,10 +149,29 @@ export interface QuizListItemDto {
  */
 export interface QuizMetadataDto extends QuizListItemDto {
   ownerIndexable: boolean;
+  /** Personal data flagged with no admin clear in force (RIN-1341). Server-only. */
+  personalDataFlagged: boolean;
+  /** Under a report hold (RIN-1341). Server-only. */
+  indexHold: boolean;
   /** Texts of the first (up to 3) questions, for the generated description (RIN-1241). */
   leadQuestionTexts: string[];
   /** The one language the quiz is written in; its page there is canonical (RIN-1241 D14). */
   contentLocale: 'vi' | 'en';
+}
+
+/** A link to another indexable public quiz on a quiz landing (RIN-1241 C12). */
+export interface RelatedQuizDto {
+  slug: string;
+  title: string;
+  questionCount: number;
+}
+
+export interface RelatedQuizzesQueryDto {
+  /** The quiz on the page; never linked to itself. */
+  excludeSlug: string;
+  /** Only quizzes written in this language (RIN-1241 D14). */
+  contentLocale: 'vi' | 'en';
+  limit: number;
 }
 
 /** An indexable public quiz (RIN-1241 D13), listed once at its content-locale URL. */
@@ -157,13 +188,23 @@ export type QuizQuestionDto = QuizQuestionInputDto & {
 
 export type PlayableQuizQuestionDto = QuizQuestionDisplay;
 
+/** Owner/admin view of the personal-data check (RIN-1338); never on public DTOs. */
+interface QuizContentFlagsDto {
+  personalData: boolean;
+  kinds: string[];
+}
+
 export interface QuizDetailDto extends QuizListItemDto {
   questions: QuizQuestionDto[];
   pdfUrl?: string;
   tags?: string[];
+  contentFlags?: QuizContentFlagsDto;
 }
 
-export interface QuizPlayDetailDto extends Omit<QuizDetailDto, 'questions'> {
+export interface QuizPlayDetailDto extends Omit<
+  QuizDetailDto,
+  'questions' | 'pdfUrl' | 'contentFlags'
+> {
   questions: PlayableQuizQuestionDto[];
   /** Present on a retry-missed session: `questions[i]` is quiz question `questionIndices[i]`. */
   retry?: { ofAttemptId: string; questionIndices: number[] };
@@ -238,11 +279,13 @@ export const submitQuizAttemptRequestSchema = z
     /** Quick round only: `answers[i]` answers quiz question `questionIndices[i]` (play order). */
     questionIndices: z.array(z.number().int().min(0)).optional(),
     /**
-     * RIN-1256: where the attempt started (`?entry=`, and `?post=` with `entry=blog`).
+     * RIN-1256: where the attempt started (`?entry=`, `?post=` with `entry=blog`,
+     * `?topic=` with `entry=hub` since RIN-1417).
      * Any string is accepted; the route keeps only tracked values and drops the rest.
      */
     entry: z.string().optional(),
     post: z.string().optional(),
+    topic: z.string().optional(),
   })
   .superRefine((body, ctx) => {
     // The quiz-dependent checks (size threshold, index range) run in the service.

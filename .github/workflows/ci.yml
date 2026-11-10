@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -207,15 +207,14 @@ jobs:
 
   mutation:
     name: Critical mutation
-    # Deferred off the pull-request path, and measured rather than assumed: the
-    # campaign's fixed cost is its initial test run, which instruments the whole
-    # unit corpus and takes about nine minutes of which only sixty-nine seconds
-    # is test execution. Stryker's incremental cache reuses verdicts perfectly
-    # (42 of 42 in a control run) but cannot avoid that pass, so no cache makes
-    # this suitable for a gate a developer waits on. It runs on every push to
-    # master instead, which detects a regression one merge after it lands rather
-    # than one night later.
-    if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
+    # Weekly full campaign on the Monday cron, plus manual dispatch. It is off
+    # the pull-request, merge-queue and push paths: its fixed cost is the initial
+    # test run, which instruments the whole unit corpus and takes about nine
+    # minutes of which only sixty-nine seconds is test execution. Stryker's
+    # incremental cache reuses verdicts perfectly but cannot avoid that pass, so
+    # no cache makes this suitable for a check a developer waits on, and running
+    # it on every master push cost more runner time than it was worth.
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     # Full campaigns have a 3h process timeout; leave setup/evidence headroom
     # while preventing a stuck worker tree from consuming the 6h Actions default.
@@ -251,17 +250,7 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           # Invoke the wrapper script directly (not `npm run`) so package-script hijack cannot redirect CI.
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            node scripts/run-mutation-gate.mjs --mode full
-          else
-            BASE_REF="${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}"
-            if [ -z "$BASE_REF" ] || [ "$BASE_REF" = "0000000000000000000000000000000000000000" ] || ! git rev-parse --verify "${BASE_REF}^{commit}" >/dev/null 2>&1; then
-              # Empty/all-zero/unresolvable push base: run full rather than under-scoping via HEAD^.
-              node scripts/run-mutation-gate.mjs --mode full
-            else
-              node scripts/run-mutation-gate.mjs --mode changed --base-ref "$BASE_REF"
-            fi
-          fi
+          node scripts/run-mutation-gate.mjs --mode full
 
       - name: Upload mutation evidence
         if: ${{ !cancelled() }}
@@ -695,10 +684,34 @@ jobs:
       # --config is passed explicitly rather than relying on gitleaks finding
       # .gitleaks.toml by itself: a silently missing config would drop the two
       # repository-specific rules and turn this gate green for the wrong reason.
+      # On a pull request the checked-out tree is the PR's own merge commit, so
+      # its config and ignore file are attacker-controlled: a PR could add its
+      # own fingerprint to .gitleaksignore or a `gitleaks:allow` comment. Read
+      # both from the base commit instead, and ignore inline allow comments.
+      # A missing base config falls back to the default rules, never to no scan.
       - name: Scan all reachable repository history
-        run: >-
-          "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1
-          --config .gitleaks.toml --log-opts='--all' .
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            trusted="${RUNNER_TEMP}/gitleaks-base"
+            mkdir -p "$trusted"
+            git cat-file -e "${BASE_SHA}^{commit}"
+            if ! git show "${BASE_SHA}:.gitleaks.toml" > "$trusted/.gitleaks.toml" 2>/dev/null; then
+              printf '[extend]\nuseDefault = true\n' > "$trusted/.gitleaks.toml"
+            fi
+            git show "${BASE_SHA}:.gitleaksignore" > "$trusted/.gitleaksignore" 2>/dev/null || : > "$trusted/.gitleaksignore"
+            # gitleaks also loads <source>/.gitleaksignore (the PR's own file, with
+            # global file:rule:line entries). This job only scans, so drop it.
+            rm -f -- .gitleaksignore
+            "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 --ignore-gitleaks-allow \
+              --config "$trusted/.gitleaks.toml" --gitleaks-ignore-path "$trusted/.gitleaksignore" \
+              --log-opts='--all' .
+          else
+            "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code=1 \
+              --config .gitleaks.toml --log-opts='--all' .
+          fi
 
   codeql:
     name: CodeQL (${{ matrix.language }})
@@ -768,28 +781,37 @@ jobs:
         env:
           REQUIRED_RESULTS: ${{ toJSON(needs) }}
           EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           node - <<'NODE'
           const results = JSON.parse(process.env.REQUIRED_RESULTS);
           const eventName = process.env.EVENT_NAME;
+          // The cutover guard reads this line to check that a green run was
+          // tested on the current master head.
+          if (eventName === 'pull_request') console.log(`tested-base=${process.env.BASE_SHA}`);
           const EXPECTED_JOBS = 17;
 
-          // Two campaigns are deferred to master because their fixed cost makes
-          // them unfit for a check a developer waits on, and two suites are
-          // skipped when the change cannot reach them. Neither allowance is a
-          // blanket tolerance of `skipped`: each is tied to the reason it is
+          // Two campaigns are deferred because their fixed cost makes them unfit
+          // for a check a developer waits on: mutation runs only on the weekly
+          // schedule (and manual dispatch), so a skip is excused on pull_request,
+          // merge_group and push but never on schedule; performance is deferred
+          // to master and excused only on pull_request and merge_group. Two
+          // suites are skipped when the change cannot reach them. No allowance is
+          // a blanket tolerance of `skipped`: each is tied to the reason it is
           // allowed, and a job that ran and failed is never excused.
-          const DEFERRED_TO_MASTER = new Set(['mutation', 'performance']);
+          const DEFERRAL_EVENTS = {
+            mutation: new Set(['pull_request', 'merge_group', 'push']),
+            performance: new Set(['pull_request', 'merge_group']),
+          };
           const PATH_FILTERED = new Set(['integration', 'e2e-build', 'e2e', 'e2e-report']);
 
-          const deferralAllowed = eventName === 'pull_request' || eventName === 'merge_group';
           // Read from the classifier's own output, not assumed: if that job did
           // not run or did not answer, no path-based skip is permitted.
           const pathSkipAllowed = results.changes?.outputs?.heavy === 'false';
 
           const excused = (name, result) => {
             if (result !== 'skipped') return false;
-            if (DEFERRED_TO_MASTER.has(name)) return deferralAllowed;
+            if (name in DEFERRAL_EVENTS) return DEFERRAL_EVENTS[name].has(eventName);
             if (PATH_FILTERED.has(name)) return pathSkipAllowed;
             return false;
           };

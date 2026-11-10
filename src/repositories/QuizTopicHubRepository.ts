@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongoose';
 import QuizModel from '@/models/Quiz';
 import QuizTopicModel from '@/models/QuizTopic';
 import QuizTopicAssignmentModel from '@/models/QuizTopicAssignment';
+import { QUIZ_INDEX_BLOCK_PROJECTION } from '@/repositories/quiz-index-filter';
 import {
   TOPIC_PROJECTION,
   toTopicRecord,
@@ -31,6 +32,8 @@ interface HubQuizPersistence {
   visibility: string;
   author?: Types.ObjectId | null;
   questionCount: number;
+  personalDataFlagged: boolean;
+  indexHold: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -50,6 +53,26 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
   async findPublishedTopicBySlug(slug: string): Promise<QuizTopicRecord | null> {
     await connectDB();
     const row = await QuizTopicModel.findOne({ slug, published: true }, TOPIC_PROJECTION)
+      .lean<QuizTopicPersistence>()
+      .exec();
+    return row ? toTopicRecord(row) : null;
+  }
+
+  async findPublishedTopicByQuizId(quizId: string): Promise<QuizTopicRecord | null> {
+    if (!Types.ObjectId.isValid(quizId)) return null;
+    await connectDB();
+    // Unique `quizId` index, then the topic by `_id`: two point reads.
+    const assignment = await QuizTopicAssignmentModel.findOne(
+      { quizId: new Types.ObjectId(quizId) },
+      { topicId: 1 },
+    )
+      .lean<Pick<HubAssignmentPersistence, 'topicId'>>()
+      .exec();
+    if (!assignment) return null;
+    const row = await QuizTopicModel.findOne(
+      { _id: assignment.topicId, published: true },
+      TOPIC_PROJECTION,
+    )
       .lean<QuizTopicPersistence>()
       .exec();
     return row ? toTopicRecord(row) : null;
@@ -100,6 +123,7 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
           createdAt: 1,
           updatedAt: 1,
           questionCount: { $size: { $ifNull: ['$questions', []] } },
+          ...QUIZ_INDEX_BLOCK_PROJECTION,
         },
       },
     ]);
@@ -110,6 +134,8 @@ export class QuizTopicHubRepository implements IQuizTopicHubRepository {
       visibility: row.visibility,
       authorId: row.author ? row.author.toString() : null,
       questionCount: row.questionCount,
+      personalDataFlagged: row.personalDataFlagged,
+      indexHold: row.indexHold,
       createdAt: row.createdAt,
       ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
     }));

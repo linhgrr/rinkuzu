@@ -4,9 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
 import type { AdminQuizListItemViewModel } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
 
-const { fetchListMock, setVisibilityMock, translate } = vi.hoisted(() => ({
+const { fetchListMock, setVisibilityMock, clearFlagMock, translate } = vi.hoisted(() => ({
   fetchListMock: vi.fn(),
   setVisibilityMock: vi.fn(),
+  clearFlagMock: vi.fn(),
   translate: (key: string) => key,
 }));
 
@@ -22,6 +23,13 @@ vi.mock('@/i18n/navigation', () => ({
     </a>
   ),
 }));
+// The topic panel (RIN-1248) loads with the page; its own tests live beside it.
+vi.mock('@/features/admin/quizzes/api/admin-quiz-topics-api', () => ({
+  fetchAdminQuizTopics: () => Promise.resolve([]),
+}));
+vi.mock('@/features/admin/quizzes/components/AdminQuizTopicsPanel', () => ({
+  AdminQuizTopicsPanel: () => null,
+}));
 vi.mock('@/features/quiz/components/QuizPreviewModal', () => ({ QuizPreviewModal: () => null }));
 vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   fetchAdminQuizListViewModel: (...args: unknown[]) => fetchListMock(...args),
@@ -33,6 +41,7 @@ vi.mock('@/features/admin/quizzes/api/admin-quizzes-api', () => ({
   updateStarterQuiz: vi.fn(),
   unmarkStarterQuiz: vi.fn(),
   setAdminQuizVisibility: (...args: unknown[]) => setVisibilityMock(...args),
+  clearAdminQuizPersonalDataFlag: (...args: unknown[]) => clearFlagMock(...args),
 }));
 
 import { AdminQuizzesPageClient } from './AdminQuizzesPageClient';
@@ -153,5 +162,90 @@ describe('AdminQuizzesPageClient visibility action', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/premium publication/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'quizMakePublic' })).toBeInTheDocument();
+  });
+});
+
+// RIN-1342 (spec RIN-1336 Part 3, AC4): admins see flagged quizzes, filter to
+// them, and clear a false positive after confirming.
+describe('AdminQuizzesPageClient personal-data flag', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
+      this.open = true;
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+      this.open = false;
+    });
+  });
+
+  it('shows the badge and Clear flag only on flagged rows', async () => {
+    fetchListMock.mockResolvedValue({
+      ...listOf(quiz({ personalDataKinds: ['phone'] })),
+      quizzes: [
+        quiz({ personalDataKinds: ['phone'] }),
+        quiz({ id: '507f191e810c19729de860ee', title: 'Fake Clean Quiz' }),
+      ],
+    });
+
+    render(<AdminQuizzesPageClient />);
+
+    expect(await screen.findAllByText('quizPersonalDataBadge')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'quizClearPersonalDataFlag' })).toHaveLength(1);
+  });
+
+  it('filters the list to flagged quizzes from page 1', async () => {
+    const user = userEvent.setup();
+    fetchListMock.mockResolvedValue(listOf(quiz()));
+
+    render(<AdminQuizzesPageClient />);
+    await screen.findByText('Fake Community Quiz');
+    expect(fetchListMock).toHaveBeenLastCalledWith(expect.objectContaining({ flag: 'all' }));
+
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'quizFlagFilterLabel' }),
+      'personal_data',
+    );
+
+    await waitFor(() =>
+      expect(fetchListMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ flag: 'personal_data', page: 1 }),
+      ),
+    );
+  });
+
+  it('clears the flag only after confirmation, then drops the badge', async () => {
+    const user = userEvent.setup();
+    fetchListMock.mockResolvedValue(listOf(quiz({ personalDataKinds: ['email'] })));
+    clearFlagMock.mockResolvedValue({
+      id: '507f191e810c19729de860ea',
+      slug: 'fake-community-quiz',
+      cleared: true,
+    });
+
+    render(<AdminQuizzesPageClient />);
+
+    await user.click(await screen.findByRole('button', { name: 'quizClearPersonalDataFlag' }));
+    expect(clearFlagMock).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'quizClearPersonalDataFlag' }));
+
+    await waitFor(() => expect(clearFlagMock).toHaveBeenCalledWith('507f191e810c19729de860ea'));
+    await waitFor(() => expect(screen.queryByText('quizPersonalDataBadge')).toBeNull());
+    expect(screen.queryByRole('button', { name: 'quizClearPersonalDataFlag' })).toBeNull();
+  });
+
+  it('keeps the badge and shows localized copy when the clear fails', async () => {
+    const user = userEvent.setup();
+    fetchListMock.mockResolvedValue(listOf(quiz({ personalDataKinds: ['email'] })));
+    clearFlagMock.mockRejectedValue(new Error('server text'));
+
+    render(<AdminQuizzesPageClient />);
+
+    await user.click(await screen.findByRole('button', { name: 'quizClearPersonalDataFlag' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'quizClearPersonalDataFlag' }));
+
+    expect(await screen.findByText('quizClearPersonalDataFlagError')).toBeInTheDocument();
+    expect(screen.getByText('quizPersonalDataBadge')).toBeInTheDocument();
   });
 });

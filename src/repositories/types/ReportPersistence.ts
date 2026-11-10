@@ -1,4 +1,5 @@
 import type { ReportStatus } from '@/shared/constants/report-status';
+import type { ReportReason, ReportSource } from '@/shared/constants/report-reason';
 import type { QuestionType } from '@/shared/constants/question-type';
 import type { MongoIdLike } from '@/types/mongo';
 
@@ -31,9 +32,14 @@ export interface ReportPersistenceFields {
   quizSlug: string;
   questionId?: string;
   questionSnapshot?: ReportQuestionSnapshotPersistence;
-  reporterEmail: string;
-  reporterName: string;
-  content: string;
+  /** Optional only on `source: 'quiz_page'` reports, which may be anonymous. */
+  reporterEmail?: string;
+  reporterName?: string;
+  content?: string;
+  reason?: ReportReason;
+  source?: ReportSource;
+  /** HMAC of the reporter's address; rate limiting only, never returned by a route. */
+  ipHash?: string;
   status: ReportStatus;
   createdAt: Date;
   updatedAt: Date;

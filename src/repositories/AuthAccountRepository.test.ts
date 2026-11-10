@@ -78,11 +78,15 @@ describe('AuthAccountRepository', () => {
         $unset: {
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
+          guestClaimHashes: 1,
         },
       }),
-      { new: true },
+      // The pre-image still carries the guest claim hashes the update removes (RIN-1310).
+      { new: false },
     );
-    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith('email role');
+    expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith(
+      'email role guestClaimHashes',
+    );
   });
 
   it('matches password-reset tokens through the partial-index type contract', async () => {
@@ -142,6 +146,7 @@ describe('AuthAccountRepository', () => {
         verificationExpires: now,
         displayName: 'User',
         locale: 'en',
+        signupOrigin: { signupLocale: 'en', signupCountry: 'SG' },
       }),
     ).resolves.toMatchObject({ email: 'user@example.com' });
     expect(mocks.create).toHaveBeenCalledWith({
@@ -154,6 +159,8 @@ describe('AuthAccountRepository', () => {
       disabledBy: null,
       displayName: 'User',
       locale: 'en',
+      signupLocale: 'en',
+      signupCountry: 'SG',
       emailVerificationTokenHash: 'verify-hash',
       emailVerificationExpires: now,
     });
@@ -164,6 +171,7 @@ describe('AuthAccountRepository', () => {
         passwordHash: 'hash',
         verificationTokenHash: 'verify-hash',
         verificationExpires: now,
+        signupOrigin: { signupLocale: 'vi', signupCountry: null },
       }),
     ).resolves.toBeNull();
   });
@@ -311,6 +319,7 @@ describe('AuthAccountRepository', () => {
       passwordHash: 'hash',
       verificationTokenHash: 'verify-hash',
       verificationExpires: now,
+      signupOrigin: { signupLocale: 'vi', signupCountry: null },
     });
     expect(mocks.create).toHaveBeenCalledWith({
       email: 'user@example.com',
@@ -320,6 +329,8 @@ describe('AuthAccountRepository', () => {
       authVersion: 0,
       disabledAt: null,
       disabledBy: null,
+      signupLocale: 'vi',
+      signupCountry: null,
       emailVerificationTokenHash: 'verify-hash',
       emailVerificationExpires: now,
     });
@@ -332,8 +343,42 @@ describe('AuthAccountRepository', () => {
         passwordHash: 'hash',
         verificationTokenHash: 'verify-hash',
         verificationExpires: now,
+        signupOrigin: { signupLocale: 'vi', signupCountry: null },
       }),
     ).rejects.toThrow('write concern failed');
+  });
+
+  it('stores guest claim hashes on a pending account only when there are some (RIN-1310)', async () => {
+    mocks.create.mockResolvedValue(identityRecord({ password: 'hash' }));
+    const repository = new AuthAccountRepository();
+    const base = {
+      email: 'user@example.com',
+      passwordHash: 'hash',
+      verificationTokenHash: 'verify-hash',
+      verificationExpires: now,
+      signupOrigin: { signupLocale: 'en' as const, signupCountry: null },
+    };
+
+    await repository.createPending({ ...base, guestClaimHashes: ['a'.repeat(64)] });
+    await repository.createPending({ ...base, guestClaimHashes: [] });
+
+    expect(mocks.create.mock.calls[0]?.[0]).toMatchObject({ guestClaimHashes: ['a'.repeat(64)] });
+    expect(mocks.create.mock.calls[1]?.[0]).not.toHaveProperty('guestClaimHashes');
+  });
+
+  it('returns the guest claim hashes from the verified pre-image, and null for an unknown token (RIN-1310)', async () => {
+    const repository = new AuthAccountRepository();
+    mocks.findOneAndUpdate.mockReturnValueOnce(
+      queryChain(identityRecord({ guestClaimHashes: ['b'.repeat(64)] })),
+    );
+
+    await expect(repository.verifyEmail('verification-hash', now)).resolves.toEqual({
+      id: accountId,
+      email: 'user@example.com',
+      role: 'user',
+      guestClaimHashes: ['b'.repeat(64)],
+    });
+    await expect(repository.verifyEmail('unknown-hash', now)).resolves.toBeNull();
   });
 
   it('unsets every password-reset and verification field on successful reset', async () => {
@@ -656,6 +701,28 @@ describe('AuthAccountRepository', () => {
 
     mocks.updateOne.mockClear();
     await repository.rememberLocaleIfMissing('invalid-id', 'vi');
+    expect(mocks.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('records a signup origin only on an account that has none (RIN-1268)', async () => {
+    mocks.updateOne.mockResolvedValue({ matchedCount: 1 });
+    const repository = new AuthAccountRepository();
+    const accountId = '507f191e810c19729de860ea';
+
+    await repository.recordSignupOriginIfMissing(accountId, {
+      signupLocale: 'en',
+      signupCountry: null,
+    });
+    expect(mocks.updateOne).toHaveBeenCalledWith(
+      { _id: new Types.ObjectId(accountId), signupLocale: null },
+      { $set: { signupLocale: 'en', signupCountry: null } },
+    );
+
+    mocks.updateOne.mockClear();
+    await repository.recordSignupOriginIfMissing('invalid-id', {
+      signupLocale: 'vi',
+      signupCountry: 'VN',
+    });
     expect(mocks.updateOne).not.toHaveBeenCalled();
   });
 

@@ -13,9 +13,12 @@ export class ReportPersistenceMapper {
       ...(record.questionSnapshot === undefined
         ? {}
         : { questionSnapshot: record.questionSnapshot }),
-      reporterEmail: record.reporterEmail,
-      reporterName: record.reporterName,
-      content: record.content,
+      // Anonymous quiz-page reports store none of the three (RIN-1343).
+      reporterEmail: record.reporterEmail ?? '',
+      reporterName: record.reporterName ?? '',
+      content: record.content ?? '',
+      ...(record.reason === undefined ? {} : { reason: record.reason }),
+      ...(record.source === undefined ? {} : { source: record.source }),
       status: record.status,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

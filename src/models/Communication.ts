@@ -40,6 +40,8 @@ const CONSENT_SOURCES = [
   'unsubscribe',
   'admin_suppression',
   'result_page_review',
+  /** Opt-in on the adaptive (Path B) end screen (RIN-1364). */
+  'adaptive_end_review',
 ] as const;
 type ConsentSource = (typeof CONSENT_SOURCES)[number];
 
@@ -49,12 +51,24 @@ const OUTBOX_KINDS = [
   'feedback_reply',
   'feedback_reminder',
   'review_reminder',
+  /** Final day-5 review touch (RIN-1304); its own kind so d2 rows stay as they are. */
+  'review_reminder_d5',
   /** One per account for its lifetime, 24 h after signup (RIN-999). */
   'activation_nudge',
+  /** One per rejected Premium submission, to its author (RIN-1348). */
+  'premium_decision',
 ] as const;
 export type OutboxKind = (typeof OUTBOX_KINDS)[number];
 
-const OUTBOX_ENTITY_TYPES = ['support_ticket', 'feedback_conversation', 'attempt', 'user'] as const;
+const OUTBOX_ENTITY_TYPES = [
+  'support_ticket',
+  'feedback_conversation',
+  'attempt',
+  'user',
+  'premium_submission',
+  /** Path B review email (RIN-1364): `entityId` is the learner, the anchor fields name the completion. */
+  'adaptive_completion',
+] as const;
 export type OutboxEntityType = (typeof OUTBOX_ENTITY_TYPES)[number];
 
 const CAMPAIGN_STATUSES = [
@@ -162,6 +176,8 @@ interface MarketingPreferenceDocument extends Document {
   /** Opt-in to the 2-day review email (RIN-915). */
   studyReminders: boolean;
   studyRemindersOptedInAt?: Date | null;
+  /** Result-page "No thanks" (RIN-1362): the review prompt stays hidden until then. Not consent. */
+  reviewPromptSnoozedUntil?: Date | null;
   locale?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -285,6 +301,14 @@ interface EmailOutboxDocument extends Document {
   locale?: string | null;
   /** First tracked CTA click of an activation nudge (RIN-1000); set once. */
   clickedAt?: Date | null;
+  /**
+   * Review emails (RIN-1364): the due time the send window is measured from, so a
+   * retry that moves `availableAt` never stretches the window. Null on older rows.
+   */
+  dueAt?: Date | null;
+  /** Path B review email: the adaptive completion it follows (`completed_at`, session id). */
+  anchorAt?: Date | null;
+  anchorDocumentId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -440,6 +464,7 @@ const MarketingPreferenceSchema = new Schema<MarketingPreferenceDocument>(
     promotions: { type: Boolean, required: true, default: false },
     studyReminders: { type: Boolean, required: true, default: false },
     studyRemindersOptedInAt: { type: Date, default: null },
+    reviewPromptSnoozedUntil: { type: Date, default: null },
     locale: { type: String, default: null },
   },
   { timestamps: true, versionKey: false },
@@ -610,6 +635,9 @@ const EmailOutboxSchema = new Schema<EmailOutboxDocument>(
     trigger: { type: String, enum: ['24h', 'backfill', null], default: null },
     locale: { type: String, default: null, maxlength: 8 },
     clickedAt: { type: Date, default: null },
+    dueAt: { type: Date, default: null },
+    anchorAt: { type: Date, default: null },
+    anchorDocumentId: { type: String, default: null, maxlength: 128 },
   },
   { timestamps: true, versionKey: false },
 );

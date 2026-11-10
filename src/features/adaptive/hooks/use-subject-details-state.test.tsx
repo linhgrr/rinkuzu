@@ -293,6 +293,15 @@ describe('useSubjectDetailsState', () => {
     });
   });
 
+  it('leaves accuracy out of the summary before the first answer (RIN-1274)', async () => {
+    getSessionStatusMock.mockResolvedValueOnce(
+      createStatus({ total_concepts: 4, total_answered: 0, total_correct: 0, accuracy: 0 }),
+    );
+    const { result } = renderHook(() => useSubjectDetailsState('fresh', t));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.summary).toBe('t:subjectDetails.summaryNoAnswers:{"concepts":4}');
+  });
+
   describe('history load / dedup / error / unmount', () => {
     it('does not load history when not on history tab or jobId is missing', async () => {
       getJobIdMock.mockReturnValue(null);

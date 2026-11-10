@@ -24,23 +24,30 @@ import type {
   AdminStarterQuizViewModel,
 } from '@/features/admin/quizzes/types/admin-starter-quizzes-view-model';
 
+/** Rows shown on small screens before "Show all" (RIN-1229: the full panel pushed the list ~900px down at 375px). */
+const COLLAPSED_ROW_COUNT = 3;
 /** Row actions are 36px (`sm`); below lg they grow to a 44px touch target (RIN-1228). */
 const ROW_ACTION_TOUCH_TARGET = 'min-h-11 min-w-11 lg:min-h-0 lg:min-w-0';
 
 interface StarterRowProps {
   item: AdminStarterQuizViewModel;
   total: number;
+  hiddenOnMobile: boolean;
   busy: boolean;
   controller: AdminStarterQuizzesController;
   onUnmark: (item: AdminStarterQuizViewModel) => void;
 }
 
-function StarterRow({ item, total, busy, controller, onUnmark }: StarterRowProps) {
+function StarterRow({ item, total, hiddenOnMobile, busy, controller, onUnmark }: StarterRowProps) {
   const t = useTranslations('admin.starterQuizzes');
   const title = item.title ?? t('untitled');
 
   return (
-    <li className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+    <li
+      className={`grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center${
+        hiddenOnMobile ? ' max-lg:hidden' : ''
+      }`}
+    >
       <div className="flex min-w-0 items-start gap-3">
         <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-trust/10 text-sm font-semibold text-brand-trust">
           {item.order}
@@ -133,6 +140,7 @@ interface AdminStarterQuizzesPanelProps {
 function StarterPanelBody({ controller }: AdminStarterQuizzesPanelProps) {
   const t = useTranslations('admin.starterQuizzes');
   const [starterToUnmark, setStarterToUnmark] = useState<AdminStarterQuizViewModel | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   if (controller.loadError) {
     return <ErrorState error={controller.loadError} onRetry={controller.retry} className="m-4" />;
@@ -147,20 +155,41 @@ function StarterPanelBody({ controller }: AdminStarterQuizzesPanelProps) {
     );
   }
 
+  const collapsible = controller.items.length > COLLAPSED_ROW_COUNT;
+
   return (
     <>
-      <ol className="divide-y divide-line-blue/25" aria-label={t('listLabel')}>
-        {controller.items.map((item) => (
+      <ol
+        id="admin-starter-quizzes-list"
+        className="divide-y divide-line-blue/25"
+        aria-label={t('listLabel')}
+      >
+        {controller.items.map((item, index) => (
           <StarterRow
             key={item.id}
             item={item}
             total={controller.items.length}
+            hiddenOnMobile={collapsible && !expanded && index >= COLLAPSED_ROW_COUNT}
             busy={controller.pendingId !== null}
             controller={controller}
             onUnmark={setStarterToUnmark}
           />
         ))}
       </ol>
+      {collapsible ? (
+        <div className="border-t border-line-blue/25 p-3 lg:hidden">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full"
+            aria-expanded={expanded}
+            aria-controls="admin-starter-quizzes-list"
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {expanded ? t('showFewer') : t('showAll', { count: controller.items.length })}
+          </Button>
+        </div>
+      ) : null}
       <ConfirmModal
         isOpen={starterToUnmark !== null}
         title={t('unmarkTitle')}

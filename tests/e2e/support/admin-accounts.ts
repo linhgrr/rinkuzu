@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { MongoClient, ObjectId, type Db } from 'mongodb';
 import type { Page, TestInfo } from '@playwright/test';
+import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './auth-rate-limit-keys';
 import { createE2EUserEmail } from './fixture-identifiers';
 import { skipPostSignInStarter } from './post-signin';
 
@@ -46,6 +47,9 @@ export async function withAccounts(
   try {
     const password = await hash(E2E_PASSWORD, 4);
     const now = new Date();
+    await db
+      .collection('auth_rate_limits')
+      .deleteMany({ key: { $in: [...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] } });
     await db.collection('users').insertMany(
       [
         { ...admin, displayName: 'E2E Admin User', role: 'admin' },
@@ -71,9 +75,11 @@ export async function withAccounts(
         db.collection('auditlogs').deleteMany({
           $or: [{ userId: { $in: [admin.id, regular.id] } }, { email: { $in: emails } }],
         }),
-        db
-          .collection('auth_rate_limits')
-          .deleteMany({ key: { $in: emails.map(credentialsRateLimitKey) } }),
+        db.collection('auth_rate_limits').deleteMany({
+          key: {
+            $in: [...emails.map(credentialsRateLimitKey), ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS],
+          },
+        }),
       ]);
       await db.collection('users').deleteMany({ _e2eRun: runId });
       const remaining = await db.collection('users').countDocuments({ _e2eRun: runId });

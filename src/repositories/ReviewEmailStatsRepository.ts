@@ -13,6 +13,8 @@ interface SendWeekRow {
   _id: Date;
   sent: number;
   opened: number;
+  sentD5: number;
+  openedD5: number;
 }
 
 interface ConsentWeekRow {
@@ -25,10 +27,13 @@ interface ConsentWeekRow {
 const REVIEW_REMINDER_CAMPAIGN = 'w1-review';
 
 const countWhen = (condition: unknown) => ({ $sum: { $cond: [condition, 1, 0] } });
+const isKind = (kind: string) => ({ $eq: ['$kind', kind] });
+const isOpened = { $ne: [{ $ifNull: ['$openedAt', null] }, null] };
 
 /**
  * Week-1 review email aggregates (RIN-916). Sends are completed
- * `review_reminder` outbox rows bucketed by `availableAt` (the send slot) and
+ * `review_reminder` (d2) and `review_reminder_d5` (RIN-1304) outbox rows,
+ * counted per touch and bucketed by `availableAt` (the send slot) and
  * served by `{status, availableAt}`; consent events by `createdAt`. Both drop
  * the analytics-excluded accounts and the QA recipients.
  */
@@ -46,7 +51,7 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
           $match: {
             status: 'completed',
             availableAt: { $gte: from, $lt: to },
-            kind: 'review_reminder',
+            kind: { $in: ['review_reminder', 'review_reminder_d5'] },
             userId: { $nin: excluded },
             to: { $nin: [...qaEmails] },
           },
@@ -54,8 +59,10 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
         {
           $group: {
             _id: utcWeekStart('$availableAt'),
-            sent: { $sum: 1 },
-            opened: countWhen({ $ne: [{ $ifNull: ['$openedAt', null] }, null] }),
+            sent: countWhen(isKind('review_reminder')),
+            opened: countWhen({ $and: [isKind('review_reminder'), isOpened] }),
+            sentD5: countWhen(isKind('review_reminder_d5')),
+            openedD5: countWhen({ $and: [isKind('review_reminder_d5'), isOpened] }),
           },
         },
       ]),
@@ -70,8 +77,17 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
         {
           $group: {
             _id: utcWeekStart('$createdAt'),
+            // Both prompts: the quiz result page and the adaptive end screen (RIN-1364).
             optIns: countWhen({
-              $and: [{ $eq: ['$action', 'opt_in'] }, { $eq: ['$source', 'result_page_review'] }],
+              $and: [
+                { $eq: ['$action', 'opt_in'] },
+                {
+                  $or: [
+                    { $eq: ['$source', 'result_page_review'] },
+                    { $eq: ['$source', 'adaptive_end_review'] },
+                  ],
+                },
+              ],
             }),
             unsubscribed: countWhen({
               $and: [
@@ -94,7 +110,13 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
     ]);
     return {
       sends: sends.map(
-        (row): ReviewEmailSendWeek => ({ weekStart: row._id, sent: row.sent, opened: row.opened }),
+        (row): ReviewEmailSendWeek => ({
+          weekStart: row._id,
+          sent: row.sent,
+          opened: row.opened,
+          sentD5: row.sentD5,
+          openedD5: row.openedD5,
+        }),
       ),
       consents: consents.map(
         (row): ReviewEmailConsentWeek => ({

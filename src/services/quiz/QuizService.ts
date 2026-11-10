@@ -7,6 +7,8 @@ import type {
   QuizDetailDto,
   QuizListDto,
   PublicQuizSitemapEntryDto,
+  RelatedQuizDto,
+  RelatedQuizzesQueryDto,
   QuizListOptionsDto,
   QuizMetadataDto,
   QuizPlayDetailDto,
@@ -26,7 +28,7 @@ import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgress
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
-import type { IPremiumQuizRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
+import type { IPremiumSubmissionWithdrawalRepository } from '@/interfaces/repositories/IPremiumQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
 
@@ -59,9 +61,9 @@ export class QuizService implements IQuizService {
     folderRepository?: IFolderRepository,
     premiumAccessPolicy?: PremiumDiscussionAccessPolicy,
     attemptRepository?: Pick<IAttemptRepository, 'findByIdWithQuiz'>,
-    premiumPublications?: Pick<IPremiumQuizRepository, 'findActivePublicationByQuizId'>,
+    premiumWithdrawal?: IPremiumSubmissionWithdrawalRepository,
   ) {
-    this.crudService = new QuizCrudService(quizRepository, folderRepository, premiumPublications);
+    this.crudService = new QuizCrudService(quizRepository, folderRepository, premiumWithdrawal);
     this.playService = new QuizPlayService(
       quizRepository,
       userRepository,
@@ -104,6 +106,10 @@ export class QuizService implements IQuizService {
 
   async getPublicSitemapQuizzes(limit: number): Promise<PublicQuizSitemapEntryDto[]> {
     return this.adminService.getPublicSitemapQuizzes(limit);
+  }
+
+  async getRelatedPublicQuizzes(query: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]> {
+    return this.adminService.getRelatedPublicQuizzes(query);
   }
 
   async getQuizMetadataBySlug(slug: string): Promise<QuizMetadataDto | null> {

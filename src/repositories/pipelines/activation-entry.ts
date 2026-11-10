@@ -64,7 +64,7 @@ export const ENTRY_WEEK_ACCUMULATORS = {
 } as const;
 
 function emptyEntryCounts(): AdminActivationEntryCounts {
-  return { blog: 0, landing: 0, post_signin_starter: 0, activation_email: 0, none: 0 };
+  return { blog: 0, landing: 0, post_signin_starter: 0, activation_email: 0, hub: 0, none: 0 };
 }
 
 function isEntryBucket(entry: string): entry is keyof AdminActivationEntryCounts {

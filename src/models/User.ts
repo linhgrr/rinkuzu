@@ -24,6 +24,10 @@ interface UserDocument extends Document {
   disabledBy?: Types.ObjectId | null;
   /** Set by an admin in /admin/users; excluded from activation stats. Absent = false. */
   isTestAccount?: boolean;
+  /** UI locale of the signup page, set once at creation (RIN-1268). Absent = unknown. */
+  signupLocale?: Locale;
+  /** ISO-3166 alpha-2 country of the signup request, set once at creation; null = not known. */
+  signupCountry?: string | null;
   /** UI locale of signup, else of the first sign-in that knew one (RIN-1263). Absent = unknown. */
   locale?: Locale;
   /** Monotonic session generation; increments on login and real disable/restore. */
@@ -34,6 +38,8 @@ interface UserDocument extends Document {
   emailVerified?: Date | null;
   emailVerificationTokenHash?: string | null;
   emailVerificationExpires?: Date | null;
+  /** Guest claim token hashes from sign-up; claimed and removed at verification (RIN-1310). */
+  guestClaimHashes?: string[];
 
   // Password reset
   passwordResetTokenHash?: string | null;
@@ -94,6 +100,9 @@ const UserSchema = new Schema<UserDocument>({
   disabledAt: { type: Date, default: null },
   disabledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   isTestAccount: { type: Boolean, default: false },
+  // Analytics only (RIN-1268): no default, so accounts created before stay absent.
+  signupLocale: { type: String, enum: locales, required: false },
+  signupCountry: { type: String, match: /^[A-Z]{2}$/, required: false },
   locale: { type: String, enum: locales, required: false },
   authVersion: {
     type: Number,
@@ -111,6 +120,7 @@ const UserSchema = new Schema<UserDocument>({
   emailVerified: { type: Date, default: null },
   emailVerificationTokenHash: { type: String, default: null },
   emailVerificationExpires: { type: Date, default: null },
+  guestClaimHashes: { type: [String], default: undefined, select: false },
 
   passwordResetTokenHash: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },

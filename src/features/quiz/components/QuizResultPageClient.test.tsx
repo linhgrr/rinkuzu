@@ -184,6 +184,21 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     );
   });
 
+  it('keeps entry=hub and its topic in the save card callbacks (RIN-1417)', async () => {
+    searchParams.value = new URLSearchParams(
+      'attemptId=attempt-1&score=80&entry=hub&topic=tieng-anh-lop-10',
+    );
+
+    render(<QuizResultPageClient />);
+
+    const hubPath = `${RESULT_PATH}&entry=hub&topic=tieng-anh-lop-10`;
+    await screen.findByRole('region', { name: 'guestSaveTitle' });
+    expect(screen.getByRole('link', { name: 'guestSaveCreateAccount' })).toHaveAttribute(
+      'href',
+      `/register?callbackUrl=${encodeURIComponent(hubPath)}`,
+    );
+  });
+
   it('drops an untracked entry or a malformed post from the save card callbacks', async () => {
     searchParams.value = new URLSearchParams(
       'attemptId=attempt-1&score=80&entry=newsletter&post=Bad%20Slug',
@@ -369,8 +384,27 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(claimMock).not.toHaveBeenCalled();
   });
 
-  it('keeps the not-found state for a signed-in reader whose browser holds no guest token', async () => {
+  // RIN-1310: signed in from another browser (no guest token here) before the attempt
+  // was attached to the account: keep the score from the link, not a 404.
+  it('shows the URL score to a signed-in reader whose browser holds no guest token', async () => {
     session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    fetchPageDataMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Not found', status: 404, payload: {} }),
+    );
+
+    render(<QuizResultPageClient />);
+
+    expect(await screen.findByText('guestReviewUnavailable')).toHaveAttribute('role', 'status');
+    expect(screen.getByText('80%')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'guestSaveTitle' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'errors.api.notFoundTitle' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the not-found state for a signed-in reader when the link carries no score', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    searchParams.value = new URLSearchParams('attemptId=attempt-1');
     fetchPageDataMock.mockRejectedValueOnce(
       new ApiResponseError({ message: 'Not found', status: 404, payload: {} }),
     );
@@ -380,6 +414,17 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(
       await screen.findByRole('heading', { name: 'errors.api.notFoundTitle' }),
     ).toBeInTheDocument();
+  });
+
+  it('keeps the retryable error for a signed-in reader whose read fails on the server', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    fetchPageDataMock.mockRejectedValueOnce(
+      new ApiResponseError({ message: 'Server error', status: 500, payload: {} }),
+    );
+
+    render(<QuizResultPageClient />);
+
+    expect(await screen.findByRole('button', { name: 'common.retry' })).toBeInTheDocument();
     expect(screen.queryByText('80%')).not.toBeInTheDocument();
   });
 });

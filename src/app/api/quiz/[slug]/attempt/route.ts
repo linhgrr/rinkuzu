@@ -23,8 +23,12 @@ export const POST = withOptionalAuth(async (request: NextRequest, { params, sess
     }
 
     const quizService = getQuizService();
-    // RIN-1256: an untracked entry or a malformed post is dropped, never a 400.
-    const attribution = resolveQuizEntryAttribution(parsed.body.entry, parsed.body.post);
+    // RIN-1256: an untracked entry or a malformed post or topic is dropped, never a 400.
+    const attribution = resolveQuizEntryAttribution(
+      parsed.body.entry,
+      parsed.body.post,
+      parsed.body.topic,
+    );
 
     const result = await quizService.submitQuizAttempt(
       parsed.params.slug,

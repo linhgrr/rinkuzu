@@ -7,14 +7,17 @@ import type {
   VerificationResendResultDto,
 } from '@/dtos/auth';
 import type { AuthRequestContext } from '@/entities/AuthAccount';
+import { defaultLocale } from '@/i18n/config';
 import type { IAuthAccountRepository } from '@/interfaces/repositories/IAuthAccountRepository';
 import type { IAuthAccountService } from '@/interfaces/services/IAuthAccountService';
 import type { AuthAuditIdentity, IAuthAudit } from '@/interfaces/services/IAuthAudit';
 import type { IAuthNotifier } from '@/interfaces/services/IAuthNotifier';
 import type { IDeferredTaskScheduler } from '@/interfaces/services/IDeferredTaskScheduler';
+import type { IGuestAttemptClaimService } from '@/interfaces/services/IGuestAttemptClaimService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { createSecureToken, hashToken, wasIssuedRecently } from '@/lib/auth-tokens';
 import { hashPassword } from '@/lib/password';
+import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { logger } from '@/lib/logger';
 import { AuthAccountDtoMapper } from '@/mappers/auth/AuthAccountDtoMapper';
 
@@ -29,6 +32,7 @@ export class AuthAccountService implements IAuthAccountService {
     private readonly notifier: IAuthNotifier,
     private readonly audit: IAuthAudit,
     private readonly scheduler: IDeferredTaskScheduler,
+    private readonly guestAttempts: IGuestAttemptClaimService,
   ) {}
 
   async register(
@@ -63,13 +67,19 @@ export class AuthAccountService implements IAuthAccountService {
 
       const passwordHash = await hashPassword(input.password);
       const verification = createSecureToken();
+      const guestClaimHashes = [...new Set(input.guestClaimTokens ?? [])].map(hashGuestClaimToken);
       const account = await this.repository.createPending({
         email: input.email,
         passwordHash,
         ...(input.displayName ? { displayName: input.displayName } : {}),
         ...(input.locale ? { locale: input.locale } : {}),
+        signupOrigin: {
+          signupLocale: input.locale ?? defaultLocale,
+          signupCountry: input.signupCountry ?? null,
+        },
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
+        ...(guestClaimHashes.length > 0 ? { guestClaimHashes } : {}),
       });
       if (!account) {
         this.scheduleAudit('register', context, {
@@ -122,6 +132,9 @@ export class AuthAccountService implements IAuthAccountService {
           error: 'Verification link is invalid or has expired',
           statusCode: 400,
         };
+      }
+      if (account.guestClaimHashes?.length) {
+        await this.claimGuestAttempts(account.id, account.guestClaimHashes);
       }
       this.scheduleAudit('email_verified', context, {
         userId: account.id,
@@ -295,5 +308,21 @@ export class AuthAccountService implements IAuthAccountService {
     identity: AuthAuditIdentity,
   ): void {
     this.scheduler.schedule(() => this.audit.record({ event, ...identity, ...context }));
+  }
+
+  /**
+   * Attaches the guest results stored at sign-up before the learner signs in, so the
+   * result and history survive a link opened in another browser (RIN-1310). A failure
+   * never fails the verification; only the error class is logged, never a hash.
+   */
+  private async claimGuestAttempts(userId: string, hashes: readonly string[]): Promise<void> {
+    try {
+      await this.guestAttempts.claimHashed(userId, hashes);
+    } catch (error) {
+      logger.error(
+        { errorName: error instanceof Error ? error.name : 'unknown' },
+        'Guest attempt claim at verification failed',
+      );
+    }
   }
 }

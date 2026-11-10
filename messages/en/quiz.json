@@ -150,15 +150,17 @@
     "another": "Another {count}",
     "fullQuiz": "Full quiz"
   },
+  "reviewPrompt": {
+    "question": "Want a 2-day review of the {count, plural, one {# question} other {# questions}} you missed?",
+    "remind": "Remind me in 2 days",
+    "decline": "No thanks",
+    "scheduled": "We'll send your review on {weekday}.",
+    "capped": "You already have a review email coming this week.",
+    "saveError": "Couldn't save, try again."
+  },
   "resultActions": {
     "retryMissed": "Retry the {count} you missed",
     "tryAnother": "Try another quiz",
-    "reviewEmail": "Email me a 2-minute review in 2 days",
-    "saving": "Saving…",
-    "savedOn": "Done. You can turn this off any time.",
-    "savedOff": "Reminder turned off.",
-    "saveError": "Couldn't save. Try again.",
-    "tryAgain": "Try again",
     "retryOfMissed": "Retry of missed questions",
     "retryPill": "Retry: {count, plural, one {# question} other {# questions}}",
     "share": "Send to a classmate",
@@ -173,6 +175,20 @@
   "guestSaveSignInEmail": "Sign in with email",
   "guestSaveCreateAccount": "Create an account",
   "guestReviewUnavailable": "We can't open the question review on this device. Your score is still shown above.",
+  "landing": {
+    "cta": "Play now – no account needed",
+    "ctaSignedIn": "Play now",
+    "quickHint": "10 questions, about 3 minutes",
+    "previewTitle": "Preview of the first {count} questions",
+    "previewMore": "{count} more questions",
+    "previewCta": "See the answers and keep going – no account needed",
+    "previewCtaSignedIn": "See the answers and keep going",
+    "questionNumber": "Question {number}",
+    "relatedTitle": "More quizzes on RinKuzu",
+    "relatedTopicTitle": "Quizzes on the same topic",
+    "topicHubLink": "See all {topic} quizzes",
+    "relatedCount": "{count} questions"
+  },
   "pdfViewer": {
     "title": "PDF reference",
     "openInNewTab": "Open in new tab",

@@ -68,10 +68,12 @@ describe.each(locales)('homepage links on /%s', (locale) => {
     const { container } = renderHomepageLinks(locale, false);
     const registerHrefs = internalHrefs(container).filter((href) => href.includes('/register'));
 
-    // Header (desktop + mobile), Hero and BottomCta register buttons.
-    expect(registerHrefs.length).toBeGreaterThanOrEqual(4);
+    // Header, the Hero text link and the BottomCta upload button. The Hero PDF pill now
+    // goes to the guest trial instead (RIN-1473), checked below.
+    expect(registerHrefs.length).toBeGreaterThanOrEqual(3);
     for (const href of registerHrefs) {
       expect(href.startsWith(`/${locale}/register`)).toBe(true);
     }
+    expect(internalHrefs(container)).toContain(`/${locale}/try/pdf?entry=landing`);
   });
 });

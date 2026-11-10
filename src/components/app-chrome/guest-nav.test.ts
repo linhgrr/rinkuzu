@@ -32,7 +32,8 @@ describe('toGuestNav (RIN-978)', () => {
 
   it('sends every remaining sign-in-only entry to login with a return URL', () => {
     const links = allLinks([...primary, ...bottom]);
-    expect(links).toContainEqual({ href: '/login?callbackUrl=%2Fcreate', locked: true });
+    // RIN-1473: the create hub is public and shows guests the PDF trial.
+    expect(links).toContainEqual({ href: '/create', locked: undefined });
     expect(links).toContainEqual({
       href: '/login?callbackUrl=%2Fadaptive%2Fupload',
       locked: true,

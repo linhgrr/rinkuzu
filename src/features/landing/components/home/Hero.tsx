@@ -28,14 +28,16 @@ function UploadIcon() {
 }
 
 /**
- * Signed-out hero CTAs (RIN-1178): play a starter quiz as a guest first, upload second,
- * create an account as a text link. Long vi labels wrap on mobile instead of clipping.
+ * Signed-out hero CTAs (RIN-1178): play a starter quiz as a guest first, then try the
+ * guest PDF upload with no account (RIN-1473), create an account as a text link. The two
+ * pills stack at every width: the PDF label is too long to sit beside the primary at
+ * 1280px. Long vi labels wrap on mobile instead of clipping.
  */
 function GuestHeroCtas({ locale }: { locale: string }) {
   const isVi = locale === 'vi';
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
+      <div className="flex flex-col gap-[16px] items-start">
         <Magnetic className="w-full sm:w-auto">
           <LandingCtaLink
             href={ROUTES.TRY}
@@ -53,15 +55,17 @@ function GuestHeroCtas({ locale }: { locale: string }) {
         </Magnetic>
         <Magnetic className="w-full sm:w-auto">
           <LandingCtaLink
-            href="/register?next=/adaptive/upload"
-            cta="upload"
+            href={`${ROUTES.TRY_PDF}?entry=landing`}
+            cta="guest_pdf"
             position="hero"
             locale={locale}
             className={`${PILL_BASE} gap-[10px] border border-[#ff541b] hover:bg-[#ff541b]/20`}
           >
             <UploadIcon />
-            <span className="font-unbounded text-[18px] font-medium text-white">
-              {isVi ? 'Tải PDF lên' : 'Upload PDF'}
+            <span className="text-balance text-center font-unbounded text-[16px] font-medium leading-[1.35] text-white">
+              {isVi
+                ? 'Thử với PDF của bạn – không cần tài khoản'
+                : 'Try it with your own PDF, no account needed'}
             </span>
           </LandingCtaLink>
         </Magnetic>

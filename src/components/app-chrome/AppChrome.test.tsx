@@ -204,12 +204,10 @@ describe('AppChrome', () => {
       for (const hidden of ['home', 'myQuizzes', 'review', 'history', 'bookmarks', 'settings']) {
         expect(within(sidebar).queryByRole('link', { name: hidden })).not.toBeInTheDocument();
       }
-      expect(within(sidebar).getByRole('link', { name: /createQuiz/ })).toHaveAttribute(
+      // RIN-1473: /create is public; a guest opens the signed-out hub, not sign-in.
+      expect(within(sidebar).getByRole('link', { name: 'createQuiz' })).toHaveAttribute(
         'href',
-        '/login?callbackUrl=%2Fcreate',
-      );
-      expect(within(sidebar).getByRole('link', { name: /createQuiz/ })).toHaveAccessibleName(
-        'createQuiz (signInRequired)',
+        '/create',
       );
 
       fireEvent.click(screen.getByRole('button', { name: 'openMenu' }));

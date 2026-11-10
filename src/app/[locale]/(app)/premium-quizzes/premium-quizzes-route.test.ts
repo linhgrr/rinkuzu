@@ -21,4 +21,9 @@ describe('/[locale]/premium-quizzes route contract', () => {
       }),
     );
   });
+
+  it('has no route loading.tsx, so the header and intro ship in the first HTML (RIN-1518)', () => {
+    const route = path.join(process.cwd(), 'src/app/[locale]/(app)/premium-quizzes');
+    expect(existsSync(path.join(route, 'loading.tsx'))).toBe(false);
+  });
 });

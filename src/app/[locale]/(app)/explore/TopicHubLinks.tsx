@@ -1,5 +1,6 @@
+import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { topicHubPath } from '@/lib/seo/topic-hub';
+import { EXPLORE_HUB_LINK_LIMIT, loadIndexableTopicHubs, topicHubPath } from '@/lib/seo/topic-hub';
 
 export interface TopicHubLink {
   slug: string;
@@ -31,4 +32,19 @@ export function TopicHubLinks({ heading, hubs }: { heading: string; hubs: TopicH
       </ul>
     </nav>
   );
+}
+
+/**
+ * Reads the indexable hubs and renders their links, or nothing when there are
+ * none or the read fails. Async on purpose: `/vi/explore` streams it inside its
+ * own Suspense so the page shell does not wait for the DB (RIN-1518).
+ */
+export async function ExploreTopicHubLinks({ locale }: { locale: string }) {
+  const hubs = (await loadIndexableTopicHubs('explore: topic hub links failed')).slice(
+    0,
+    EXPLORE_HUB_LINK_LIMIT,
+  );
+  if (hubs.length === 0) return null;
+  const t = await getTranslations({ locale, namespace: 'explore.hub' });
+  return <TopicHubLinks heading={t('linksHeading')} hubs={hubs} />;
 }

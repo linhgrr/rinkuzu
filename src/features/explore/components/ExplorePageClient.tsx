@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/navigation';
-import { Suspense, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
@@ -96,7 +96,14 @@ interface ExplorePageClientProps {
   hubLinks?: ReactNode;
 }
 
-function ExploreContent({ hubLinks }: ExplorePageClientProps) {
+/**
+ * No Suspense around this page (RIN-1518). `/explore` is rendered per request
+ * (the app layout reads the session), so `useSearchParams` does not suspend on
+ * the server. React 19.2 streams any boundary over 500 bytes after a 12.8 KB
+ * shell as a hidden div revealed later by script, which kept the heading, search
+ * and tabs (the LCP text) out of the first paint for seconds on mobile.
+ */
+export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = {}) {
   const t = useTranslations('explore');
   const tAdaptive = useTranslations('adaptiveLearning');
   const tAdaptiveDashboard = useTranslations('adaptiveLearning.dashboard');
@@ -384,26 +391,5 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
         </div>
       </div>
     </main>
-  );
-}
-
-function ExploreFallback({ hubLinks }: ExplorePageClientProps) {
-  return (
-    <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1340px] space-y-6">
-        <div className="h-9 w-56 rounded-md skeleton-shimmer" />
-        {hubLinks}
-        <div className="h-12 max-w-3xl rounded-xl skeleton-shimmer" />
-        <QuizGridSkeleton count={6} />
-      </div>
-    </main>
-  );
-}
-
-export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = {}) {
-  return (
-    <Suspense fallback={<ExploreFallback hubLinks={hubLinks} />}>
-      <ExploreContent hubLinks={hubLinks} />
-    </Suspense>
   );
 }

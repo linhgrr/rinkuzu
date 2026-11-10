@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { isValidElement, Suspense, type ReactElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { createTranslator, NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
@@ -36,7 +36,6 @@ vi.mock('@/features/explore/components/ExplorePageClient', () => ({
 }));
 
 import ExplorePage from './page';
-import { ExploreTopicHubLinks } from './TopicHubLinks';
 
 function summary(index: number): QuizTopicHubSummaryDto {
   return {
@@ -48,23 +47,11 @@ function summary(index: number): QuizTopicHubSummaryDto {
   };
 }
 
-type PageElement = ReactElement<{ hubLinks?: ReactNode }>;
-
-async function explorePage(locale: string): Promise<PageElement> {
-  return (await ExplorePage({ params: Promise.resolve({ locale }) })) as PageElement;
-}
-
-/** Resolves the streamed hub boundary the way the server does, then renders the page. */
 async function renderExplore(locale: string) {
-  const page = await explorePage(locale);
-  const boundary = page.props.hubLinks;
-  let hubLinks: ReactNode = null;
-  if (isValidElement<{ children: ReactElement<{ locale: string }> }>(boundary)) {
-    hubLinks = await ExploreTopicHubLinks(boundary.props.children.props);
-  }
+  const page = await ExplorePage({ params: Promise.resolve({ locale }) });
   return render(
     <NextIntlClientProvider locale={locale} messages={{}}>
-      {{ ...page, props: { ...page.props, hubLinks } }}
+      {page}
     </NextIntlClientProvider>,
   );
 }
@@ -109,17 +96,7 @@ describe('/explore topic hub links (B6)', () => {
 });
 
 describe('/explore first HTML (RIN-1518)', () => {
-  it('renders the page shell without waiting for the hub read', async () => {
-    listIndexableTopics.mockReturnValue(new Promise<QuizTopicHubSummaryDto[]>(() => {}));
-    const page = await explorePage('vi');
-
-    expect(listIndexableTopics).not.toHaveBeenCalled();
-    const boundary = page.props.hubLinks as ReactElement<{ children: ReactElement }>;
-    expect(boundary.type).toBe(Suspense);
-    expect(boundary.props.children.type).toBe(ExploreTopicHubLinks);
-  });
-
-  it('has no route loading.tsx holding the heading and tabs behind a fallback', () => {
+  it('has no route loading.tsx holding the heading and tabs behind a streamed fallback', () => {
     const route = path.join(process.cwd(), 'src/app/[locale]/(app)/explore');
     expect(existsSync(path.join(route, 'page.tsx'))).toBe(true);
     expect(existsSync(path.join(route, 'loading.tsx'))).toBe(false);

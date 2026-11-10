@@ -395,6 +395,15 @@ export class PremiumQuizService {
     }
   }
 
+  /**
+   * RIN-1413: the caller saved the quiz `personal` for Premium but failed
+   * before it could call `submitSavedQuiz`. Sets it back to public under the
+   * same rules; never throws, so the caller keeps its own error.
+   */
+  async restorePublicWithoutSubmission(quizId: string): Promise<boolean> {
+    return this.restorePublic(quizId);
+  }
+
   private async restorePublic(quizId: string): Promise<boolean> {
     if (!this.submissionRecovery) return false;
     try {

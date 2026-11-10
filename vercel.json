@@ -4,7 +4,8 @@
   "git": {
     "deploymentEnabled": {
       "eng/*": false,
-      "dependabot/*": false
+      "dependabot/*": false,
+      "gate/*": false
     }
   },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs"

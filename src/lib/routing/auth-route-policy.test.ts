@@ -21,6 +21,11 @@ describe('getAuthRoutePolicy', () => {
     ['/quizzes', 'public'],
     ['/try', 'public'],
     ['/try/pdf', 'public'],
+    // RIN-1473: the create hub itself is public (guest hub); everything under it is not.
+    ['/create', 'public'],
+    ['/create/pdf', 'authenticated'],
+    ['/create/mobile', 'authenticated'],
+    ['/creates', 'public'],
   ])('classifies %s as %s', (pathname, expected) => {
     expect(getAuthRoutePolicy(pathname)).toBe(expected);
   });

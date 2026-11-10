@@ -1,8 +1,9 @@
 import type { AnchorHTMLAttributes, PropsWithChildren } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import BottomCta from './BottomCta';
 import Hero from './Hero';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ href, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
@@ -35,26 +36,67 @@ describe('landing hero calls to action', () => {
   });
 
   it.each([
-    ['vi', 'Làm thử quiz 2 phút, không cần tài khoản', 'Tải PDF lên', 'Tạo tài khoản'],
-    ['en', 'Try a 2-minute quiz, no account', 'Upload PDF', 'Start Learning'],
+    [
+      'vi',
+      'Làm thử quiz 2 phút, không cần tài khoản',
+      'Thử với PDF của bạn – không cần tài khoản',
+      'Tạo tài khoản',
+    ],
+    [
+      'en',
+      'Try a 2-minute quiz, no account',
+      'Try it with your own PDF, no account needed',
+      'Start Learning',
+    ],
   ])(
-    'leads the signed-out %s hero with the play-first starter quiz (RIN-1178)',
-    (locale, play, upload, register) => {
+    'leads the signed-out %s hero with play-first, then the guest PDF trial (RIN-1178, RIN-1473)',
+    (locale, play, guestPdf, register) => {
       render(<Hero locale={locale} />);
 
       const links = screen.getAllByRole('link');
-      expect(links.map((link) => link.textContent)).toEqual([play, upload, register]);
+      expect(links.map((link) => link.textContent)).toEqual([play, guestPdf, register]);
       expect(links.map((link) => link.getAttribute('href'))).toEqual([
         '/try',
-        '/register?next=/adaptive/upload',
+        '/try/pdf?entry=landing',
         '/register?next=/adaptive',
       ]);
       expect(links[0]).toHaveClass('bg-brand-action-strong');
       expect(links[1]).toHaveClass('border');
       expect(links[1]).not.toHaveClass('bg-brand-action-strong');
       expect(links[0]?.querySelector('.whitespace-nowrap')).toBeNull();
+      expect(links[1]?.querySelector('img')).not.toBeNull();
     },
   );
+
+  it('stacks the two signed-out pills at every width, the long PDF label at 16px (RIN-1473)', () => {
+    render(<Hero locale="vi" />);
+
+    const [play, guestPdf] = screen.getAllByRole('link');
+    // Magnetic is a pass-through in this test, so the pills sit directly in their row.
+    const row = play?.parentElement;
+    expect(row).toBe(guestPdf?.parentElement);
+    const rowClasses = row?.className.split(/\s+/) ?? [];
+    expect(rowClasses).toEqual(expect.arrayContaining(['flex', 'flex-col', 'items-start']));
+    expect(rowClasses.some((name) => name.endsWith(':flex-row'))).toBe(false);
+
+    const label = guestPdf?.querySelector('span:last-child');
+    const labelClasses = label?.className.split(/\s+/) ?? [];
+    expect(labelClasses).toEqual(
+      expect.arrayContaining(['text-balance', 'text-center', 'font-unbounded', 'text-[16px]']),
+    );
+    expect(labelClasses.some((name) => /^[a-z]+:text-\[\d+px\]$/.test(name))).toBe(false);
+  });
+
+  it('reports the guest PDF pill as its own landing CTA (RIN-1473)', async () => {
+    render(<Hero locale="en" />);
+
+    fireEvent.click(screen.getByRole('link', { name: /own PDF/ }));
+
+    expect(captureAnalyticsEvent).toHaveBeenCalledWith(
+      'landing_cta_clicked',
+      expect.objectContaining({ cta: 'guest_pdf', position: 'hero', locale: 'en' }),
+    );
+  });
 
   it('keeps the signed-in hero unchanged', () => {
     render(<Hero isAuthenticated locale="en" />);

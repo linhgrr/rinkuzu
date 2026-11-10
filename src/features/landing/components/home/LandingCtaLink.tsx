@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
-type LandingCta = 'play_first' | 'upload' | 'register';
+type LandingCta = 'play_first' | 'upload' | 'guest_pdf' | 'register';
 /** Homepage spots (RIN-1178) and the blog quiz card's (RIN-1258). */
 type LandingCtaPosition = 'hero' | 'bottom' | 'blog_inline' | 'blog_end' | 'blog_index';
 

@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { EXPLORE_HUB_LINK_LIMIT, loadIndexableTopicHubs, topicHubPath } from '@/lib/seo/topic-hub';
 
-export interface TopicHubLink {
+interface TopicHubLink {
   slug: string;
   name: string;
 }
@@ -12,7 +12,7 @@ export interface TopicHubLink {
  * server-rendered links to the indexable hubs. The caller renders nothing
  * when there are none.
  */
-export function TopicHubLinks({ heading, hubs }: { heading: string; hubs: TopicHubLink[] }) {
+function TopicHubLinks({ heading, hubs }: { heading: string; hubs: TopicHubLink[] }) {
   return (
     <nav aria-labelledby="explore-hubs-heading" className="mt-4">
       <h2 id="explore-hubs-heading" className="font-home text-lg font-semibold text-ink">

@@ -82,6 +82,26 @@ describe('GuestPdfSeoContent (RIN-1498)', () => {
     expect(schema.mainEntity).toEqual(visible);
   });
 
+  it.each(LOCALES)(
+    'renders steps and FAQ in the Card surface with one body size in %s (RIN-1508)',
+    async (l) => {
+      const doc = await serverHtml(l);
+      const cards = doc.querySelectorAll(
+        'ol > li > .card, [data-testid="try-pdf-faq"] > li > .card',
+      );
+      expect(cards).toHaveLength(
+        3 + doc.querySelectorAll('[data-testid="try-pdf-faq"] > li').length,
+      );
+      expect(doc.body.innerHTML).not.toMatch(/bg-white|border-neutral-|text-neutral-/);
+      const bodies = [
+        ...Array.from(doc.querySelectorAll('ol > li p')),
+        ...Array.from(doc.querySelectorAll('[data-testid="try-pdf-faq"] p')),
+        doc.querySelector('[data-testid="try-pdf-limits"]'),
+      ];
+      for (const body of bodies) expect(body?.className).toMatch(/\btext-base\b/);
+    },
+  );
+
   it.each(LOCALES)('uses the personalized wording, never adaptive, in %s', async (l) => {
     const doc = await serverHtml(l);
     expect(doc.body.textContent).not.toMatch(/adaptive|thích ứng/i);

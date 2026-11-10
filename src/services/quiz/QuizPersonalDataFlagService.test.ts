@@ -98,3 +98,45 @@ describe('QuizPersonalDataFlagService.clear', () => {
     });
   });
 });
+
+describe('QuizPersonalDataFlagService.clear IndexNow (RIN-1500)', () => {
+  function setupWithNotifier(quiz: Quiz) {
+    const quizRepository = {
+      findById: vi.fn().mockResolvedValue(quiz),
+      update: vi.fn().mockResolvedValue(quiz),
+    };
+    const auditRepository = { record: vi.fn().mockResolvedValue(undefined) };
+    const quizIndexNow = { quizChanged: vi.fn() };
+    const service = new QuizPersonalDataFlagService(
+      quizRepository,
+      auditRepository,
+      () => now,
+      quizIndexNow,
+    );
+    return { service, quizIndexNow };
+  }
+
+  it('queues a public quiz that becomes indexable when the flag is cleared', async () => {
+    const { service, quizIndexNow } = setupWithNotifier({ ...flaggedQuiz, questionCount: 8 });
+    await service.clear(flaggedQuiz.id, actor);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledWith({
+      quizId: flaggedQuiz.id,
+      slug: flaggedQuiz.slug,
+      cause: 'indexability',
+    });
+  });
+
+  it('queues nothing when the clear does not change indexability', async () => {
+    const thin = setupWithNotifier(flaggedQuiz);
+    await thin.service.clear(flaggedQuiz.id, actor);
+    expect(thin.quizIndexNow.quizChanged).not.toHaveBeenCalled();
+
+    const alreadyClear = setupWithNotifier({
+      ...flaggedQuiz,
+      questionCount: 8,
+      contentFlags: { personalData: false, kinds: [], checkedAt },
+    });
+    await alreadyClear.service.clear(flaggedQuiz.id, actor);
+    expect(alreadyClear.quizIndexNow.quizChanged).not.toHaveBeenCalled();
+  });
+});

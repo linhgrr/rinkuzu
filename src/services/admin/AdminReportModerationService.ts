@@ -2,12 +2,14 @@ import type { AdminMessageDto } from '@/dtos/admin-user';
 import type { Report } from '@/entities/Report';
 import type { QuizVisibility } from '@/entities/Quiz';
 import type { IQuizIndexHoldRepository } from '@/interfaces/repositories/IQuizIndexHoldRepository';
+import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type {
   IIndexHoldReportRepository,
   IReportRepository,
 } from '@/interfaces/repositories/IReportRepository';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { notifyQuizIndexNow } from '@/lib/seo/quiz-search-change';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
 import { holdsQuizIndex } from '@/shared/constants/report-reason';
 import type { ReportStatus } from '@/shared/constants/report-status';
@@ -30,6 +32,8 @@ interface AdminReportModerationDeps {
   reports: Pick<IReportRepository, 'findById' | 'update'> & IIndexHoldReportRepository;
   indexHold: IQuizIndexHoldRepository;
   quizVisibility: QuizVisibilityModerator;
+  /** Queues the page for IndexNow when its hold is set or lifted (RIN-1500). */
+  quizIndexNow?: IQuizIndexNowNotifier;
   now?: () => Date;
 }
 
@@ -55,12 +59,23 @@ export class AdminReportModerationService {
    */
   async syncIndexHold(report: Report, status: ReportStatus): Promise<void> {
     if (!holdsQuizIndex(report.reason)) return;
+    const changed = await this.applyIndexHold(report, status);
+    if (changed) {
+      notifyQuizIndexNow(this.deps.quizIndexNow, {
+        quizId: report.quizId,
+        slug: report.quizSlug,
+        cause: 'index-hold',
+      });
+    }
+  }
+
+  /** True when the quiz's hold was set or lifted by this call. */
+  private async applyIndexHold(report: Report, status: ReportStatus): Promise<boolean> {
     if (status === 'pending') {
-      await this.deps.indexHold.holdForReport(report.quizId, this.now());
-      return;
+      return this.deps.indexHold.holdForReport(report.quizId, this.now());
     }
     const stillPending = await this.deps.reports.countPendingIndexHoldReports(report.quizId);
-    if (stillPending === 0) await this.deps.indexHold.releaseReportHold(report.quizId);
+    return stillPending === 0 ? this.deps.indexHold.releaseReportHold(report.quizId) : false;
   }
 
   /**

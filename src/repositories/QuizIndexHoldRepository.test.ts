@@ -47,4 +47,13 @@ describe('QuizIndexHoldRepository (RIN-1343)', () => {
 
     expect(mocks.updateOne).not.toHaveBeenCalled();
   });
+
+  it('says whether the write changed the hold (RIN-1500)', async () => {
+    const repository = new QuizIndexHoldRepository();
+    await expect(repository.holdForReport(quizId, new Date())).resolves.toBe(true);
+    mocks.updateOne.mockResolvedValue({ modifiedCount: 0 });
+    await expect(repository.holdForReport(quizId, new Date())).resolves.toBe(false);
+    await expect(repository.releaseReportHold(quizId)).resolves.toBe(false);
+    await expect(repository.releaseReportHold('not-an-id')).resolves.toBe(false);
+  });
 });

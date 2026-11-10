@@ -6,6 +6,7 @@ import {
   resolveQuizContentFlags,
   type QuizTextSource,
 } from '@/lib/quiz/personal-data';
+import { MAX_QUESTION_TEXT_LENGTH, MAX_QUESTIONS_PER_QUIZ } from '@/lib/validation/question';
 
 // Fake data only: none of these values belongs to a real person.
 function kindsOf(text: string) {
@@ -79,7 +80,29 @@ describe('detectPersonalData', () => {
     expect(JSON.stringify(result)).not.toMatch(/example|0912/);
   });
 
-  it('checks a 100-question quiz in under 50 ms', () => {
+  /**
+   * Fastest of several timings. Load on the shared CI machine and coverage
+   * instrumentation only ever add time, so the minimum is the detector's own
+   * cost; a single wall-clock sample is not (RIN-1513).
+   */
+  function fastestRunMs(run: () => void, runs = 5): number {
+    let fastest = Number.POSITIVE_INFINITY;
+    for (let attempt = 0; attempt < runs; attempt += 1) {
+      const started = performance.now();
+      run();
+      fastest = Math.min(fastest, performance.now() - started);
+    }
+    return fastest;
+  }
+
+  /**
+   * The guard is against super-linear regexes (catastrophic backtracking), which
+   * cost seconds on these inputs, not against a few ms of drift: the old 50 ms
+   * bound on one sample went red at 96 ms under gate load (RIN-1513).
+   */
+  const BUDGET_MS = 250;
+
+  it('checks a 100-question quiz well within budget', () => {
     const quiz: QuizTextSource = {
       title: 'Ôn tập Hóa học 10 năm 1945',
       description: 'Trang 123, hằng số 6.022×10^23. '.repeat(10),
@@ -92,13 +115,33 @@ describe('detectPersonalData', () => {
       })),
     };
     const texts = collectQuizTexts(quiz);
-    detectPersonalData(texts); // warm the regex engine
-    const started = performance.now();
-    const result = detectPersonalData(texts);
-    const elapsed = performance.now() - started;
 
-    expect(result.kinds).toEqual([]);
-    expect(elapsed).toBeLessThan(50);
+    expect(detectPersonalData(texts).kinds).toEqual([]);
+    expect(fastestRunMs(() => detectPersonalData(texts))).toBeLessThan(BUDGET_MS);
+  });
+
+  it('stays linear on crafted inputs at the size limits', () => {
+    // Long runs that a backtracking pattern would retry from every position.
+    const crafted = [
+      'a'.repeat(MAX_QUESTION_TEXT_LENGTH),
+      '1 '.repeat(MAX_QUESTION_TEXT_LENGTH / 2),
+      '1.'.repeat(MAX_QUESTION_TEXT_LENGTH / 2),
+      '1'.repeat(MAX_QUESTION_TEXT_LENGTH),
+      `${' '.repeat(MAX_QUESTION_TEXT_LENGTH - 1)}=`,
+      'a.'.repeat(MAX_QUESTION_TEXT_LENGTH / 2),
+      'Họ và tên: '.repeat(MAX_QUESTION_TEXT_LENGTH / 11),
+      'Họ và tên: An '.repeat(MAX_QUESTION_TEXT_LENGTH / 14),
+      'MSSV '.repeat(MAX_QUESTION_TEXT_LENGTH / 5),
+      `${'a'.repeat(MAX_QUESTION_TEXT_LENGTH - 2)} @`,
+      'a@a.'.repeat(MAX_QUESTION_TEXT_LENGTH / 4),
+      `x@${'a.'.repeat(MAX_QUESTION_TEXT_LENGTH / 2 - 1)}`,
+    ];
+    const texts = Array.from(
+      { length: MAX_QUESTIONS_PER_QUIZ },
+      (_, index) => crafted[index % crafted.length] ?? '',
+    );
+
+    expect(fastestRunMs(() => detectPersonalData(texts), 3)).toBeLessThan(BUDGET_MS);
   });
 });
 

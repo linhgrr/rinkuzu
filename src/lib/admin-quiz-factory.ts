@@ -1,4 +1,5 @@
 import { getAdminAuditRepository } from '@/lib/admin-audit-factory';
+import { quizIndexNowNotifier } from '@/lib/indexnow-factory';
 import { PremiumQuizRepository } from '@/repositories/PremiumQuizRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { QuizAdminService } from '@/services/quiz/QuizAdminService';
@@ -10,6 +11,7 @@ export function getAdminQuizService(): QuizAdminService {
   adminQuizService ??= new QuizAdminService(new QuizRepository(), {
     premiumRepository: new PremiumQuizRepository(),
     auditRepository: getAdminAuditRepository(),
+    quizIndexNow: quizIndexNowNotifier,
   });
   return adminQuizService;
 }
@@ -21,6 +23,8 @@ export function getQuizPersonalDataFlagService(): QuizPersonalDataFlagService {
   personalDataFlagService ??= new QuizPersonalDataFlagService(
     new QuizRepository(),
     getAdminAuditRepository(),
+    undefined,
+    quizIndexNowNotifier,
   );
   return personalDataFlagService;
 }

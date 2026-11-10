@@ -38,7 +38,7 @@ async function readForm(request: NextRequest): Promise<FormData | null> {
 
 /**
  * Guest quiz from the visitor's own PDF (RIN-1446), no account. The file is checked
- * here (type, ≤ 10 MB) before the caps, and the caps before any OCR or LLM call.
+ * here (type, ≤ 4 MB) before the caps, and the caps before any OCR or LLM call.
  * The token arrives in a header and only its hash is stored; nothing here is logged.
  */
 export async function POST(request: NextRequest) {

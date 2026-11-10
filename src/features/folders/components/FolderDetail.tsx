@@ -124,7 +124,7 @@ export function FolderDetail({ folderId }: { folderId: string }) {
     <main className="mx-auto max-w-[1340px] px-4 pb-20 pt-6 sm:px-6 lg:px-8">
       <Link
         href="/my-quizzes?tab=folders"
-        className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-brand-trust"
+        className="inline-flex items-center gap-2 text-sm text-ink/70 hover:text-brand-trust"
       >
         <HiOutlineArrowLeft className="size-4" /> Back to folders
       </Link>
@@ -137,7 +137,7 @@ export function FolderDetail({ folderId }: { folderId: string }) {
             <h1 className="text-2xl font-semibold text-ink">
               {title ?? (foldersLoading ? 'Loading…' : 'Folder not found')}
             </h1>
-            <p className="text-sm text-ink/55">{state.quizzes.length} quizzes</p>
+            <p className="text-sm text-ink/70">{state.quizzes.length} quizzes</p>
           </div>
         </div>
         <Button onClick={() => dispatch({ type: 'modal:open' })}>

@@ -46,7 +46,7 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
 
   return (
     <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
-      <div className="flex items-center justify-between text-sm text-ink/40">
+      <div className="flex items-center justify-between text-sm text-ink/70">
         <div className="flex flex-wrap items-center gap-2">
           <span>{t('questionCount', { count: quiz.questionCount })}</span>
           {quiz.premiumSubmissionStatus ? (
@@ -83,7 +83,7 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
           </span>
           {quiz.visibility === 'personal' ? (
             <HiOutlineLockClosed
-              className="ml-auto size-4 shrink-0 text-ink/45"
+              className="ml-auto size-4 shrink-0 text-ink/60"
               aria-label={t('personalSource')}
             />
           ) : null}

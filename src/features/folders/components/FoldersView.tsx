@@ -119,7 +119,7 @@ function FolderCard({
       </div>
       <Link href={href} className="mt-5 block">
         <h2 className="truncate font-semibold text-ink">{folder.name}</h2>
-        <p className="mt-1 text-sm text-ink/55">{quizCountLabel}</p>
+        <p className="mt-1 text-sm text-ink/70">{quizCountLabel}</p>
       </Link>
     </article>
   );

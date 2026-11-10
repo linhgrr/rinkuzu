@@ -161,7 +161,7 @@ export function AddQuizToFolderModal({
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-ink">{quiz.title}</p>
-                  <p className="mt-1 text-xs text-ink/55">
+                  <p className="mt-1 text-xs text-ink/70">
                     {quiz.ownedByMe ? 'Created by you' : 'Completed quiz'}
                   </p>
                 </div>

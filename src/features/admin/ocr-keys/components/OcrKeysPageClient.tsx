@@ -368,21 +368,21 @@ function AdminOcrKeysContent() {
               <section className="mb-6 grid gap-4 md:grid-cols-4">
                 <div className="rounded-lg border border-line-blue/30 bg-white p-4">
                   <div className="text-2xl font-semibold text-ink">{state.keys.length}</div>
-                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysTotal')}</div>
+                  <div className="mt-1 text-sm text-ink/70">{t('ocrKeysTotal')}</div>
                 </div>
                 <div className="rounded-lg border border-line-blue/30 bg-white p-4">
                   <div className="text-2xl font-semibold text-ink">{activeKeyCount}</div>
-                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysActive')}</div>
+                  <div className="mt-1 text-sm text-ink/70">{t('ocrKeysActive')}</div>
                 </div>
                 <div className="rounded-lg border border-line-blue/30 bg-white p-4">
                   <div className="text-2xl font-semibold text-ink">{failedKeyCount}</div>
-                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysFailed')}</div>
+                  <div className="mt-1 text-sm text-ink/70">{t('ocrKeysFailed')}</div>
                 </div>
                 <div className="rounded-lg border border-line-blue/30 bg-white p-4">
                   <div className="text-2xl font-semibold text-ink">
                     {state.fallbackEnvConfigured ? t('yes') : t('no')}
                   </div>
-                  <div className="mt-1 text-sm text-ink/55">{t('ocrKeysEnvFallback')}</div>
+                  <div className="mt-1 text-sm text-ink/70">{t('ocrKeysEnvFallback')}</div>
                 </div>
               </section>
 
@@ -410,7 +410,7 @@ function AdminOcrKeysContent() {
                   className="h-11 rounded-lg border border-line bg-white px-3 text-sm outline-none focus:border-accent"
                 />
                 <label className="flex h-11 items-center gap-2 rounded-lg border border-line bg-white px-3">
-                  <HiOutlineEyeOff className="size-5 shrink-0 text-ink/40" />
+                  <HiOutlineEyeOff className="size-5 shrink-0 text-ink/60" />
                   <input
                     value={state.apiKey}
                     onChange={(event) =>
@@ -461,11 +461,11 @@ function AdminOcrKeysContent() {
                     ))}
                   </div>
                 ) : state.keys.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-ink/60">{t('ocrKeysEmpty')}</div>
+                  <div className="p-8 text-center text-sm text-ink/70">{t('ocrKeysEmpty')}</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-full text-left text-sm">
-                      <thead className="bg-neutral-50 text-xs uppercase text-ink/50">
+                      <thead className="bg-neutral-50 text-xs uppercase text-ink/70">
                         <tr>
                           <th className="px-5 py-3 font-semibold">{t('ocrKeysKey')}</th>
                           <th className="px-5 py-3 font-semibold">{t('status')}</th>
@@ -485,10 +485,10 @@ function AdminOcrKeysContent() {
                                 </span>
                                 <div className="min-w-0">
                                   <div className="font-semibold text-ink">{key.label}</div>
-                                  <div className="mt-1 font-mono text-xs text-ink/60">
+                                  <div className="mt-1 font-mono text-xs text-ink/70">
                                     {key.maskedKey}
                                   </div>
-                                  <div className="mt-1 text-xs text-ink/45">
+                                  <div className="mt-1 text-xs text-ink/70">
                                     {key.provider} · {t('ocrKeysPriority')} {key.priority}
                                   </div>
                                 </div>

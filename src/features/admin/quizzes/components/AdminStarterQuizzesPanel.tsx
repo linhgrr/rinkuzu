@@ -65,7 +65,7 @@ function StarterRow({ item, total, hiddenOnMobile, busy, controller, onUnmark }:
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-sm text-ink/55">
+          <p className="mt-1 text-sm text-ink/70">
             {t('questionCount', { count: item.questionCount })}
           </p>
           {item.dropReason ? (
@@ -150,7 +150,7 @@ function StarterPanelBody({ controller }: AdminStarterQuizzesPanelProps) {
     return (
       <div className="p-6 text-center">
         <p className="font-semibold text-ink">{t('emptyTitle')}</p>
-        <p className="mt-1 text-sm text-ink/55">{t('emptyHint')}</p>
+        <p className="mt-1 text-sm text-ink/70">{t('emptyHint')}</p>
       </div>
     );
   }
@@ -222,7 +222,7 @@ export function AdminStarterQuizzesPanel({ controller }: AdminStarterQuizzesPane
         <h2 id="admin-starter-quizzes-heading" className="text-lg font-semibold text-ink">
           {t('title')}
         </h2>
-        <p className="mt-1 text-sm text-ink/60">{t('description')}</p>
+        <p className="mt-1 text-sm text-ink/70">{t('description')}</p>
       </header>
       <StarterPanelBody controller={controller} />
       <MarkStarterDialog controller={controller} />

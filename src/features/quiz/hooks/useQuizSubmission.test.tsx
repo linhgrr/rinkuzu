@@ -235,3 +235,51 @@ describe('useQuizSubmission', () => {
     expect(settled).toBe(true);
   });
 });
+
+describe('useQuizSubmission with a guest-draft submitter (RIN-1448)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    randomUUID.mockReturnValueOnce('018f7494-8bd8-7b8a-a387-3bc5a14f22a2');
+    window.localStorage.clear();
+    vi.stubGlobal('crypto', {
+      randomUUID,
+      getRandomValues: (bytes: Uint8Array) => bytes.fill(9),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('submits through the override with a fresh claim token, even when signed in', async () => {
+    const submitAttempt = vi.fn().mockResolvedValue({ attemptId: 'attempt-draft-1', score: 80 });
+    const onSubmitSuccess = vi.fn();
+    const { result } = renderHook(() =>
+      useQuizSubmission({
+        slug: 'guest-draft-play',
+        quiz: { questions: [{ type: 'single' }] },
+        userAnswers: [2],
+        sessionEmail: 'learner@example.com',
+        submitAttempt,
+        onSubmitSuccess,
+        onSubmitError: vi.fn(),
+        mapAnswersToOriginalOrder: (_quiz, answers) => answers,
+        isQuestionAnswered: () => true,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.submitQuiz();
+    });
+
+    expect(submitAttemptMock).not.toHaveBeenCalled();
+    const input = submitAttempt.mock.calls[0]?.[0];
+    expect(input).toMatchObject({
+      answers: [2],
+      idempotencyKey: '018f7494-8bd8-7b8a-a387-3bc5a14f22a2',
+    });
+    expect(input.guestClaimToken).toEqual(expect.any(String));
+    expect(findGuestClaimToken('attempt-draft-1')).toBe(input.guestClaimToken);
+    expect(onSubmitSuccess).toHaveBeenCalledWith('attempt-draft-1', 80);
+  });
+});

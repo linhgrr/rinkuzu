@@ -7,16 +7,16 @@ import { ApiResponseError } from '@/lib/api/client';
 import { addGuestClaim } from '@/features/quiz/lib/guest-claims';
 import { QuizResultPageClient } from './QuizResultPageClient';
 
-const { claimMock, fetchPageDataMock, searchParams, router, session, signInMock } = vi.hoisted(
-  () => ({
+const { claimMock, fetchPageDataMock, routeSlug, searchParams, router, session, signInMock } =
+  vi.hoisted(() => ({
+    routeSlug: { value: 'demo' },
     claimMock: vi.fn(() => Promise.resolve()),
     fetchPageDataMock: vi.fn(),
     signInMock: vi.fn(),
     session: { value: { data: { user: { id: 'u1' } }, status: 'authenticated' } as object },
     searchParams: { value: new URLSearchParams('attemptId=attempt-1') },
     router: { push: () => undefined, back: () => undefined },
-  }),
-);
+  }));
 
 vi.mock('next-auth/react', () => ({
   useSession: () => session.value,
@@ -42,7 +42,7 @@ const translate = (key: string) => key;
 vi.mock('next-intl', () => ({ useTranslations: () => translate, useLocale: () => 'en' }));
 
 vi.mock('@/lib/routing/useRequiredRouteParam', () => ({
-  useRequiredRouteParam: () => 'demo',
+  useRequiredRouteParam: () => routeSlug.value,
 }));
 
 vi.mock('@/features/ask-rin-chan/components/AskRinPanel', () => ({ AskRinPanel: () => null }));
@@ -161,6 +161,29 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     // Retry needs no sign-in.
     expect(screen.getByRole('link', { name: 'redo' })).toHaveAttribute('href', '/quiz/demo');
     expect(document.body.innerHTML).not.toContain(FAKE_TOKEN);
+  });
+
+  it('asks a guest-draft player to sign up to save the quiz and the result (RIN-1448)', async () => {
+    routeSlug.value = 'guest-draft-play';
+    addGuestClaim({
+      attemptId: 'attempt-1',
+      token: FAKE_TOKEN,
+      quizSlug: 'guest-draft-play',
+      takenAt: Date.now(),
+    });
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: guestResult,
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    try {
+      render(<QuizResultPageClient />);
+      const card = await screen.findByRole('region', { name: 'guestDraftSaveTitle' });
+      expect(card).toHaveTextContent('guestDraftSaveBody');
+      expect(screen.getByRole('button', { name: 'guestDraftSaveWithGoogle' })).toBeVisible();
+    } finally {
+      routeSlug.value = 'demo';
+    }
   });
 
   it('keeps entry=blog and its post in the save card callbacks (RIN-1242)', async () => {

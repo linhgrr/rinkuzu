@@ -3,12 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  INDEXNOW_KEY,
-  isIndexNowEnabled,
-  normalizeIndexNowUrls,
-  submitIndexNow,
-} from '@/lib/seo/indexnow';
+import { isIndexNowEnabled, normalizeIndexNowUrls, submitIndexNow } from '@/lib/seo/indexnow';
+import { INDEXNOW_KEY } from '@/lib/seo/indexnow-core';
 
 const QUIZ_URL = 'https://www.rinkuzu.app/vi/quiz/fake-biology-quiz';
 const HUB_URL = 'https://www.rinkuzu.app/vi/explore/fake-topic';

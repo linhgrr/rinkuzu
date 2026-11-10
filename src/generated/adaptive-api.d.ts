@@ -529,6 +529,53 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/quiz/guest-drafts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Guest Quiz Draft
+     * @description Create a guest draft from a small PDF and start extraction (service-only, no user).
+     *
+     *     Too many pages or bytes → 413 ``validation_error`` with ``meta.reason``
+     *     ``guest_pdf_too_large`` and ``limit_pages`` / ``limit_mb``, before any OCR or LLM call.
+     */
+    post: operations['create_guest_quiz_draft_api_quiz_guest_drafts_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/quiz/guest-drafts/{draft_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Guest Quiz Draft
+     * @description Status and progress of a guest draft; title and questions once completed.
+     */
+    get: operations['get_guest_quiz_draft_api_quiz_guest_drafts__draft_id__get'];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Guest Quiz Draft
+     * @description Idempotent delete of a guest draft and its source PDF (200 even when already gone).
+     */
+    delete: operations['delete_guest_quiz_draft_api_quiz_guest_drafts__draft_id__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/premium-quiz/reviews': {
     parameters: {
       query?: never;
@@ -968,6 +1015,44 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/admin/review-reminder/adaptive/{user_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Review Reminder Adaptive Facts
+     * @description Server-to-server facts about one learner's adaptive learning (Path B), for the
+     *     web's week-1 review email. Called once per email at send time and once per opt-in.
+     *
+     *     - `latest_completion`: the learner's most recent adaptive completion on any
+     *       document, or `null`. A completion is every 5th answered exercise on one
+     *       uploaded document, timed by the exercise's generation timestamp (same rule as
+     *       `/api/admin/activation/adaptive-events`).
+     *       - `document_id`: the adaptive session id the web's adaptive routes take
+     *         (`/adaptive/subject/{document_id}`); the API recovers it for its owner.
+     *         `null` only if the progress has no saved session, then link `/adaptive`.
+     *       - `job_id`: the uploaded document's pipeline job id (stable identity).
+     *       - `document_title`: the uploaded file's name, or `null` if the job is gone.
+     *       - `due_count`: concepts on that document whose most recent answered exercise
+     *         was wrong. The adaptive model has no due queue, and each exercise is
+     *         generated fresh, so a concept is the unit that gets "answered right since".
+     *     - `completions_after`: completion times strictly after `after`, on any
+     *       document, oldest first; `[]` when `after` is absent. Naive `after` is UTC.
+     *     - An unknown id gets `latest_completion: null` and `completions_after: []`.
+     *     No question text or answers are returned, and nothing per learner is logged.
+     */
+    get: operations['get_review_reminder_adaptive_facts_api_admin_review_reminder_adaptive__user_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/ask-rin-chan/contexts': {
     parameters: {
       query?: never;
@@ -1221,6 +1306,14 @@ export interface components {
      * @enum {string}
      */
     BloomLabel: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
+    /** Body_create_guest_quiz_draft_api_quiz_guest_drafts_post */
+    Body_create_guest_quiz_draft_api_quiz_guest_drafts_post: {
+      /**
+       * File
+       * @description Source PDF.
+       */
+      file: string;
+    };
     /** ConceptDetailResponse */
     ConceptDetailResponse: {
       /** Id */
@@ -1555,6 +1648,60 @@ export interface components {
       arguments: string;
     } & {
       [key: string]: unknown;
+    };
+    /**
+     * GuestQuizDraftData
+     * @description Guest draft (RIN-1444). ``questions`` and ``title`` are set only when completed.
+     */
+    GuestQuizDraftData: {
+      /** Draft Id */
+      draft_id: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'expired';
+      progress: components['schemas']['QuizDraftProgress'];
+      /** Title */
+      title?: string | null;
+      /**
+       * Question Count
+       * @default 0
+       */
+      question_count: number;
+      /** Questions */
+      questions?: components['schemas']['QuizDraftQuestion'][];
+      /** Failure Reason */
+      failure_reason?:
+        | (
+            | 'pdf_too_large'
+            | 'pdf_unreadable'
+            | 'invalid_pdf'
+            | 'ocr_failed'
+            | 'no_text'
+            | 'no_questions'
+            | 'extract_failed'
+            | 'timeout'
+          )
+        | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Expires At */
+      expires_at: string | null;
+    };
+    /** GuestQuizDraftDeleteResponse */
+    GuestQuizDraftDeleteResponse: {
+      /** Draft Id */
+      draft_id: string;
+      /** Deleted */
+      deleted: boolean;
+    };
+    /** GuestQuizDraftResponse */
+    GuestQuizDraftResponse: {
+      draft: components['schemas']['GuestQuizDraftData'];
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -2016,7 +2163,13 @@ export interface components {
      * @description Where an LLM call originated. Determines whether it is product usage.
      * @enum {string}
      */
-    LlmUsageSource: 'request' | 'pipeline_job' | 'quiz_draft' | 'admin_probe' | 'system';
+    LlmUsageSource:
+      | 'request'
+      | 'pipeline_job'
+      | 'quiz_draft'
+      | 'guest_quiz_draft'
+      | 'admin_probe'
+      | 'system';
     /** LlmUsageSummaryResponse */
     LlmUsageSummaryResponse: {
       /** Window Days */
@@ -4001,6 +4154,28 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
+    /** ReviewReminderAdaptiveFacts */
+    ReviewReminderAdaptiveFacts: {
+      latest_completion: components['schemas']['ReviewReminderLatestCompletion'] | null;
+      /** Completions After */
+      completions_after: string[];
+    };
+    /** ReviewReminderLatestCompletion */
+    ReviewReminderLatestCompletion: {
+      /**
+       * Completed At
+       * Format: date-time
+       */
+      completed_at: string;
+      /** Document Id */
+      document_id: string | null;
+      /** Job Id */
+      job_id: string;
+      /** Document Title */
+      document_title: string | null;
+      /** Due Count */
+      due_count: number;
+    };
     /** RouteInput */
     RouteInput: {
       action: components['schemas']['LlmAction'];
@@ -4309,6 +4484,32 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['ExerciseContextResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[GuestQuizDraftDeleteResponse] */
+    StandardResponse_GuestQuizDraftDeleteResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['GuestQuizDraftDeleteResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[GuestQuizDraftResponse] */
+    StandardResponse_GuestQuizDraftResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['GuestQuizDraftResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -4647,6 +4848,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['ReadinessResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[ReviewReminderAdaptiveFacts] */
+    StandardResponse_ReviewReminderAdaptiveFacts_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['ReviewReminderAdaptiveFacts'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -6316,6 +6530,112 @@ export interface operations {
       };
     };
   };
+  create_guest_quiz_draft_api_quiz_guest_drafts_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_create_guest_quiz_draft_api_quiz_guest_drafts_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_GuestQuizDraftResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_guest_quiz_draft_api_quiz_guest_drafts__draft_id__get: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        draft_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_GuestQuizDraftResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_guest_quiz_draft_api_quiz_guest_drafts__draft_id__delete: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        draft_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_GuestQuizDraftDeleteResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_premium_review_api_premium_quiz_reviews_post: {
     parameters: {
       query?: never;
@@ -7430,6 +7750,43 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_AdaptiveActivationEventsResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_review_reminder_adaptive_facts_api_admin_review_reminder_adaptive__user_id__get: {
+    parameters: {
+      query?: {
+        after?: string | null;
+      };
+      header: {
+        'x-user-id': string;
+        'x-user-role': string;
+        'x-service-token': string;
+      };
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_ReviewReminderAdaptiveFacts_'];
         };
       };
       /** @description Validation Error */

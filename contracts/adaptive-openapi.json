@@ -1976,6 +1976,192 @@
         }
       }
     },
+    "/api/quiz/guest-drafts": {
+      "post": {
+        "tags": ["quiz-guest-drafts"],
+        "summary": "Create Guest Quiz Draft",
+        "description": "Create a guest draft from a small PDF and start extraction (service-only, no user).\n\nToo many pages or bytes → 413 ``validation_error`` with ``meta.reason``\n``guest_pdf_too_large`` and ``limit_pages`` / ``limit_mb``, before any OCR or LLM call.",
+        "operationId": "create_guest_quiz_draft_api_quiz_guest_drafts_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_guest_quiz_draft_api_quiz_guest_drafts_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_GuestQuizDraftResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/guest-drafts/{draft_id}": {
+      "get": {
+        "tags": ["quiz-guest-drafts"],
+        "summary": "Get Guest Quiz Draft",
+        "description": "Status and progress of a guest draft; title and questions once completed.",
+        "operationId": "get_guest_quiz_draft_api_quiz_guest_drafts__draft_id__get",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_\\-]+$",
+              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "title": "Draft Id"
+            },
+            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_GuestQuizDraftResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["quiz-guest-drafts"],
+        "summary": "Delete Guest Quiz Draft",
+        "description": "Idempotent delete of a guest draft and its source PDF (200 even when already gone).",
+        "operationId": "delete_guest_quiz_draft_api_quiz_guest_drafts__draft_id__delete",
+        "parameters": [
+          {
+            "name": "draft_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-zA-Z0-9_\\-]+$",
+              "description": "Resource identifier (alphanumeric, hyphens, underscores)",
+              "title": "Draft Id"
+            },
+            "description": "Resource identifier (alphanumeric, hyphens, underscores)"
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_GuestQuizDraftDeleteResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/premium-quiz/reviews": {
       "post": {
         "tags": ["premium-quiz-reviews"],
@@ -4566,6 +4752,91 @@
         }
       }
     },
+    "/api/admin/review-reminder/adaptive/{user_id}": {
+      "get": {
+        "tags": ["admin-activation"],
+        "summary": "Get Review Reminder Adaptive Facts",
+        "description": "Server-to-server facts about one learner's adaptive learning (Path B), for the\nweb's week-1 review email. Called once per email at send time and once per opt-in.\n\n- `latest_completion`: the learner's most recent adaptive completion on any\n  document, or `null`. A completion is every 5th answered exercise on one\n  uploaded document, timed by the exercise's generation timestamp (same rule as\n  `/api/admin/activation/adaptive-events`).\n  - `document_id`: the adaptive session id the web's adaptive routes take\n    (`/adaptive/subject/{document_id}`); the API recovers it for its owner.\n    `null` only if the progress has no saved session, then link `/adaptive`.\n  - `job_id`: the uploaded document's pipeline job id (stable identity).\n  - `document_title`: the uploaded file's name, or `null` if the job is gone.\n  - `due_count`: concepts on that document whose most recent answered exercise\n    was wrong. The adaptive model has no due queue, and each exercise is\n    generated fresh, so a concept is the unit that gets \"answered right since\".\n- `completions_after`: completion times strictly after `after`, on any\n  document, oldest first; `[]` when `after` is absent. Naive `after` is UTC.\n- An unknown id gets `latest_completion: null` and `completions_after: []`.\nNo question text or answers are returned, and nothing per learner is logged.",
+        "operationId": "get_review_reminder_adaptive_facts_api_admin_review_reminder_adaptive__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-user-role",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Role"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_ReviewReminderAdaptiveFacts_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ask-rin-chan/contexts": {
       "post": {
         "tags": ["ask-rin-chan"],
@@ -5221,6 +5492,19 @@
         "type": "string",
         "enum": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
         "title": "BloomLabel"
+      },
+      "Body_create_guest_quiz_draft_api_quiz_guest_drafts_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "Source PDF."
+          }
+        },
+        "type": "object",
+        "required": ["file"],
+        "title": "Body_create_guest_quiz_draft_api_quiz_guest_drafts_post"
       },
       "ConceptDetailResponse": {
         "properties": {
@@ -6022,6 +6306,112 @@
         "required": ["name", "arguments"],
         "title": "FunctionCall",
         "description": "The name and arguments of a tool call."
+      },
+      "GuestQuizDraftData": {
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "title": "Draft Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "processing", "completed", "failed", "cancelled", "expired"],
+            "title": "Status"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/QuizDraftProgress"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "question_count": {
+            "type": "integer",
+            "title": "Question Count",
+            "default": 0
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuizDraftQuestion"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pdf_too_large",
+                  "pdf_unreadable",
+                  "invalid_pdf",
+                  "ocr_failed",
+                  "no_text",
+                  "no_questions",
+                  "extract_failed",
+                  "timeout"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": ["draft_id", "status", "progress", "created_at", "expires_at"],
+        "title": "GuestQuizDraftData",
+        "description": "Guest draft (RIN-1444). ``questions`` and ``title`` are set only when completed."
+      },
+      "GuestQuizDraftDeleteResponse": {
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "title": "Draft Id"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": ["draft_id", "deleted"],
+        "title": "GuestQuizDraftDeleteResponse"
+      },
+      "GuestQuizDraftResponse": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/GuestQuizDraftData"
+          }
+        },
+        "type": "object",
+        "required": ["draft"],
+        "title": "GuestQuizDraftResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -6998,7 +7388,14 @@
       },
       "LlmUsageSource": {
         "type": "string",
-        "enum": ["request", "pipeline_job", "quiz_draft", "admin_probe", "system"],
+        "enum": [
+          "request",
+          "pipeline_job",
+          "quiz_draft",
+          "guest_quiz_draft",
+          "admin_probe",
+          "system"
+        ],
         "title": "LlmUsageSource",
         "description": "Where an LLM call originated. Determines whether it is product usage."
       },
@@ -11564,6 +11961,73 @@
         "title": "ResumeEntry",
         "description": "An answer to one interrupt, sent on the run that continues from it."
       },
+      "ReviewReminderAdaptiveFacts": {
+        "properties": {
+          "latest_completion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewReminderLatestCompletion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completions_after": {
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "array",
+            "title": "Completions After"
+          }
+        },
+        "type": "object",
+        "required": ["latest_completion", "completions_after"],
+        "title": "ReviewReminderAdaptiveFacts"
+      },
+      "ReviewReminderLatestCompletion": {
+        "properties": {
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "document_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Title"
+          },
+          "due_count": {
+            "type": "integer",
+            "title": "Due Count"
+          }
+        },
+        "type": "object",
+        "required": ["completed_at", "document_id", "job_id", "document_title", "due_count"],
+        "title": "ReviewReminderLatestCompletion"
+      },
       "RouteInput": {
         "properties": {
           "action": {
@@ -12251,6 +12715,60 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[ExerciseContextResponse]"
+      },
+      "StandardResponse_GuestQuizDraftDeleteResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/GuestQuizDraftDeleteResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[GuestQuizDraftDeleteResponse]"
+      },
+      "StandardResponse_GuestQuizDraftResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/GuestQuizDraftResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[GuestQuizDraftResponse]"
       },
       "StandardResponse_InfoResponse_": {
         "properties": {
@@ -12953,6 +13471,33 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[ReadinessResponse]"
+      },
+      "StandardResponse_ReviewReminderAdaptiveFacts_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReviewReminderAdaptiveFacts"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[ReviewReminderAdaptiveFacts]"
       },
       "StandardResponse_SessionCreateResponse_": {
         "properties": {

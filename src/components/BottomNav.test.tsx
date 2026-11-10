@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import BottomNav from './BottomNav';
@@ -39,6 +39,8 @@ describe('BottomNav', () => {
     const current = screen.getByRole('link', { name: 'tabHome' });
     expect(current).toHaveAttribute('aria-current', 'page');
     expect(current.querySelector('svg')).toHaveClass('text-accent');
+    // RIN-1503: the label is text, so it takes the AA ink step (text-accent was 2.57:1).
+    expect(within(current).getByText('tabHome')).toHaveClass('text-accent-ink');
     expect((await axe(container)).violations).toEqual([]);
   });
 

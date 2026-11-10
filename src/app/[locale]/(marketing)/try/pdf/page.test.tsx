@@ -12,6 +12,9 @@ vi.mock('next-intl/server', () => ({
   setRequestLocale: vi.fn(),
 }));
 vi.mock('@/features/guest-draft/components/GuestPdfUploadPage', () => ({ GuestPdfUploadPage }));
+vi.mock('@/features/guest-draft/components/GuestPdfSeoContent', () => ({
+  GuestPdfSeoContent: () => null,
+}));
 
 import TryPdfPage, { generateMetadata } from './page';
 
@@ -37,10 +40,21 @@ describe('/try/pdf page (RIN-1448, RIN-1497)', () => {
 
   it('passes a known entry through and leaves an unknown one to the browser', async () => {
     const page = await TryPdfPage({ params, searchParams: Promise.resolve({ entry: 'create' }) });
-    expect(page.props).toEqual({ entry: 'create' });
+    expect(page.props.entry).toBe('create');
     const blog = await TryPdfPage({ params, searchParams: Promise.resolve({ entry: 'blog' }) });
-    expect(blog.props).toEqual({ entry: 'blog' });
+    expect(blog.props.entry).toBe('blog');
     const fallback = await TryPdfPage({ params, searchParams: Promise.resolve({ entry: 'x' }) });
-    expect(fallback.props).toEqual({ entry: undefined });
+    expect(fallback.props.entry).toBeUndefined();
   });
+
+  it.each(['vi', 'en'])(
+    'renders the SEO copy under the widget in %s (RIN-1498)',
+    async (locale) => {
+      const page = await TryPdfPage({
+        params: Promise.resolve({ locale }),
+        searchParams: Promise.resolve({}),
+      });
+      expect(page.props.children.props).toEqual({ locale });
+    },
+  );
 });

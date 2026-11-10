@@ -8,6 +8,7 @@ import { IndexNowService } from '@/services/seo/IndexNowService';
 
 let indexNowService: IndexNowService | undefined;
 
+/** @public The post-deploy ping (RIN-1501) flushes through this service. */
 export function getIndexNowService(): IndexNowService {
   indexNowService ??= new IndexNowService({
     queue: new IndexNowQueueRepository(),
@@ -30,7 +31,7 @@ async function runQuietly(urls: readonly string[]): Promise<void> {
  * request never waits on Mongo or IndexNow and never sees an error from them.
  * Outside a request scope (scripts) the work runs detached instead.
  */
-export function scheduleIndexNow(urls: readonly string[]): void {
+function scheduleIndexNow(urls: readonly string[]): void {
   if (urls.length === 0 || !isIndexNowEnabled()) return;
   const copy = [...urls];
   try {

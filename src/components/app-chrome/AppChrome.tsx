@@ -248,7 +248,7 @@ function SidebarSubItem({ href, label, active, lockedLabel }: SidebarSubItemProp
       href={href}
       aria-current={active ? 'page' : undefined}
       className={`relative flex h-10 items-center gap-2.5 pl-6 pr-2.5 font-home text-body transition-colors ${
-        active ? 'font-semibold text-accent' : 'font-normal text-ink hover:text-accent'
+        active ? 'font-semibold text-accent-ink' : 'font-normal text-ink hover:text-accent-ink'
       } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
       <span className="h-10 w-px border-l border-dashed border-line-blue/70" aria-hidden="true" />
@@ -271,7 +271,7 @@ function SidebarItem({
 }: SidebarItemProps) {
   const base = `flex h-12 w-full items-center rounded-control font-home text-body font-semibold transition-colors ${
     collapsed ? 'justify-center px-0' : 'px-3'
-  } ${active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'}`;
+  } ${active ? 'bg-accent-soft text-accent-ink' : 'text-ink hover:bg-accent-soft/60'}`;
 
   const inner = (
     <>
@@ -481,7 +481,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
                     if (!active) onSelect(option.value);
                   }}
                   className={`flex w-full items-center justify-between px-4 py-2.5 text-left font-home text-body transition-colors ${
-                    active ? 'font-semibold text-accent' : 'text-ink hover:bg-accent-soft/60'
+                    active ? 'font-semibold text-accent-ink' : 'text-ink hover:bg-accent-soft/60'
                   }`}
                 >
                   <span>{option.label}</span>
@@ -879,7 +879,7 @@ function MobileMenuItem({
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={`flex h-12 items-center gap-3 rounded-lg px-3 font-home text-body font-semibold transition-colors ${
-        active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'
+        active ? 'bg-accent-soft text-accent-ink' : 'text-ink hover:bg-accent-soft/60'
       } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
       {icon ? <ShellIcon name={icon} /> : <span className="ml-9" aria-hidden="true" />}
@@ -908,7 +908,7 @@ function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProp
       ) : (
         <div
           className={`flex h-12 items-center gap-3 rounded-lg px-3 font-home text-body font-semibold ${
-            active ? 'bg-accent-soft text-accent' : 'text-ink'
+            active ? 'bg-accent-soft text-accent-ink' : 'text-ink'
           }`}
         >
           <ShellIcon name={entry.icon} />

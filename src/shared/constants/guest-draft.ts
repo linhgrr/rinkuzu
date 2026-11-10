@@ -47,3 +47,9 @@ export const GUEST_DRAFT_PLAY_SLUG = 'guest-draft-play';
 export function isGuestDraftSlug(slug: string): boolean {
   return slug.startsWith('guest-draft-');
 }
+
+/**
+ * Most questions the API writes for a guest draft (its `GUEST_QUIZ_MAX_QUESTIONS` default,
+ * RIN-1444). Shown on `/try/pdf` (RIN-1498); the API is the enforcer.
+ */
+export const GUEST_DRAFT_MAX_QUESTIONS = 10;

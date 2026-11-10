@@ -52,6 +52,14 @@ export class IndexNowService {
     if (result.outcome === 'sent' || result.outcome === 'rejected') {
       await this.deps.queue.removePending(pending);
     }
+    // Last, so a failed write never keeps an already-sent batch for a resend.
+    await this.deps.queue.recordResult({
+      outcome: result.outcome,
+      status: result.status,
+      attempt: result.attempt,
+      urlCount: result.urlCount,
+      at: this.now(),
+    });
     return result;
   }
 }

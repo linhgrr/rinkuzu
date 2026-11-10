@@ -4,6 +4,7 @@ import { HiOutlineLockClosed, HiOutlineLockOpen } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import type { UserIdentity } from '@/components/user/user-identity';
+import { cn } from '@/lib/utils';
 import { ROUTES } from '@/shared/constants/routes';
 import { QuizCardOwnerMenu } from './QuizCardOwnerMenu';
 
@@ -58,7 +59,13 @@ export function QuizCard({
   const author = getAuthor(quiz);
 
   return (
-    <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
+    <article
+      className={cn(
+        'group relative flex flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none',
+        // The height floor fits the author row; cards without it hug their content.
+        showAuthor && 'min-h-[146px]',
+      )}
+    >
       <div className="flex items-center justify-between text-sm text-ink/40">
         <div className="flex flex-wrap items-center gap-2">
           <span>{t('questionCount', { count: quiz.questionCount })}</span>

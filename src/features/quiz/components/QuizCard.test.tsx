@@ -118,3 +118,20 @@ describe('QuizCard play CTA and author', () => {
     );
   });
 });
+
+describe('QuizCard height floor', () => {
+  it('keeps the 146px floor only with the author row', () => {
+    const quiz = {
+      title: 'Short',
+      slug: 'short',
+      author: null,
+      visibility: 'public' as const,
+      questionCount: 3,
+    };
+    const { rerender } = render(<QuizCard quiz={quiz} />);
+    expect(screen.getByRole('article')).toHaveClass('min-h-[146px]');
+
+    rerender(<QuizCard quiz={quiz} showAuthor={false} />);
+    expect(screen.getByRole('article')).not.toHaveClass('min-h-[146px]');
+  });
+});

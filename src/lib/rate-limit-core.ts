@@ -23,6 +23,8 @@ export type RateLimitOutcome =
 export interface RateLimiterRegistry<TAction extends string> {
   resolveLimit(action: TAction): RateLimitWindow;
   consume(action: TAction, key: string): Promise<RateLimitOutcome>;
+  /** Gives one point back, e.g. when the work the point paid for never happened. */
+  refund(action: TAction, key: string): Promise<void>;
 }
 
 /**
@@ -101,5 +103,10 @@ export function createRateLimiterRegistry<TAction extends string>(
     }
   }
 
-  return { resolveLimit, consume };
+  async function refund(action: TAction, key: string): Promise<void> {
+    await connectDB();
+    await getLimiter(action).reward(key, 1);
+  }
+
+  return { resolveLimit, consume, refund };
 }

@@ -39,6 +39,7 @@ import QuizTopic from '@/models/QuizTopic';
 import QuizTopicAssignment from '@/models/QuizTopicAssignment';
 import CreditLedger from '@/models/CreditLedger';
 import CreditWallet from '@/models/CreditWallet';
+import GuestQuizDraft from '@/models/GuestQuizDraft';
 import PremiumPlaySession from '@/models/PremiumPlaySession';
 import PremiumQuizAccessGrant from '@/models/PremiumQuizAccessGrant';
 import PremiumQuizSubmission from '@/models/PremiumQuizSubmission';
@@ -74,6 +75,7 @@ const MODELS = {
   questionprogresses: QuestionProgress,
   creditledgers: CreditLedger,
   creditwallets: CreditWallet,
+  guestquizdrafts: GuestQuizDraft,
   premiumplaysessions: PremiumPlaySession,
   premiumquizaccessgrants: PremiumQuizAccessGrant,
   premiumquizsubmissions: PremiumQuizSubmission,

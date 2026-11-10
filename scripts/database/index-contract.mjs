@@ -512,6 +512,15 @@ export const INDEX_CONTRACT = Object.freeze([
     { expireAfterSeconds: 0 },
   ),
 
+  // guestquizdrafts: a signed-out visitor's quiz from their own PDF (RIN-1446).
+  required('guestquizdrafts.token-hash', 'guestquizdrafts', { tokenHash: 1 }, { unique: true }),
+  required(
+    'guestquizdrafts.expiration',
+    'guestquizdrafts',
+    { expiresAt: 1 },
+    { expireAfterSeconds: 0 },
+  ),
+
   // quizprogresses
   required('quizprogresses.user-quiz', 'quizprogresses', { userId: 1, quiz: 1 }, { unique: true }),
   required('quizprogresses.user-recent', 'quizprogresses', { userId: 1, updatedAt: -1 }),

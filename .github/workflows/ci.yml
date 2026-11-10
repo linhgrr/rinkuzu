@@ -533,11 +533,8 @@ jobs:
   performance:
     name: Controlled performance
     needs: build
-    # Deferred for the same reason as the mutation campaign: it rebuilds the base
-    # commit from scratch to obtain a size baseline, and Lighthouse timings are
-    # only meaningful on the controlled runner. Every push to master produces the
-    # evidence; a pull request does not wait for it.
-    if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
+    # Blocking on pull_request, merge_group and push (RIN-1354): it runs beside
+    # the e2e shards, so it adds no wall time to a pull request.
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -791,17 +788,15 @@ jobs:
           if (eventName === 'pull_request') console.log(`tested-base=${process.env.BASE_SHA}`);
           const EXPECTED_JOBS = 17;
 
-          // Two campaigns are deferred because their fixed cost makes them unfit
-          // for a check a developer waits on: mutation runs only on the weekly
+          // The mutation campaign is deferred because its fixed cost makes it unfit
+          // for a check a developer waits on: it runs only on the weekly
           // schedule (and manual dispatch), so a skip is excused on pull_request,
-          // merge_group and push but never on schedule; performance is deferred
-          // to master and excused only on pull_request and merge_group. Two
+          // merge_group and push but never on schedule. Two
           // suites are skipped when the change cannot reach them. No allowance is
           // a blanket tolerance of `skipped`: each is tied to the reason it is
           // allowed, and a job that ran and failed is never excused.
           const DEFERRAL_EVENTS = {
             mutation: new Set(['pull_request', 'merge_group', 'push']),
-            performance: new Set(['pull_request', 'merge_group']),
           };
           const PATH_FILTERED = new Set(['integration', 'e2e-build', 'e2e', 'e2e-report']);
 

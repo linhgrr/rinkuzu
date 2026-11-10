@@ -4,6 +4,18 @@ import { fileURLToPath } from 'node:url';
 
 import { listFiles, toRepoPath } from './repo-files.shared.mjs';
 
+// A class that applies at rest: no state variant (hover:, dark:, group-*:),
+// optionally behind a breakpoint and the important modifier.
+const AT_REST = String.raw`(?<![\w:/\-\[!])(?:(?:sm|md|lg|xl|2xl):)?!?`;
+// Fills that resolve to the bright brand orange in the light theme (#ff541b,
+// #fd761a, --primary #ff7c23, --primary-5 #ea660c): white text reaches only
+// 2.6-3.3:1 on them. `bg-brand-action-strong` (5.18:1) is the white-label fill.
+// Translucent fills (`/20`) and longer tokens (`-strong`, `-soft`) are skipped.
+const BRIGHT_ORANGE_FILL = String.raw`${AT_REST}bg-(?:\[(?:#(?:ff541b|fd761a)|var\(--landing-nav-accent\))\]|orange-[4-6]00|brand-action|brand-primary|accent|primary|landing-action)(?![-/\w\]])`;
+// White label colours, including the tokens that resolve to white in light mode.
+const WHITE_TEXT = String.raw`${AT_REST}text-(?:white|brand-action-text|accent-text)(?:/\d+)?(?![-\w])`;
+const SAME_CLASS_STRING = '[^"\'`\\n]*';
+
 const RULES = [
   {
     id: 'consumer-hardcoded-color',
@@ -38,6 +50,13 @@ const RULES = [
     id: 'solid-orange-dark-text',
     pattern:
       /(?:bg-(?:brand-action|accent|primary|orange-[5-9]00)(?![-/\w])[^"'`\n]*text-(?:black|ink|neutral-[7-9]00|gray-[7-9]00|slate-[7-9]00|zinc-[7-9]00)|text-(?:black|ink|neutral-[7-9]00|gray-[7-9]00|slate-[7-9]00|zinc-[7-9]00)[^"'`\n]*bg-(?:brand-action|accent|primary|orange-[5-9]00)(?![-/\w]))/g,
+  },
+  {
+    id: 'solid-orange-white-text',
+    pattern: new RegExp(
+      `${BRIGHT_ORANGE_FILL}${SAME_CLASS_STRING}${WHITE_TEXT}|${WHITE_TEXT}${SAME_CLASS_STRING}${BRIGHT_ORANGE_FILL}`,
+      'gi',
+    ),
   },
 ];
 
@@ -131,8 +150,13 @@ export function evaluateDesignSystem(files, policy, options = {}) {
   const scopedFiles = files.filter(
     (file) => !(policy.excludedPaths ?? []).some((glob) => matchesGlob(file.path, glob)),
   );
+  // Rules listed here also scan `excludedPaths` (landing, auth): a contrast
+  // failure is one whatever visual system the page follows.
+  const scansExcludedPaths = new Set(policy.scanExcludedPaths ?? []);
   const occurrences = [
-    ...RULES.flatMap((rule) => scanRule(scopedFiles, rule, policy)),
+    ...RULES.flatMap((rule) =>
+      scanRule(scansExcludedPaths.has(rule.id) ? files : scopedFiles, rule, policy),
+    ),
     ...scanIconFamilies(scopedFiles, policy),
   ];
   const exceptionUsage = new Map(policy.exceptions.map((exception) => [exception, 0]));

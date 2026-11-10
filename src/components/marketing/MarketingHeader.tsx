@@ -3,7 +3,15 @@
 import Image from 'next/image';
 import { getSession } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { Button } from '@/components/ui/Button';
 import { Link } from '@/i18n/navigation';
 import type { MarketingHeaderPosition } from '@/lib/routing/pathname';
@@ -43,6 +51,25 @@ function useSignedInAfterMount(): boolean {
   return signedIn;
 }
 
+/** Calls `onOutside` for a pointer press outside `ref` while `active` (RIN-1519 design review). */
+function useOutsidePointerDown(
+  ref: RefObject<HTMLElement | null>,
+  active: boolean,
+  onOutside: () => void,
+): void {
+  const onOutsideEvent = useEffectEvent(onOutside);
+
+  useEffect(() => {
+    if (!active) return undefined;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && ref.current?.contains(event.target)) return;
+      onOutsideEvent();
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [active, ref]);
+}
+
 function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg
@@ -72,9 +99,11 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
   const signedIn = useSignedInAfterMount();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const menuId = useId();
 
   const closeMenu = () => setMenuOpen(false);
+  useOutsidePointerDown(headerRef, menuOpen, closeMenu);
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'Escape' || !menuOpen) return;
     setMenuOpen(false);
@@ -112,7 +141,8 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
         {t('skipToContent')}
       </a>
       <header
-        className="marketing-header sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur"
+        ref={headerRef}
+        className="marketing-header sticky top-0 z-40 border-b border-line bg-surface"
         onKeyDown={onKeyDown}
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-8 lg:px-8">
@@ -181,18 +211,23 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
             className="border-t border-line bg-surface lg:hidden"
           >
             <ul className="mx-auto flex max-w-6xl flex-col px-4 py-2 sm:px-6">
-              {NAV_LINKS.map((link) => (
-                <li key={link.key}>
-                  <Link
-                    href={link.href}
-                    aria-current={link.current === position ? 'page' : undefined}
-                    onClick={closeMenu}
-                    className="flex h-11 items-center text-base font-medium text-ink"
-                  >
-                    {t(link.key)}
-                  </Link>
-                </li>
-              ))}
+              {NAV_LINKS.map((link) => {
+                const isCurrent = link.current === position;
+                return (
+                  <li key={link.key}>
+                    <Link
+                      href={link.href}
+                      aria-current={isCurrent ? 'page' : undefined}
+                      onClick={closeMenu}
+                      className={`flex h-11 items-center border-l-2 pl-3 text-base text-ink ${
+                        isCurrent ? 'border-accent font-semibold' : 'border-transparent font-medium'
+                      }`}
+                    >
+                      {t(link.key)}
+                    </Link>
+                  </li>
+                );
+              })}
               {signedIn ? null : (
                 <li className="border-t border-line">
                   <LandingCtaLink
@@ -201,7 +236,7 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
                     position={position}
                     locale={locale}
                     onNavigate={closeMenu}
-                    className="flex h-11 items-center text-base font-medium text-ink-muted"
+                    className="flex h-11 items-center pl-3.5 text-base font-medium text-ink"
                   >
                     {t('signIn')}
                   </LandingCtaLink>

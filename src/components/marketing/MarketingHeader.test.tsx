@@ -170,6 +170,50 @@ describe('MarketingHeader (RIN-1519)', () => {
     expect(screen.queryByTestId('marketing-header-menu')).not.toBeInTheDocument();
   });
 
+  it('paints a solid background so scrolled content does not show through the sticky bar', () => {
+    render(<MarketingHeader position="blog_header" />);
+
+    // `surface` is a var() colour with no alpha channel, so an opacity
+    // modifier such as bg-surface/95 emits no rule and the bar is transparent.
+    const banner = screen.getByRole('banner');
+    expect(banner).toHaveClass('bg-surface');
+    expect(banner.className).not.toMatch(/\bbg-surface\//);
+  });
+
+  it('marks the current page in the menu and shows Sign In at full contrast', () => {
+    render(<MarketingHeader position="pricing_header" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'openMenu' }));
+    const menu = screen.getByTestId('marketing-header-menu');
+    const current = within(menu).getByRole('link', { name: 'pricing' });
+
+    expect(current).toHaveAttribute('aria-current', 'page');
+    expect(current).toHaveClass('border-accent', 'font-semibold');
+    expect(within(menu).getByRole('link', { name: 'blog' })).toHaveClass('border-transparent');
+    expect(within(menu).getByRole('link', { name: 'signIn' })).toHaveClass('text-ink');
+    expect(within(menu).getByRole('link', { name: 'signIn' })).not.toHaveClass('text-ink-muted');
+  });
+
+  it('closes the menu on a tap outside the header but not on one inside it', () => {
+    render(
+      <>
+        <MarketingHeader position="blog_header" />
+        <main data-testid="page" />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'openMenu' }));
+    fireEvent.pointerDown(screen.getByTestId('marketing-header-menu'));
+    expect(screen.getByTestId('marketing-header-menu')).toBeInTheDocument();
+
+    fireEvent.pointerDown(screen.getByTestId('page'));
+    expect(screen.queryByTestId('marketing-header-menu')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'openMenu' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('has no axe violations signed out with the menu open', async () => {
     const { container } = render(
       <>

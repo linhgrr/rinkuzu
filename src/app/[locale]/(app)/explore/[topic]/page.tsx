@@ -6,9 +6,9 @@ import { HiOutlineSearch } from 'react-icons/hi';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { Badge } from '@/components/ui/Card';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { QuizCard } from '@/features/quiz/components/QuizCard';
 import { Link } from '@/i18n/navigation';
 import { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
-import { routePathSegment } from '@/lib/routing/routeParams';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import {
   buildTopicHubDescription,
@@ -107,27 +107,22 @@ export default async function TopicHubPage({ params }: Props) {
             </h2>
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {quizzes.map((quiz) => (
-                <li key={quiz.slug}>
-                  <div className="flex h-full flex-col justify-between gap-3 rounded-xl border border-secondary-2 bg-surface-blue p-4">
-                    <div className="min-w-0 space-y-1">
-                      <Link
-                        href={`/quiz/${routePathSegment(quiz.slug)}`}
-                        className="line-clamp-2 break-words font-home font-medium text-ink hover:text-accent"
-                      >
-                        {quiz.title}
-                      </Link>
-                      <p className="text-sm text-ink-muted">
-                        {t('questions', { count: quiz.questionCount })}
-                      </p>
-                    </div>
-                    <Link
-                      href={topicHubPlayHref(quiz, hub.slug)}
-                      aria-label={t('playAria', { title: quiz.title })}
-                      className="btn btn-secondary min-h-11 w-full sm:w-auto sm:self-start"
-                    >
-                      {t('play')}
-                    </Link>
-                  </div>
+                <li key={quiz.slug} className="grid min-w-0">
+                  <QuizCard
+                    quiz={{
+                      title: quiz.title,
+                      slug: quiz.slug,
+                      author: null,
+                      visibility: 'public',
+                      questionCount: quiz.questionCount,
+                    }}
+                    showAuthor={false}
+                    play={{
+                      href: topicHubPlayHref(quiz, hub.slug),
+                      label: t('play'),
+                      ariaLabel: t('playAria', { title: quiz.title }),
+                    }}
+                  />
                 </li>
               ))}
             </ul>

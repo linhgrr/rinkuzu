@@ -2,6 +2,11 @@ export interface AuthActionResult {
   message?: string;
 }
 
+export interface VerifyEmailResult extends AuthActionResult {
+  /** The quiz the verification claimed from this learner's guest draft (RIN-1487). */
+  claimedQuizSlug?: string;
+}
+
 export interface ResetPasswordInput {
   token: string;
   password: string;

@@ -18,8 +18,13 @@ export interface RegisterAccountResponseDto {
   email: string;
 }
 
-export interface EmailResponseDto {
+export interface VerifyEmailResponseDto {
   email: string;
+  /**
+   * Slug of the newest quiz the verification claimed from the guest drafts stored at
+   * sign-up (RIN-1487). Only the slug: never a token, hash or id.
+   */
+  claimedQuizSlug?: string;
 }
 
 export interface PasswordResetRequestResultDto {

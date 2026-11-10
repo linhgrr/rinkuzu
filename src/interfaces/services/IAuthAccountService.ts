@@ -1,10 +1,10 @@
 import type {
-  EmailResponseDto,
   PasswordResetRequestResultDto,
   PasswordResetResultDto,
   RegisterAccountDto,
   RegisterAccountResponseDto,
   VerificationResendResultDto,
+  VerifyEmailResponseDto,
 } from '@/dtos/auth';
 import type { AuthRequestContext } from '@/entities/AuthAccount';
 import type { ServiceResult } from '@/interfaces/services/types';
@@ -18,7 +18,7 @@ export interface IAuthAccountService {
   verifyEmail(
     rawToken: string,
     context: AuthRequestContext,
-  ): Promise<ServiceResult<EmailResponseDto>>;
+  ): Promise<ServiceResult<VerifyEmailResponseDto>>;
 
   requestPasswordReset(
     email: string,

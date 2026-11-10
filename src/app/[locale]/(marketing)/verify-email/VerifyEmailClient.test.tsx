@@ -2,6 +2,10 @@ import type { AnchorHTMLAttributes } from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
+import {
+  CLAIMED_GUEST_DRAFT_STORAGE_KEY,
+  readClaimedGuestDraftQuiz,
+} from '@/features/quiz/lib/guest-draft-claims';
 import { VerifyEmailClient } from './VerifyEmailClient';
 
 const mocks = vi.hoisted(() => ({
@@ -39,6 +43,25 @@ describe('VerifyEmailClient', () => {
     mocks.verifyEmail.mockReset();
     mocks.markSignupPending.mockReset();
     mocks.search = 'token=verification-token';
+    window.localStorage.clear();
+  });
+
+  it('remembers the quiz the verification claimed from the guest draft (RIN-1487)', async () => {
+    mocks.verifyEmail.mockResolvedValue({ message: 'verified', claimedQuizSlug: 'fake-quiz' });
+
+    render(<VerifyEmailClient />);
+
+    expect(await screen.findByText('verifyEmailSuccess')).toBeInTheDocument();
+    expect(readClaimedGuestDraftQuiz()).toBe('fake-quiz');
+  });
+
+  it('remembers nothing when the verification claimed no draft', async () => {
+    mocks.verifyEmail.mockResolvedValue({ message: 'verified' });
+
+    render(<VerifyEmailClient />);
+
+    expect(await screen.findByText('verifyEmailSuccess')).toBeInTheDocument();
+    expect(window.localStorage.getItem(CLAIMED_GUEST_DRAFT_STORAGE_KEY)).toBeNull();
   });
 
   it('sends the verified user to sign in with the callbackUrl from the email link', async () => {

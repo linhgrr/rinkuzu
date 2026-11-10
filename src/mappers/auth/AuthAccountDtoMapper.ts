@@ -1,9 +1,9 @@
 import type {
-  EmailResponseDto,
   PasswordResetRequestResultDto,
   PasswordResetResultDto,
   RegisterAccountResponseDto,
   VerificationResendResultDto,
+  VerifyEmailResponseDto,
 } from '@/dtos/auth';
 
 export class AuthAccountDtoMapper {
@@ -11,8 +11,11 @@ export class AuthAccountDtoMapper {
     return { email };
   }
 
-  static toEmailResponse(email: string): EmailResponseDto {
-    return { email };
+  static toVerifyEmailResponse(
+    email: string,
+    claimedQuizSlug: string | null,
+  ): VerifyEmailResponseDto {
+    return claimedQuizSlug ? { email, claimedQuizSlug } : { email };
   }
 
   static toPasswordResetRequestResult(email: string): PasswordResetRequestResultDto {

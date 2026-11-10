@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineCheckCircle, HiOutlineExclamationCircle, HiOutlineMail } from 'react-icons/hi';
 import { verifyEmail } from '@/features/auth/api/auth-api';
+import { rememberClaimedGuestDraftQuiz } from '@/features/quiz/lib/guest-draft-claims';
 import { isEmailLinkProblem } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { markAnalyticsSignupPending } from '@/lib/analytics/client';
@@ -72,7 +73,9 @@ function VerifyEmailContent() {
 
     dispatch({ type: 'verifying' });
     verifyEmail(token)
-      .then(() => {
+      .then(({ claimedQuizSlug }) => {
+        // This browser's Retake and draft player now open the claimed quiz (RIN-1487).
+        if (claimedQuizSlug) rememberClaimedGuestDraftQuiz(claimedQuizSlug);
         markAnalyticsSignupPending('credentials', locale);
         dispatch({ type: 'success' });
       })

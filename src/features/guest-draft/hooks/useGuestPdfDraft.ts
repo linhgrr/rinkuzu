@@ -8,6 +8,7 @@ import {
   fetchGuestDraftProgress,
 } from '@/features/guest-draft/api/guest-draft-api';
 import { checkGuestPdf } from '@/features/guest-draft/lib/check-guest-pdf';
+import { resolveGuestDraftEntry } from '@/features/guest-draft/lib/resolve-guest-entry';
 import {
   guestUploadReducer,
   initialGuestUploadState,
@@ -29,7 +30,7 @@ const READY_REDIRECT_MS = 800;
  * handoff to the guest player. The token is stored through the claims module so signing
  * up later claims the draft; it never goes into a URL or an analytics event.
  */
-export function useGuestPdfDraft(entry: GuestDraftEntry) {
+export function useGuestPdfDraft(entry: GuestDraftEntry | undefined) {
   const [state, dispatch] = useReducer(guestUploadReducer, initialGuestUploadState);
   const locale = useLocale() === 'en' ? 'en' : 'vi';
   const router = useRouter();
@@ -49,7 +50,12 @@ export function useGuestPdfDraft(entry: GuestDraftEntry) {
     const nextRun = run + 1;
     dispatch({ type: 'upload_started', token: draftToken, now: Date.now() });
     try {
-      const progress = await createGuestDraft({ file, token: draftToken, locale, entry });
+      const progress = await createGuestDraft({
+        file,
+        token: draftToken,
+        locale,
+        entry: resolveGuestDraftEntry(entry, document.referrer),
+      });
       addGuestDraftClaim({ token: draftToken, createdAt: Date.now() });
       dispatch({ type: 'progressed', run: nextRun, progress, now: Date.now() });
     } catch (error) {

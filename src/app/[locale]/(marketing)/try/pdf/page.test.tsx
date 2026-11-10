@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 const { GuestPdfUploadPage } = vi.hoisted(() => ({ GuestPdfUploadPage: vi.fn(() => null) }));
 
 vi.mock('next-intl/server', () => ({
-  getTranslations: async () => (key: string) => `t:${key}`,
+  getTranslations:
+    async ({ locale }: { locale: string }) =>
+    (key: string) =>
+      `${locale}:${key}`,
   setRequestLocale: vi.fn(),
 }));
 vi.mock('@/features/guest-draft/components/GuestPdfUploadPage', () => ({ GuestPdfUploadPage }));
@@ -14,18 +17,30 @@ import TryPdfPage, { generateMetadata } from './page';
 
 const params = Promise.resolve({ locale: 'vi' });
 
-describe('/try/pdf page (RIN-1448)', () => {
-  it('is noindex and sends no referrer', async () => {
-    const metadata = await generateMetadata({ params, searchParams: Promise.resolve({}) });
-    expect(metadata.robots).toMatchObject({ index: false, follow: false });
+describe('/try/pdf page (RIN-1448, RIN-1497)', () => {
+  it.each(['vi', 'en'])('is indexable in %s with a self canonical and hreflang', async (locale) => {
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ locale }),
+      searchParams: Promise.resolve({}),
+    });
+    expect(metadata.robots).toEqual({ index: true, follow: true });
+    expect(metadata.title).toBe(`${locale}:title`);
+    expect(metadata.description).toBe(`${locale}:description`);
+    expect(String(metadata.alternates?.canonical)).toMatch(new RegExp(`/${locale}/try/pdf$`));
+    expect(metadata.alternates?.languages).toEqual({
+      vi: expect.stringMatching(/\/vi\/try\/pdf$/),
+      en: expect.stringMatching(/\/en\/try\/pdf$/),
+      'x-default': expect.stringMatching(/\/vi\/try\/pdf$/),
+    });
     expect(metadata.referrer).toBe('no-referrer');
-    expect(metadata.alternates?.languages).toBeUndefined();
   });
 
-  it('passes a known entry through and falls back to landing', async () => {
+  it('passes a known entry through and leaves an unknown one to the browser', async () => {
     const page = await TryPdfPage({ params, searchParams: Promise.resolve({ entry: 'create' }) });
     expect(page.props).toEqual({ entry: 'create' });
+    const blog = await TryPdfPage({ params, searchParams: Promise.resolve({ entry: 'blog' }) });
+    expect(blog.props).toEqual({ entry: 'blog' });
     const fallback = await TryPdfPage({ params, searchParams: Promise.resolve({ entry: 'x' }) });
-    expect(fallback.props).toEqual({ entry: 'landing' });
+    expect(fallback.props).toEqual({ entry: undefined });
   });
 });

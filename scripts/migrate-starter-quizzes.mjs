@@ -35,7 +35,7 @@ export const STARTER_QUIZ_SEED = Object.freeze([
     locale: 'en',
     order: 2,
   }),
-  Object.freeze({ slug: 'ktpm-chng-6-p1-219991', locale: 'vi', order: 3 }),
+  Object.freeze({ slug: 'ktpm-chuong-6-p1-219991', locale: 'vi', order: 3 }),
 ]);
 
 /**

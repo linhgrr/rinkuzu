@@ -11,8 +11,11 @@ const EDGE_DASHES = /^-+|-+$/g;
  * Apostrophes are dropped rather than split on ("Bloom's" -> "blooms") so
  * ordinary English text keeps the slug it had before this helper existed.
  * Returns '' when nothing slug-worthy remains (emoji, punctuation, blanks).
+ *
+ * @public scripts/reslug-legacy-quizzes.mjs loads it via a dynamic
+ * `import(new URL(...))` that knip cannot resolve (RIN-1515).
  */
-function slugifyText(text: string): string {
+export function slugifyText(text: string): string {
   return text
     .normalize('NFD')
     .replace(COMBINING_MARKS, '')

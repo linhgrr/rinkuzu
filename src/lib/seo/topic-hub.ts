@@ -2,9 +2,9 @@ import type { QuizTopicHubDto, QuizTopicHubSummaryDto } from '@/dtos/quiz-topic-
 import { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
 import { logger } from '@/lib/logger';
 import { markdownToPlainText } from '@/lib/markdown/plain-text';
-import { quizPlayHref } from '@/lib/routing/quiz-play-href';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { canonicalFor } from '@/lib/seo';
+import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 import { HUB_ENTRY } from '@/shared/constants/starter-quiz';
 
 /**
@@ -34,12 +34,20 @@ export function buildTopicHubDescription(intro: string): string {
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,.;:–-]+$/, '')}…`;
 }
 
-/** "Chơi ngay" on a hub card (B3, E17): `entry=hub` plus the topic slug for attribution. */
+/**
+ * "Chơi ngay" on a hub card (B3, E17): the quiz's round, with `entry=hub` and the
+ * topic slug for attribution. Nothing about the learner is in the link.
+ */
 export function topicHubPlayHref(
   quiz: { slug: string; questionCount: number },
   topicSlug: string,
 ): string {
-  return quizPlayHref(quiz, { entry: HUB_ENTRY, topic: topicSlug });
+  const params = new URLSearchParams({
+    mode: isQuickRoundEligible(quiz.questionCount) ? 'quick' : 'full',
+    entry: HUB_ENTRY,
+    topic: topicSlug,
+  });
+  return `/quiz/${routePathSegment(quiz.slug)}?${params.toString()}`;
 }
 
 interface TopicHubJsonLdLabels {

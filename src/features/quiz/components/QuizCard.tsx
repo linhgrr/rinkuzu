@@ -19,7 +19,7 @@ export interface QuizCardQuiz {
 }
 
 /** A one-tap link that starts a round, e.g. the topic hub's "Chơi ngay" (RIN-1466). */
-export interface QuizCardPlayAction {
+interface QuizCardPlayAction {
   /** Locale-less path; carries its own `mode` and `entry` so the round stays attributable. */
   href: string;
   label: string;

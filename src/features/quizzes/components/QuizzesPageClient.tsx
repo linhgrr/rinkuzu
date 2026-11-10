@@ -10,7 +10,6 @@ import Pagination from '@/components/ui/Pagination';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
-import { useQuizCardPlay } from '@/features/quiz/hooks/useQuizCardPlay';
 import type {
   QuizListItemViewModel,
   QuizListViewModel,
@@ -22,7 +21,6 @@ import {
   QUIZZES_PAGE_SIZE,
 } from '@/features/quizzes/lib/quizzes-page-state';
 import { useRouter } from '@/i18n/navigation';
-import { QUIZZES_ENTRY } from '@/shared/constants/starter-quiz';
 
 const EMPTY_QUIZZES: QuizListItemViewModel[] = [];
 
@@ -63,7 +61,6 @@ function QuizzesContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q')?.trim() ?? '';
   const page = parseQuizzesPage(searchParams.get('page'));
-  const play = useQuizCardPlay(QUIZZES_ENTRY);
 
   const updateUrl = (next: { q?: string; page?: number }) => {
     replace(
@@ -107,7 +104,7 @@ function QuizzesContent() {
             ) : quizzes.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {quizzes.map((quiz) => (
-                  <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} play={play(quiz)} />
+                  <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />
                 ))}
               </div>
             ) : (

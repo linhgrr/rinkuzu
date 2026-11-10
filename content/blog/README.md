@@ -42,6 +42,15 @@ Optional fields override copy that otherwise falls back to a required field:
 | `wordCount`              | omitted              | Article JSON-LD `wordCount`.               |
 | `timeRequiredMinutes`    | omitted              | Article JSON-LD `timeRequired` (`PT<n>M`). |
 | `draft`                  | `false`              | `true` hides the post everywhere (below).  |
+| `updated`                | `date`               | Sitemap `lastmod` (below).                 |
+
+`updated` (optional, `YYYY-MM-DD`, on or after `date`) is the day of the post's
+last real revision: new or corrected facts, a rewritten section. Search engines
+recrawl a page sooner when its sitemap `lastmod` moves, and stop trusting it when
+it moves without a real change, so set it only for a content change, never for a
+typo or a formatting fix. The article's `lastmod` is the newest `updated` (else
+`date`) across its locales; an author page, `/blog` and `/blog/authors` take the
+newest of their posts. An `updated` before `date` fails the build.
 
 `tags` (optional, up to 8 non-empty strings, e.g. `["personalized-learning", "pdf"]`)
 picks the related posts shown under each article: posts in the same locale that

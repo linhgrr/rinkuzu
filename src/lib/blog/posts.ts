@@ -154,8 +154,21 @@ export const getRelatedBlogArticles = (
  */
 type BlogSitemapRoute = { path: string; lastModified: string; locales?: Locale[] };
 
+/** A post's last real change: `updated` when set, else `date` (RIN-1499). */
+const lastChangeOf = (post: BlogPost): string => post.updated ?? post.date;
+
 const newestDate = (posts: BlogPost[]): string =>
-  posts.reduce((newest, post) => (post.date > newest ? post.date : newest), '');
+  posts.reduce((newest, post) => {
+    const changed = lastChangeOf(post);
+    return changed > newest ? changed : newest;
+  }, '');
+
+/**
+ * Newest change (`YYYY-MM-DD`) across the published posts, which `/blog` and
+ * `/blog/authors` list; `undefined` while nothing is published.
+ */
+export const getBlogLastModified = (now: Date = new Date()): string | undefined =>
+  newestDate(published(getAllBlogPosts(), now)) || undefined;
 
 /**
  * Article and author routes for the sitemap, derived from the published posts

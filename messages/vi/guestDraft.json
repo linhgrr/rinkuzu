@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "Biến PDF của bạn thành quiz, không cần tài khoản",
+    "description": "Tải một PDF ngắn lên và làm quiz từ nó ngay, không cần tài khoản."
+  },
+  "upload": {
+    "badge": "Không cần tài khoản",
+    "title": "Biến PDF của bạn thành quiz, làm ngay",
+    "subtitle": "Tối đa {pages} trang và {mb} MB. Rin tạo tối đa 10 câu hỏi, bạn làm luôn, không cần chỉnh sửa.",
+    "dropzoneLabel": "Tài liệu PDF",
+    "clickToUpload": "Nhấn để tải lên",
+    "dragAndDrop": "hoặc kéo và thả",
+    "limitHint": "PDF, tối đa {pages} trang và {mb} MB",
+    "dropHere": "Thả PDF vào đây",
+    "removeFile": "Bỏ tệp",
+    "checking": "Đang kiểm tra tệp…",
+    "submit": "Tạo quiz",
+    "tryAgain": "Thử lại",
+    "privacy": "Tệp của bạn chỉ được giữ 24 giờ rồi bị xóa, và chỉ bạn mở được.",
+    "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí"
+  },
+  "alerts": {
+    "tooLarge": "PDF này vượt giới hạn dùng thử: tối đa {pages} trang và {mb} MB. Đăng ký miễn phí để dùng giới hạn đầy đủ.",
+    "tooLargeLink": "Đăng ký miễn phí",
+    "notPdf": "Chỉ nhận tệp PDF.",
+    "uploadError": "Không tải được tệp lên. Kiểm tra kết nối rồi thử lại."
+  },
+  "cap": {
+    "title": "Đăng ký để tạo tiếp",
+    "body": "Lượt dùng thử không cần tài khoản hôm nay đã hết. Đăng ký miễn phí để tạo quiz từ PDF của bạn.",
+    "google": "Tiếp tục với Google",
+    "signInEmail": "Đăng nhập bằng email",
+    "createAccount": "Tạo tài khoản"
+  },
+  "progress": {
+    "uploading": "Đang tải lên…",
+    "processing": "Đã xong {percent}% • {count} câu hỏi",
+    "hint": "Thường mất khoảng 1 phút. Giữ trang này mở.",
+    "cancel": "Hủy",
+    "ready": "Quiz sẵn sàng • {count} câu hỏi",
+    "playNow": "Làm quiz ngay",
+    "pollError": "Không kiểm tra được tiến trình. Đang thử lại…"
+  },
+  "failed": {
+    "title": "Chưa tạo được quiz từ PDF này",
+    "body": "Lượt này không bị tính. Thử lại, hoặc chọn một PDF khác (PDF dạng ảnh scan thường khó đọc hơn).",
+    "retry": "Thử lại",
+    "chooseAnother": "Chọn tệp khác"
+  }
+}

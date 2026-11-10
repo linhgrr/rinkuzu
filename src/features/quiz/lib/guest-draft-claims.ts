@@ -50,7 +50,10 @@ export function readGuestDraftClaims(now: number = Date.now()): GuestDraftClaim[
   }
 }
 
-/** Store a draft token, newest first: drops stale entries and keeps at most 5. */
+/**
+ * Store a draft token, newest first: drops stale entries and keeps at most 5.
+ * @public The guest upload page (RIN-1448) writes here; this slice only reads.
+ */
 export function addGuestDraftClaim(claim: GuestDraftClaim, now: number = Date.now()): void {
   const storage = getStorage();
   if (!storage) return;

@@ -87,7 +87,7 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
       cta="dashboard"
       position={position}
       locale={locale}
-      className="btn btn-primary min-w-28 px-3 sm:px-4"
+      className="btn btn-primary min-w-36 px-3 sm:px-4"
     >
       {t('dashboard')}
     </LandingCtaLink>
@@ -97,7 +97,7 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
       cta="register"
       position={position}
       locale={locale}
-      className="btn btn-primary min-w-28 px-3 sm:px-4"
+      className="btn btn-primary min-w-36 px-3 sm:px-4"
     >
       {t('register')}
     </LandingCtaLink>
@@ -118,9 +118,9 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-8 lg:px-8">
           <Link href="/" aria-label={t('home')} className="flex shrink-0 items-center">
             <Image
-              src="/images/navbar_logo.webp"
+              src="/images/auth_logo.webp"
               alt="RinKuzu"
-              width={150}
+              width={130}
               height={40}
               loading="eager"
               sizes="120px"

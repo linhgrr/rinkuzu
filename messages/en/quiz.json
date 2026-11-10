@@ -186,8 +186,7 @@
     "questionNumber": "Question {number}",
     "relatedTitle": "More quizzes on RinKuzu",
     "relatedTopicTitle": "Quizzes on the same topic",
-    "topicHubLink": "See all {topic} quizzes",
-    "relatedCount": "{count} questions"
+    "topicHubLink": "See all {topic} quizzes"
   },
   "pdfViewer": {
     "title": "PDF reference",

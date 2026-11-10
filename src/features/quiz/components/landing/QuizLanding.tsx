@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Card';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { cn } from '@/lib/utils';
+import { QuizCard } from '@/features/quiz/components/QuizCard';
 import { ReportQuizPageLink } from '@/features/quiz/components/ReportQuizPageLink';
 import { QUIZ_LANDING_ENTRY } from '@/shared/constants/starter-quiz';
 import type {
@@ -184,18 +185,17 @@ export async function QuizLanding({
           {landing.related.length > 0 ? (
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {landing.related.map((quiz) => (
-                <li key={quiz.slug} className="min-w-0">
-                  <a
-                    href={quizHref(locale, quiz.slug)}
-                    className="block h-full rounded-xl border border-secondary-2 bg-surface-blue p-4"
-                  >
-                    <span className="line-clamp-2 break-words font-medium text-ink">
-                      {quiz.title}
-                    </span>
-                    <span className="mt-1 block text-sm text-ink/40">
-                      {t('relatedCount', { count: quiz.questionCount })}
-                    </span>
-                  </a>
+                <li key={quiz.slug} className="grid min-w-0">
+                  <QuizCard
+                    quiz={{
+                      title: quiz.title,
+                      slug: quiz.slug,
+                      author: null,
+                      visibility: 'public',
+                      questionCount: quiz.questionCount,
+                    }}
+                    showAuthor={false}
+                  />
                 </li>
               ))}
             </ul>

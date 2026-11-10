@@ -711,3 +711,38 @@ describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
     ).rejects.toBe(original);
   });
 });
+
+describe('PremiumQuizService.restorePublicWithoutSubmission (RIN-1413)', () => {
+  function setupWithRecovery() {
+    const base = setup();
+    const recovery: Mocked<IPremiumSubmissionRecoveryRepository> = {
+      restorePublicAfterFailedSubmission: vi.fn(),
+    };
+    const service = new PremiumQuizService(
+      base.quizRepository,
+      base.premiumRepository,
+      base.attemptRepository,
+      recovery,
+    );
+    return { ...base, service, recovery };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('sets a quiz saved for Premium back to public when the save never reached a submission', async () => {
+    const { service, recovery } = setupWithRecovery();
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    await expect(service.restorePublicWithoutSubmission('quiz-1')).resolves.toBe(true);
+    expect(recovery.restorePublicAfterFailedSubmission).toHaveBeenCalledWith('quiz-1');
+  });
+
+  it('never throws when the flip fails, so the caller keeps its own error', async () => {
+    const { service, recovery } = setupWithRecovery();
+    recovery.restorePublicAfterFailedSubmission.mockRejectedValue(new Error('still down'));
+
+    await expect(service.restorePublicWithoutSubmission('quiz-1')).resolves.toBe(false);
+  });
+});

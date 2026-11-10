@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { connectDBMock, consumeMock, limiterOptions } = vi.hoisted(() => ({
+const { connectDBMock, consumeMock, rewardMock, limiterOptions } = vi.hoisted(() => ({
   connectDBMock: vi.fn(),
   consumeMock: vi.fn(),
+  rewardMock: vi.fn(),
   limiterOptions: [] as Array<Record<string, unknown>>,
 }));
 
@@ -18,6 +19,7 @@ vi.mock('rate-limiter-flexible', async (importOriginal) => {
       }
 
       consume = consumeMock;
+      reward = rewardMock;
     },
   };
 });
@@ -65,5 +67,11 @@ describe('createRateLimiterRegistry', () => {
 
     consumeMock.mockRejectedValueOnce(new Error('mongo down'));
     await expect(registry.consume('ping', 'k')).rejects.toThrow('mongo down');
+  });
+
+  it('refund gives one point back to the key', async () => {
+    rewardMock.mockResolvedValueOnce({});
+    await registry.refund('ping', 'k');
+    expect(rewardMock).toHaveBeenCalledWith('k', 1);
   });
 });

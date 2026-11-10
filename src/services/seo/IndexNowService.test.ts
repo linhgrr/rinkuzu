@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { IIndexNowQueueRepository } from '@/interfaces/repositories/IIndexNowQueueRepository';
+import type {
+  IIndexNowQueueRepository,
+  IndexNowSendRecord,
+} from '@/interfaces/repositories/IIndexNowQueueRepository';
 import type { IndexNowResult } from '@/lib/seo/indexnow';
 import { IndexNowService } from '@/services/seo/IndexNowService';
 
@@ -12,6 +15,7 @@ const START = new Date('2026-11-10T12:00:00.000Z');
 class FakeQueue implements IIndexNowQueueRepository {
   pending = new Map<string, Date>();
   lastSentAt: Date | null = null;
+  lastResult: IndexNowSendRecord | null = null;
 
   async enqueue(urls: readonly string[], queuedAt: Date): Promise<void> {
     for (const url of urls) if (!this.pending.has(url)) this.pending.set(url, queuedAt);
@@ -29,6 +33,10 @@ class FakeQueue implements IIndexNowQueueRepository {
 
   async removePending(urls: readonly string[]): Promise<void> {
     for (const url of urls) this.pending.delete(url);
+  }
+
+  async recordResult(record: IndexNowSendRecord): Promise<void> {
+    this.lastResult = record;
   }
 }
 
@@ -90,10 +98,29 @@ describe('IndexNowService', () => {
     expect(queue.pending.size).toBe(0);
   });
 
+  it('records the counts and status of each send, never the URLs (RIN-1511)', async () => {
+    const { service, queue } = setup();
+    await service.enqueue([QUIZ_URL, HUB_URL]);
+    expect(queue.lastResult).toEqual({
+      outcome: 'sent',
+      status: 200,
+      attempt: 1,
+      urlCount: 2,
+      at: START,
+    });
+  });
+
+  it('records a failed send too, so a 4xx or 5xx is visible after the logs expire', async () => {
+    const { service, queue } = setup({ result: 'failed' });
+    await service.enqueue([QUIZ_URL]);
+    expect(queue.lastResult).toMatchObject({ outcome: 'failed', status: 503, urlCount: 1 });
+  });
+
   it('does not take the slot when nothing is pending', async () => {
     const { service, queue, submit } = setup();
     expect(await service.flush()).toBeNull();
     expect(queue.lastSentAt).toBeNull();
+    expect(queue.lastResult).toBeNull();
     expect(submit).not.toHaveBeenCalled();
   });
 

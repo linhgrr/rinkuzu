@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import { registerAccount } from '@/features/auth/api/auth-api';
 import { readGuestClaims } from '@/features/quiz/lib/guest-claims';
+import { readGuestDraftClaims } from '@/features/quiz/lib/guest-draft-claims';
 import { ApiResponseError } from '@/lib/api/client';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { Button } from '@/components/ui/Button';
@@ -149,12 +150,14 @@ function RegisterFormContent({ locale, googleEnabled = false, onSwitchMode }: Re
     // The verification link may open in another browser: the server claims these
     // guest results when the email is verified (RIN-1310).
     const guestClaimTokens = readGuestClaims().map((claim) => claim.token);
+    const guestDraftTokens = readGuestDraftClaims().map((claim) => claim.token);
     try {
       await registerAccount({
         email: values.email,
         password: values.password,
         ...(forwardedCallback ? { callbackUrl: forwardedCallback } : {}),
         ...(guestClaimTokens.length > 0 ? { guestClaimTokens } : {}),
+        ...(guestDraftTokens.length > 0 ? { guestDraftTokens } : {}),
         locale,
       });
       // Localized copy, not the server's English meta.message (RIN-756).

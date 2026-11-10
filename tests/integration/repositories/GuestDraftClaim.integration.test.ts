@@ -102,16 +102,14 @@ describe('guest draft claim', () => {
     await db.collection('users').insertMany([learner(fromDraft), learner(fromStarter)]);
     const claimedAt = at('2100-05-03T09:05:00.000Z');
     const takenAt = at('2100-05-03T08:30:00.000Z');
-    await db
-      .collection('attempts')
-      .insertMany([
-        attempt(new Types.ObjectId(), takenAt, {
-          user: fromDraft,
-          claimedAt,
-          fromGuestDraft: true,
-        }),
-        attempt(new Types.ObjectId(), takenAt, { user: fromStarter, claimedAt }),
-      ]);
+    await db.collection('attempts').insertMany([
+      attempt(new Types.ObjectId(), takenAt, {
+        user: fromDraft,
+        claimedAt,
+        fromGuestDraft: true,
+      }),
+      attempt(new Types.ObjectId(), takenAt, { user: fromStarter, claimedAt }),
+    ]);
 
     const aggregates = await new AdminStatsRepository().getActivationAggregates(
       at('2100-05-03T00:00:00.000Z'),

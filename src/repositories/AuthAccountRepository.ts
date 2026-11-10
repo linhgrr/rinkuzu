@@ -90,6 +90,7 @@ export class AuthAccountRepository
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
         ...(data.guestClaimHashes?.length ? { guestClaimHashes: data.guestClaimHashes } : {}),
+        ...(data.guestDraftHashes?.length ? { guestDraftHashes: data.guestDraftHashes } : {}),
       });
       return AuthAccountPersistenceMapper.toIdentity({
         _id: user._id,
@@ -117,18 +118,20 @@ export class AuthAccountRepository
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
           guestClaimHashes: 1,
+          guestDraftHashes: 1,
         },
       },
       // The pre-image: it still holds the guest claim hashes this update removes (RIN-1310).
       { new: false },
     )
-      .select('email role guestClaimHashes')
+      .select('email role guestClaimHashes guestDraftHashes')
       .lean<AuthAccountPersistenceRecord>();
     if (!record) return null;
-    const identity = AuthAccountPersistenceMapper.toIdentity(record);
-    return record.guestClaimHashes?.length
-      ? { ...identity, guestClaimHashes: record.guestClaimHashes }
-      : identity;
+    return {
+      ...AuthAccountPersistenceMapper.toIdentity(record),
+      ...(record.guestClaimHashes?.length ? { guestClaimHashes: record.guestClaimHashes } : {}),
+      ...(record.guestDraftHashes?.length ? { guestDraftHashes: record.guestDraftHashes } : {}),
+    };
   }
 
   async issuePasswordResetToken(

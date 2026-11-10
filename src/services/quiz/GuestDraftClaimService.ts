@@ -37,20 +37,19 @@ export class GuestDraftClaimService implements IGuestDraftClaimService {
     private readonly now: Clock = () => new Date(),
   ) {}
 
-  async claim(userId: string, tokens: readonly string[]): Promise<string[]> {
-    return this.claimHashed(userId, tokens.map(hashGuestClaimToken));
-  }
-
   async claimHashed(userId: string, tokenHashes: readonly string[]): Promise<string[]> {
-    const hashes = [...new Set(tokenHashes)];
-    if (hashes.length === 0) return [];
-    const drafts = await this.drafts.findClaimable(hashes, this.now());
+    if (tokenHashes.length === 0) return [];
+    const drafts = await this.drafts.findClaimable([...new Set(tokenHashes)], this.now());
     const slugs: string[] = [];
     for (const draft of drafts) {
       const slug = await this.claimOne(userId, draft);
       if (slug) slugs.push(slug);
     }
     return slugs;
+  }
+
+  claim(userId: string, tokens: readonly string[]): Promise<string[]> {
+    return this.claimHashed(userId, tokens.map(hashGuestClaimToken));
   }
 
   private async claimOne(userId: string, draft: ClaimableGuestDraft): Promise<string | null> {

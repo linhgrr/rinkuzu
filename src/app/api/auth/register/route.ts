@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
       ...(input.data.guestClaimTokens?.length
         ? { guestClaimTokens: input.data.guestClaimTokens }
         : {}),
+      ...(input.data.guestDraftTokens?.length
+        ? { guestDraftTokens: input.data.guestDraftTokens }
+        : {}),
       ...(locale ? { locale } : {}),
       ...(signupCountry ? { signupCountry } : {}),
     },

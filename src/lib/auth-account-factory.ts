@@ -14,6 +14,13 @@ export function getAuthAccountService(): AuthAccountService {
     new AuthAuditAdapter(),
     new NextDeferredTaskScheduler(),
     getGuestAttemptClaimService(),
+    // Loaded on first use: the quiz service graph stays out of every auth route.
+    {
+      claimHashed: async (userId, hashes) =>
+        (await import('@/lib/guest-draft-claim-factory'))
+          .getGuestDraftClaimService()
+          .claimHashed(userId, hashes),
+    },
   );
   return authAccountService;
 }

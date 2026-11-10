@@ -81,11 +81,17 @@ export interface IGuestAttemptClaimRepository {
   ): Promise<string[]>;
 }
 
+/** The quiz a guest draft became. */
+export interface GuestDraftQuizTarget {
+  id: string;
+  slug: string;
+}
+
 export interface IGuestDraftAttemptRepository {
   /**
    * Moves the attempts taken on a guest draft to the quiz made from it (RIN-1447):
    * `quiz`, the snapshot slug and `fromGuestDraft`. Returns the claim-token hashes of
    * the moved attempts no account owns yet, for the guest-attempt claim; never log them.
    */
-  moveGuestDraftAttempts(draftId: string, quiz: { id: string; slug: string }): Promise<string[]>;
+  moveGuestDraftAttempts(draftId: string, quiz: GuestDraftQuizTarget): Promise<string[]>;
 }

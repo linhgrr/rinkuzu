@@ -1,15 +1,15 @@
 import { Types } from 'mongoose';
 
-import type { IGuestDraftAttemptRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type {
+  GuestDraftQuizTarget,
+  IGuestDraftAttemptRepository,
+} from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import connectDB from '@/lib/mongoose';
 import AttemptModel from '@/models/Attempt';
 
 /** Attempts taken on a guest draft, moved when the draft becomes a quiz (RIN-1447). */
 export class GuestDraftAttemptRepository implements IGuestDraftAttemptRepository {
-  async moveGuestDraftAttempts(
-    draftId: string,
-    quiz: { id: string; slug: string },
-  ): Promise<string[]> {
+  async moveGuestDraftAttempts(draftId: string, quiz: GuestDraftQuizTarget): Promise<string[]> {
     if (!Types.ObjectId.isValid(draftId) || !Types.ObjectId.isValid(quiz.id)) return [];
     await connectDB();
     const draft = new Types.ObjectId(draftId);

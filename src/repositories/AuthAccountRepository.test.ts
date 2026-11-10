@@ -79,13 +79,14 @@ describe('AuthAccountRepository', () => {
           emailVerificationTokenHash: 1,
           emailVerificationExpires: 1,
           guestClaimHashes: 1,
+          guestDraftHashes: 1,
         },
       }),
       // The pre-image still carries the guest claim hashes the update removes (RIN-1310).
       { new: false },
     );
     expect(mocks.findOneAndUpdate.mock.results[0]?.value.select).toHaveBeenCalledWith(
-      'email role guestClaimHashes',
+      'email role guestClaimHashes guestDraftHashes',
     );
   });
 
@@ -359,17 +360,27 @@ describe('AuthAccountRepository', () => {
       signupOrigin: { signupLocale: 'en' as const, signupCountry: null },
     };
 
-    await repository.createPending({ ...base, guestClaimHashes: ['a'.repeat(64)] });
-    await repository.createPending({ ...base, guestClaimHashes: [] });
+    await repository.createPending({
+      ...base,
+      guestClaimHashes: ['a'.repeat(64)],
+      guestDraftHashes: ['c'.repeat(64)],
+    });
+    await repository.createPending({ ...base, guestClaimHashes: [], guestDraftHashes: [] });
 
-    expect(mocks.create.mock.calls[0]?.[0]).toMatchObject({ guestClaimHashes: ['a'.repeat(64)] });
+    expect(mocks.create.mock.calls[0]?.[0]).toMatchObject({
+      guestClaimHashes: ['a'.repeat(64)],
+      guestDraftHashes: ['c'.repeat(64)],
+    });
     expect(mocks.create.mock.calls[1]?.[0]).not.toHaveProperty('guestClaimHashes');
+    expect(mocks.create.mock.calls[1]?.[0]).not.toHaveProperty('guestDraftHashes');
   });
 
   it('returns the guest claim hashes from the verified pre-image, and null for an unknown token (RIN-1310)', async () => {
     const repository = new AuthAccountRepository();
     mocks.findOneAndUpdate.mockReturnValueOnce(
-      queryChain(identityRecord({ guestClaimHashes: ['b'.repeat(64)] })),
+      queryChain(
+        identityRecord({ guestClaimHashes: ['b'.repeat(64)], guestDraftHashes: ['d'.repeat(64)] }),
+      ),
     );
 
     await expect(repository.verifyEmail('verification-hash', now)).resolves.toEqual({
@@ -377,6 +388,7 @@ describe('AuthAccountRepository', () => {
       email: 'user@example.com',
       role: 'user',
       guestClaimHashes: ['b'.repeat(64)],
+      guestDraftHashes: ['d'.repeat(64)],
     });
     await expect(repository.verifyEmail('unknown-hash', now)).resolves.toBeNull();
   });

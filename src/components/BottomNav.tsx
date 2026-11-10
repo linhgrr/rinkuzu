@@ -99,7 +99,9 @@ export default function BottomNav() {
         <div
           className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${isActive ? 'border-accent' : styles['inactiveProfileBorder']}`}
         >
-          <span className={`text-xs font-bold ${isActive ? 'text-accent' : 'text-neutral-500'}`}>
+          <span
+            className={`text-xs font-bold ${isActive ? 'text-accent-ink' : 'text-neutral-500'}`}
+          >
             {(session.user?.displayName || session.user?.email || 'U').charAt(0).toUpperCase()}
           </span>
         </div>
@@ -214,7 +216,7 @@ export default function BottomNav() {
               {tab.icon(isActive)}
               {!tab.isCenter && (
                 <span
-                  className={`${styles['label']} font-medium ${isActive ? 'text-accent' : 'text-neutral-500'}`}
+                  className={`${styles['label']} font-medium ${isActive ? 'text-accent-ink' : 'text-neutral-500'}`}
                 >
                   {t(tab.labelKey)}
                 </span>

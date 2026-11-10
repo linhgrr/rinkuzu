@@ -18,3 +18,11 @@ export const GUEST_DRAFT_TOKEN_HEADER = 'x-guest-draft-token';
 
 /** `reason` on the 429 when a guest cap is hit, so the UI shows "Sign up to create more". */
 export const GUEST_DRAFT_LIMIT_REASON = 'guest_draft_limit';
+
+/**
+ * Snapshot slug of an attempt on a guest draft, and the key of the review-queue progress a
+ * claimed one writes (RIN-1446). Reserved: no Quiz slug starts with `guest-draft-`.
+ */
+export function guestDraftSnapshotSlug(draftId: string): string {
+  return `guest-draft-${draftId}`;
+}

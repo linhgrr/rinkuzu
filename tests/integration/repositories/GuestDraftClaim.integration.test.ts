@@ -38,6 +38,7 @@ describe('guest draft claim', () => {
     await Promise.all([
       db.collection('attempts').deleteMany({ _integrationRun: runId }),
       db.collection('users').deleteMany({ _integrationRun: runId }),
+      db.collection('questionprogresses').deleteMany({ _integrationRun: runId }),
     ]);
   }, 10_000);
 
@@ -47,7 +48,21 @@ describe('guest draft claim', () => {
     const quizId = new Types.ObjectId();
     const hash = hashGuestClaimToken(randomBytes(32).toString('base64url'));
     const guest = attempt(draftId, new Date(), { guestClaimTokenHash: hash });
-    const owned = attempt(draftId, new Date(), { user: new Types.ObjectId() });
+    const ownerId = new Types.ObjectId();
+    const owned = attempt(draftId, new Date(), { user: ownerId });
+    // Review-queue progress the earlier attempt claim keyed by the draft's snapshot slug.
+    const draftSlug = `guest-draft-${draftId.toHexString()}`;
+    const progress = (userId: string, quizSlug: string) => ({
+      _id: new Types.ObjectId(),
+      _integrationRun: runId,
+      userId,
+      quizSlug,
+      questionId: 'q0',
+      nextReviewDate: new Date(),
+    });
+    const ownerProgress = progress(ownerId.toHexString(), draftSlug);
+    const strangerProgress = progress(new Types.ObjectId().toHexString(), draftSlug);
+    await db.collection('questionprogresses').insertMany([ownerProgress, strangerProgress]);
     const other = attempt(new Types.ObjectId(), new Date(), {
       guestClaimTokenHash: hashGuestClaimToken(randomBytes(32).toString('base64url')),
     });
@@ -55,10 +70,14 @@ describe('guest draft claim', () => {
 
     const repository = new GuestDraftAttemptRepository();
     await expect(
-      repository.moveGuestDraftAttempts(draftId.toHexString(), {
-        id: quizId.toHexString(),
-        slug: `${runId}-quiz`,
-      }),
+      repository.moveGuestDraftAttempts(
+        draftId.toHexString(),
+        {
+          id: quizId.toHexString(),
+          slug: `${runId}-quiz`,
+        },
+        new Types.ObjectId().toHexString(),
+      ),
     ).resolves.toEqual([hash]);
 
     const moved = await db
@@ -72,14 +91,25 @@ describe('guest draft claim', () => {
         fromGuestDraft: true,
       });
     }
+    // The owner's progress follows the quiz; a user who owns no attempt here is not touched.
+    await expect(
+      db.collection('questionprogresses').findOne({ _id: ownerProgress._id }),
+    ).resolves.toMatchObject({ quizSlug: `${runId}-quiz` });
+    await expect(
+      db.collection('questionprogresses').findOne({ _id: strangerProgress._id }),
+    ).resolves.toMatchObject({ quizSlug: draftSlug });
     const untouched = await db.collection('attempts').findOne({ _id: other._id });
     expect(untouched?.['fromGuestDraft']).toBeUndefined();
     // A second run (retry, second tab) finds nothing left on the draft.
     await expect(
-      repository.moveGuestDraftAttempts(draftId.toHexString(), {
-        id: quizId.toHexString(),
-        slug: `${runId}-quiz`,
-      }),
+      repository.moveGuestDraftAttempts(
+        draftId.toHexString(),
+        {
+          id: quizId.toHexString(),
+          slug: `${runId}-quiz`,
+        },
+        ownerId.toHexString(),
+      ),
     ).resolves.toEqual([]);
   });
 

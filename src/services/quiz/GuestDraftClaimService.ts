@@ -65,10 +65,11 @@ export class GuestDraftClaimService implements IGuestDraftClaimService {
       if (error instanceof QuizCreationError && error.code === 'invalid_draft') return null;
       throw error;
     }
-    const unowned = await this.attempts.moveGuestDraftAttempts(draft.id, {
-      id: quiz.id,
-      slug: quiz.slug,
-    });
+    const unowned = await this.attempts.moveGuestDraftAttempts(
+      draft.id,
+      { id: quiz.id, slug: quiz.slug },
+      userId,
+    );
     // The draft's attempts belong to whoever holds the draft: they count toward activated.
     if (unowned.length > 0) await this.guestAttempts.claimHashed(userId, unowned);
     if (await this.drafts.deleteClaimed(draft.id)) {

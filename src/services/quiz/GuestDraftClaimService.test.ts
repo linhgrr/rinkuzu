@@ -61,10 +61,12 @@ describe('GuestDraftClaimService (RIN-1447)', () => {
       questions: draft.questions,
       submitToPremium: false,
     });
-    expect(attempts.moveGuestDraftAttempts).toHaveBeenCalledWith(draft.id, {
-      id: '6730b0000000000000000001',
-      slug: 'fake-biology-quiz',
-    });
+    // The claimer's review-queue progress follows the draft to the quiz (CTO, RIN-1446 review).
+    expect(attempts.moveGuestDraftAttempts).toHaveBeenCalledWith(
+      draft.id,
+      { id: '6730b0000000000000000001', slug: 'fake-biology-quiz' },
+      'user-1',
+    );
     expect(guestAttempts.claimHashed).toHaveBeenCalledWith('user-1', ['hash-1']);
     expect(drafts.deleteClaimed).toHaveBeenCalledWith(draft.id);
     expect(events.claimed).toHaveBeenCalledWith({

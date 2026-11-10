@@ -46,5 +46,12 @@
     "body": "This try doesn't count. Try again, or pick another PDF (scanned image PDFs are harder to read).",
     "retry": "Try again",
     "chooseAnother": "Choose another file"
+  },
+  "play": {
+    "notice": "Quiz from your PDF. Kept for 24 hours: <link>sign up</link> to keep it.",
+    "expiredTitle": "This quiz has expired",
+    "expiredBody": "Trial quizzes are kept for 24 hours. Make it again from your PDF.",
+    "makeAgain": "Make it again",
+    "loading": "Loading your quiz…"
   }
 }

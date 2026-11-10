@@ -32,3 +32,15 @@ export function guestDraftSnapshotSlug(draftId: string): string {
 
 /** Guest page ceiling, checked in the browser for instant feedback; the API enforces it too. */
 export const GUEST_DRAFT_MAX_PAGES = 10;
+
+/**
+ * Route slug of a guest draft in the player and on its result page
+ * (`/quiz/guest-draft-play/result`). Under the reserved `guest-draft-` prefix, so never a
+ * real quiz, and not an id, so never a snapshot slug.
+ */
+export const GUEST_DRAFT_PLAY_SLUG = 'guest-draft-play';
+
+/** A guest draft's route or snapshot slug: it has no quiz page of its own. */
+export function isGuestDraftSlug(slug: string): boolean {
+  return slug.startsWith('guest-draft-');
+}

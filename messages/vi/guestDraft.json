@@ -46,5 +46,12 @@
     "body": "Lượt này không bị tính. Thử lại, hoặc chọn một PDF khác (PDF dạng ảnh scan thường khó đọc hơn).",
     "retry": "Thử lại",
     "chooseAnother": "Chọn tệp khác"
+  },
+  "play": {
+    "notice": "Quiz từ PDF của bạn. Chỉ lưu 24 giờ: <link>đăng ký</link> để giữ lại.",
+    "expiredTitle": "Quiz này đã hết hạn",
+    "expiredBody": "Quiz từ PDF dùng thử chỉ được giữ 24 giờ. Tạo lại từ PDF của bạn.",
+    "makeAgain": "Tạo lại",
+    "loading": "Đang tải quiz…"
   }
 }

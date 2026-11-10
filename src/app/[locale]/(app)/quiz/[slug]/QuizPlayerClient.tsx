@@ -2,6 +2,7 @@
 
 import { useRouter } from '@/i18n/navigation';
 import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from 'react';
+import type { ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { captureAnalyticsEvent, captureAnalyticsEventOnce } from '@/lib/analytics/client';
 import dynamic from 'next/dynamic';
@@ -13,7 +14,10 @@ import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
+import {
+  useQuizSubmission,
+  type QuizAttemptSubmitter,
+} from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -719,6 +723,12 @@ interface QuizPlayerClientProps {
   shuffleSeed?: number;
   /** The server's guess that the request comes from a phone, so it renders the mobile layout. */
   initialMobile?: boolean;
+  /**
+   * A signed-out visitor's quiz from their own PDF (RIN-1448): submits to the guest-draft
+   * attempt route, saves no progress, shows `notice` above the question and no
+   * report/discussion (a draft has no quiz page).
+   */
+  guestDraft?: { submitAttempt: QuizAttemptSubmitter; notice: ReactNode };
 }
 
 // Opened by /start right after sign-in (RIN-913): intro + Skip, tagged completion.
@@ -761,6 +771,7 @@ export default function QuizPlayerClient({
   mode,
   shuffleSeed,
   initialMobile,
+  guestDraft,
 }: QuizPlayerClientProps) {
   const t = useTranslations('quiz');
   const { data: session, status: sessionStatus } = useSession();
@@ -770,10 +781,12 @@ export default function QuizPlayerClient({
 
   const isMobile = useMediaQuery(MEDIA_MAX_MD, initialMobile);
   const clientMount = useClientOnlyMount();
-  const starterNotice = postSignInStarterNotice(entry, slug);
+  const starterNotice = guestDraft?.notice ?? postSignInStarterNotice(entry, slug);
 
   const sessionEmail = session?.user?.email || undefined;
-  const retrySetup = retrySessionSetup(initialQuiz, Boolean(session?.user?.email), t);
+  // A guest draft never reads or writes saved progress, even for a signed-in visitor.
+  const savesProgress = Boolean(session?.user?.email) && guestDraft === undefined;
+  const retrySetup = retrySessionSetup(initialQuiz, savesProgress, t);
   const [playMode, setPlayMode] = useState(() => initialPlayMode(initialQuiz, mode));
   const { progressEnabled, analyticsMode, layoutProps } = playModeSetup(playMode, retrySetup, t);
   // Render the first question on the server when no saved progress is needed (RIN-1032).
@@ -978,6 +991,7 @@ export default function QuizPlayerClient({
     ...retrySetup.submission,
     ...(state.quickIndices ? { questionIndices: state.quickIndices } : {}),
     attribution: trackedEntryProperties(entry, post, topic),
+    ...(guestDraft ? { submitAttempt: guestDraft.submitAttempt } : {}),
     onSubmitSuccess: async (attemptId, score) => {
       captureAnalyticsEvent('quiz_completed', {
         journey_id: getQuizJourneyId(),
@@ -1200,6 +1214,7 @@ export default function QuizPlayerClient({
             complete: completeSubmit,
           }}
           notice={starterNotice}
+          community={guestDraft === undefined}
           {...layoutProps}
           t={t}
         />

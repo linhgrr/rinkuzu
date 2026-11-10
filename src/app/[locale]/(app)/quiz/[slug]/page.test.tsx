@@ -28,6 +28,11 @@ const {
 
 vi.mock('next/headers', () => ({ headers: () => Promise.resolve(requestHeaders.current) }));
 vi.mock('next/navigation', () => ({ permanentRedirect: permanentRedirectMock }));
+vi.mock('@/i18n/navigation', () => ({
+  redirect: (target: { href: string; locale: string }): never => {
+    throw new Error(`redirect:${target.locale}:${target.href}`);
+  },
+}));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession }));
 vi.mock('@/lib/quiz-factory', () => ({
   getQuizService: () => ({
@@ -83,6 +88,13 @@ function renderPage(slug: string, searchParams: Record<string, string | string[]
     searchParams: Promise.resolve(searchParams),
   });
 }
+
+describe('QuizPlayerPage guest draft slugs (RIN-1448)', () => {
+  it('sends a guest draft slug to the guest draft player without a quiz lookup', async () => {
+    await expect(renderPage('guest-draft-play')).rejects.toThrow('redirect:vi:/try/pdf/play');
+    expect(getQuizForPlay).not.toHaveBeenCalled();
+  });
+});
 
 describe('QuizPlayerPage slug aliases', () => {
   beforeEach(() => {

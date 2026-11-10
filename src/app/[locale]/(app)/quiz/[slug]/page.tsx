@@ -3,6 +3,9 @@ import { getCurrentSession } from '@/lib/auth/session';
 import { randomInt } from 'node:crypto';
 import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { isGuestDraftSlug } from '@/shared/constants/guest-draft';
+import { ROUTES } from '@/shared/constants/routes';
 import { getQuizService } from '@/lib/quiz-factory';
 import { toQuizPlayViewModel } from '@/features/quiz/mappers/quiz-play.mapper';
 import type {
@@ -182,6 +185,8 @@ export default async function QuizPlayerPage({ params, searchParams }: QuizPageP
     searchParams,
     headers(),
   ]);
+  // A guest draft has no quiz page: Retake on its result plays the draft again (RIN-1448).
+  if (isGuestDraftSlug(slug)) return redirect({ href: ROUTES.TRY_PDF_PLAY, locale });
   const premiumMetadata = await getPremiumQuizService().getCatalogMetadataBySlug(slug);
   if (premiumMetadata) {
     const description =

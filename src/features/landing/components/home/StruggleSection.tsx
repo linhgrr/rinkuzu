@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import { imgGroup1, imgSolarDocumentAddBold, imgTablerClockFilled } from './constants';
 import { Reveal } from './Reveal';

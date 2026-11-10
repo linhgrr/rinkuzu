@@ -12,7 +12,7 @@ const EDGE_DASHES = /^-+|-+$/g;
  * ordinary English text keeps the slug it had before this helper existed.
  * Returns '' when nothing slug-worthy remains (emoji, punctuation, blanks).
  */
-function slugifyText(text: string): string {
+export function slugifyText(text: string): string {
   return text
     .normalize('NFD')
     .replace(COMBINING_MARKS, '')

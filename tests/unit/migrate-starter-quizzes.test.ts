@@ -43,7 +43,7 @@ describe('migrate-starter-quizzes', () => {
         locale: 'en',
         order: 2,
       },
-      { slug: 'ktpm-chng-6-p1-219991', locale: 'vi', order: 3 },
+      { slug: 'ktpm-chuong-6-p1-219991', locale: 'vi', order: 3 },
     ]);
   });
 

@@ -2119,7 +2119,7 @@ test.describe('production critical paths', () => {
   test('marks and clears an audited test-account flag from the admin users page @critical-admin-test-account', async ({
     page,
     browser,
-    playwright,
+    request,
   }, testInfo) => {
     test.setTimeout(60_000);
     await withDatabaseFixture(testInfo, async (fixture) => {
@@ -2130,24 +2130,15 @@ test.describe('production critical paths', () => {
           'isTestAccount'
         ];
 
-      // A fresh cookie-less context: the anonymous caller is refused before any write. The shared
-      // `request` fixture can reuse a keep-alive socket the server already closed ("socket hang up",
-      // RIN-1443), so this call owns its connection pool.
-      const baseURL = testInfo.project.use.baseURL;
-      const anonymousContext = await playwright.request.newContext(
-        typeof baseURL === 'string' && baseURL.length > 0 ? { baseURL } : undefined,
-      );
-      try {
-        const anonymous = await anonymousContext.patch(flagRoute, {
-          data: { isTestAccount: true },
-          headers: { 'Sec-Fetch-Site': 'same-origin' },
-        });
-        expect(anonymous.status()).toBe(401);
-      } finally {
-        await anonymousContext.dispose();
-      }
+      // `request` is cookie-less: the anonymous caller is refused before any write.
+      const anonymous = await request.patch(flagRoute, {
+        data: { isTestAccount: true },
+        headers: { 'Sec-Fetch-Site': 'same-origin' },
+      });
+      expect(anonymous.status()).toBe(401);
 
       // A signed-in learner is refused too, from an isolated context.
+      const baseURL = testInfo.project.use.baseURL;
       const learnerContext = await browser.newContext(
         typeof baseURL === 'string' && baseURL.length > 0 ? { baseURL } : undefined,
       );

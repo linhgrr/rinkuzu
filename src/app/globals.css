@@ -159,6 +159,9 @@
     --accent-warm: var(--primary-3);
     --accent-pale: var(--primary-2);
     --accent-text: var(--neutral-white);
+    /* Orange as text: the active nav label on --accent-soft (6.07:1) and on
+       white (7.31:1). Plain --accent is 2.13:1 and 2.57:1 there (RIN-1503). */
+    --accent-ink: #9a3412;
     --line: var(--secondary-2);
     --line-blue: var(--secondary-4);
     --progress-track: var(--neutral-warm-31);
@@ -348,6 +351,8 @@
     /* Text on --accent: white is 2.5:1 here. White labels on a filled orange
        control belong on --brand-action-strong, which does not vary by theme. */
     --accent-text: #10110f;
+    /* Already clears 4.5:1 on the dark surface and its 16% tint (RIN-1503). */
+    --accent-ink: #ff7c23;
     --line: rgba(255, 255, 255, 0.12);
     --line-blue: rgba(255, 255, 255, 0.24);
     --divider-warm: rgba(255, 124, 35, 0.3);

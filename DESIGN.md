@@ -391,6 +391,17 @@ Do not use orange for:
 - Score metrics or completion statistics (use green)
 - Decorative blobs, gradients, or background glows
 
+Orange as text: `text-accent` (`--accent`, #ff7c23) is 2.57:1 on white and 2.13:1 on the
+peach `bg-accent-soft` fill, so it fails AA for text. Text in the orange family, such as the
+active app-shell nav label, uses `text-accent-ink` (`--accent-ink`) (RIN-1503):
+
+| Theme | `--accent-ink` | on `--accent-soft` | on `--surface` |
+| ----- | -------------- | ------------------ | -------------- |
+| Light | `#9a3412`      | 6.07:1             | 7.31:1         |
+| Dark  | `#ff7c23`      | ≥4.5:1             | ≥4.5:1         |
+
+Icons and focus rings may keep `--accent` (non-text, 3:1 floor).
+
 ### Green Usage
 
 Use green for:

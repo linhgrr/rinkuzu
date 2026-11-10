@@ -18,9 +18,6 @@
     // RIN-1248: the topic hub read service ships before its pages (RIN-1249).
     // Remove this entry in the RIN-1249 PR that imports it.
     "src/lib/quiz-topic-hub-factory.ts!",
-    // RIN-1500: the IndexNow core ships before its hooks (second PR on RIN-1500).
-    // Remove this entry in the hooks PR that imports it.
-    "src/lib/indexnow-factory.ts!",
   ],
   "project": [
     "src/**/*.{ts,tsx}!",

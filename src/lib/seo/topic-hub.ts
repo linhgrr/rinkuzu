@@ -4,12 +4,15 @@ import { logger } from '@/lib/logger';
 import { markdownToPlainText } from '@/lib/markdown/plain-text';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { canonicalFor } from '@/lib/seo';
+import { topicHubPath } from '@/lib/seo/topic-hub-urls';
 import { HUB_ENTRY } from '@/shared/constants/starter-quiz';
 
 /**
  * Topic hubs `/vi/explore/<topic>` (RIN-1249, spec RIN-1241 B). Hubs exist in
  * Vietnamese only until an `en` topic does.
  */
+export { topicHubPath };
+
 export const TOPIC_HUB_LOCALE = 'vi';
 
 /** A hub lists at most this many quizzes; the footer link covers the rest. */
@@ -19,10 +22,6 @@ export const TOPIC_HUB_QUIZ_LIMIT = 30;
 export const EXPLORE_HUB_LINK_LIMIT = 12;
 
 const META_DESCRIPTION_MAX = 155;
-
-export function topicHubPath(slug: string): string {
-  return `/explore/${routePathSegment(slug)}`;
-}
 
 /** The intro as plain text, cut at a word boundary to about 155 characters (B4). */
 export function buildTopicHubDescription(intro: string): string {

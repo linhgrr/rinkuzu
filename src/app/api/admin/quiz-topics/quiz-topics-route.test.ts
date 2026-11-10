@@ -17,6 +17,7 @@ import type {
   IStarterQuizReadRepository,
   StarterQuizCandidateRecord,
 } from '@/interfaces/repositories/IStarterQuizReadRepository';
+import { canonicalFor } from '@/lib/seo';
 import { QuizTopicAdminService } from '@/services/admin/QuizTopicAdminService';
 
 const { authMock, serviceRef } = vi.hoisted(() => ({
@@ -168,6 +169,7 @@ const quizRepository: IStarterQuizReadRepository = {
 let repo: FakeTopicRepository;
 let auditEntries: AdminAuditEntry[];
 let auditRecord: ReturnType<typeof vi.fn<IAdminAuditRepository['record']>>;
+let notifyChanged: ReturnType<typeof vi.fn<(urls: readonly string[]) => void>>;
 
 function jsonRequest(method: string, path: string, body?: unknown): NextRequest {
   return new NextRequest('http://localhost/api/admin/quiz-topics' + path, {
@@ -231,6 +233,7 @@ beforeEach(() => {
     { id: nextId(902), quizId: QUIZ_B, topicId: TOPIC_HOA, order: 2 },
   ];
   auditEntries = [];
+  notifyChanged = vi.fn();
   auditRecord = vi.fn(async (entry: AdminAuditEntry) => {
     auditEntries.push(entry);
   });
@@ -238,6 +241,7 @@ beforeEach(() => {
     topicRepository: repo,
     quizRepository,
     auditRepository: { record: auditRecord },
+    indexNow: { notifyChanged: (urls) => notifyChanged(urls) },
   });
 });
 
@@ -681,5 +685,64 @@ describe('DELETE /api/admin/quiz-topics/[id]/quizzes/[quizId]', () => {
     );
     expect(response.status).toBe(404);
     expect(auditRecord).not.toHaveBeenCalled();
+  });
+});
+
+describe('IndexNow pings on topic hub changes (RIN-1500)', () => {
+  const HOA_HUB = canonicalFor('vi', '/explore/hoa-hoc-12');
+  const SINH_HUB = canonicalFor('vi', '/explore/sinh-hoc');
+  const EXPLORE = canonicalFor('vi', '/explore');
+
+  it('sends the hub and /explore when a topic is published or unpublished', async () => {
+    await PATCH(
+      jsonRequest('PATCH', '/x', { intro: words(200), published: true }),
+      topicContext(TOPIC_SINH),
+    );
+    await PATCH(jsonRequest('PATCH', '/x', { published: false }), topicContext(TOPIC_HOA));
+    expect(notifyChanged.mock.calls).toEqual([[[SINH_HUB, EXPLORE]], [[HOA_HUB, EXPLORE]]]);
+  });
+
+  it('sends the old and the new hub after a slug change of a published topic', async () => {
+    await PATCH(jsonRequest('PATCH', '/x', { slug: 'hoa-12' }), topicContext(TOPIC_HOA));
+    expect(notifyChanged).toHaveBeenCalledWith([
+      HOA_HUB,
+      canonicalFor('vi', '/explore/hoa-12'),
+      EXPLORE,
+    ]);
+  });
+
+  it('sends nothing for a draft edit, a no-op patch, a rejected patch or a reverted one', async () => {
+    await PATCH(jsonRequest('PATCH', '/x', { intro: 'Ngắn thôi' }), topicContext(TOPIC_SINH));
+    await PATCH(jsonRequest('PATCH', '/x', { name: 'Hóa học 12' }), topicContext(TOPIC_HOA));
+    await PATCH(jsonRequest('PATCH', '/x', { intro: words(50) }), topicContext(TOPIC_HOA));
+    auditRecord.mockRejectedValueOnce(new Error('audit down'));
+    await PATCH(jsonRequest('PATCH', '/x', { intro: words(180) }), topicContext(TOPIC_HOA));
+    expect(notifyChanged).not.toHaveBeenCalled();
+  });
+
+  it('sends the hub when a published topic gains, reorders or loses a quiz', async () => {
+    await ASSIGN(jsonRequest('POST', '/x', { quizId: QUIZ_C }), topicContext(TOPIC_HOA));
+    await REORDER(jsonRequest('PATCH', '/x', { order: 1 }), topicQuizContext(TOPIC_HOA, QUIZ_C));
+    await UNASSIGN(jsonRequest('DELETE', '/x'), topicQuizContext(TOPIC_HOA, QUIZ_A));
+    expect(notifyChanged.mock.calls).toEqual([[[HOA_HUB]], [[HOA_HUB]], [[HOA_HUB]]]);
+  });
+
+  it('sends nothing for membership changes of a draft topic', async () => {
+    await ASSIGN(jsonRequest('POST', '/x', { quizId: QUIZ_C }), topicContext(TOPIC_SINH));
+    await UNASSIGN(jsonRequest('DELETE', '/x'), topicQuizContext(TOPIC_SINH, QUIZ_C));
+    expect(notifyChanged).not.toHaveBeenCalled();
+  });
+
+  it('keeps the admin write successful when the notifier throws', async () => {
+    notifyChanged.mockImplementation(() => {
+      throw new Error('indexnow down');
+    });
+    const response = await PATCH(
+      jsonRequest('PATCH', '/x', { intro: words(180) }),
+      topicContext(TOPIC_HOA),
+    );
+    expect(response.status).toBe(200);
+    expect(notifyChanged).toHaveBeenCalledWith([HOA_HUB]);
+    expect(auditEntries).toHaveLength(1);
   });
 });

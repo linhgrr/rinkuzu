@@ -992,9 +992,23 @@ test.describe('production critical paths', () => {
           .collection('marketingconsentevents')
           .countDocuments({ userId: fixture.regular.id }),
       ).toBe(0);
+      // RIN-1423: the page is scrolled down to the prompt, so the retry link sits above the
+      // fixed top bar. Moving focus back to it must scroll it clear of the bar (WCAG 2.4.11),
+      // not leave it underneath, where a tap mid smooth-scroll landed and did not navigate.
+      const retryLink = page.getByRole('link', { name: 'Retry the 1 you missed', exact: true });
+      await retryLink.focus();
+      await expect
+        .poll(async () => {
+          const [link, bar] = await Promise.all([
+            retryLink.boundingBox(),
+            page.getByRole('banner').boundingBox(),
+          ]);
+          return link && bar ? Math.round(link.y - (bar.y + bar.height)) : null;
+        })
+        .toBeGreaterThanOrEqual(0);
       await Promise.all([
         page.waitForURL(new RegExp(`/en/quiz/${fixture.quizSlug}\\?retryOf=${sourceId}`)),
-        page.getByRole('link', { name: 'Retry the 1 you missed', exact: true }).click(),
+        retryLink.click(),
       ]);
 
       await expect(

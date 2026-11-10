@@ -61,9 +61,9 @@ export function QuizCard({
   return (
     <article
       className={cn(
-        'group relative flex flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none',
+        'group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none',
         // The height floor fits the author row; cards without it hug their content.
-        showAuthor && 'min-h-[146px]',
+        !showAuthor && 'min-h-0',
       )}
     >
       <div className="flex items-center justify-between text-sm text-ink/40">

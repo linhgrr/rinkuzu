@@ -31,6 +31,7 @@ import {
 import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import Folder from '@/models/Folder';
+import { IndexNowPendingUrl, IndexNowThrottle } from '@/models/IndexNowQueue';
 import FolderQuiz from '@/models/FolderQuiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
@@ -65,6 +66,8 @@ const MODELS = {
   folders: Folder,
   folderquizzes: FolderQuiz,
   idempotencyrecords: IdempotencyRecord,
+  indexnowpendingurls: IndexNowPendingUrl,
+  indexnowthrottles: IndexNowThrottle,
   internalrequestnonces: InternalRequestNonce,
   paymentattempts: PaymentAttempt,
   paymenttransactions: PaymentTransaction,

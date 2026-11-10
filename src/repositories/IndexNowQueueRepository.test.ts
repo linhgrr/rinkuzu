@@ -94,6 +94,16 @@ describe('IndexNowQueueRepository (RIN-1500)', () => {
     );
   });
 
+  it('stores the last send result on the throttle document (RIN-1511)', async () => {
+    mocks.updateOne.mockResolvedValue({ acknowledged: true });
+    const record = { outcome: 'sent' as const, status: 202, attempt: 1, urlCount: 3, at: NOW };
+    await new IndexNowQueueRepository().recordResult(record);
+    expect(mocks.updateOne).toHaveBeenCalledWith(
+      { _id: 'global' },
+      { $set: { lastResult: record } },
+    );
+  });
+
   it('removes the sent URLs', async () => {
     await new IndexNowQueueRepository().removePending([QUIZ_URL]);
     expect(mocks.deleteMany).toHaveBeenCalledWith({ url: { $in: [QUIZ_URL] } });

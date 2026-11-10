@@ -1,4 +1,7 @@
-import type { IIndexNowQueueRepository } from '@/interfaces/repositories/IIndexNowQueueRepository';
+import type {
+  IIndexNowQueueRepository,
+  IndexNowSendRecord,
+} from '@/interfaces/repositories/IIndexNowQueueRepository';
 import connectDB from '@/lib/mongoose';
 import { INDEXNOW_THROTTLE_ID, IndexNowPendingUrl, IndexNowThrottle } from '@/models/IndexNowQueue';
 
@@ -60,5 +63,13 @@ export class IndexNowQueueRepository implements IIndexNowQueueRepository {
     if (urls.length === 0) return;
     await connectDB();
     await IndexNowPendingUrl.deleteMany({ url: { $in: [...urls] } });
+  }
+
+  async recordResult(record: IndexNowSendRecord): Promise<void> {
+    await connectDB();
+    await IndexNowThrottle.updateOne(
+      { _id: INDEXNOW_THROTTLE_ID },
+      { $set: { lastResult: record } },
+    );
   }
 }

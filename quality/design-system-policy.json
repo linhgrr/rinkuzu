@@ -9,7 +9,7 @@
     "standalone-raw-button": 37,
     "raw-select": 0,
     "solid-orange-dark-text": 0,
-    "solid-orange-white-text": 20,
+    "solid-orange-white-text": 0,
     "new-icon-family": 0
   },
   "allowedIconFamilies": ["react-icons/hi", "react-icons/hi2", "lucide-react", "@iconify/react"],

@@ -37,6 +37,8 @@ describe('shared tab bar design contract', () => {
   it('maps interactive and navigation tabs to the same orange semantic active treatment', () => {
     expect(tabBarSource).toContain("variant={selected ? 'primary' : 'ghost'}");
     expect(navigationTabBarSource).toContain("selected ? 'btn-primary' : 'btn-ghost'");
-    expect(globalsSource).toMatch(/\.btn-primary\s*\{[\s\S]*?background:\s*var\(--brand-action\)/);
+    expect(globalsSource).toMatch(
+      /\.btn-primary\s*\{[\s\S]*?background:\s*var\(--brand-action-strong\)/,
+    );
   });
 });

@@ -23,7 +23,7 @@ type HeroProps = {
 };
 
 const heroActionClass =
-  'h-auto w-full rounded-full bg-brand-action px-5 py-3 font-home text-base font-semibold text-white hover:bg-brand-action-hover sm:w-auto sm:text-lg';
+  'h-auto w-full rounded-full bg-brand-action-strong px-5 py-3 font-home text-base font-semibold text-white hover:bg-brand-action-strong-hover sm:w-auto sm:text-lg';
 
 function PersonalLearningArtwork() {
   return (

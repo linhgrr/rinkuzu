@@ -631,8 +631,10 @@ Examples:
   padding: 0 18px;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
-  background: var(--brand-action);
-  color: var(--text-inverse);
+  /* White label on the theme-stable strong step: 5.18:1 rest, 7.31:1 hover,
+     about 9.4:1 active, in light and dark (RIN-1492). */
+  background: var(--brand-action-strong);
+  color: var(--neutral-white);
   font-size: 15px;
   font-weight: 650;
   line-height: 1;
@@ -644,13 +646,13 @@ Examples:
 }
 
 .btn-primary:hover {
-  background: var(--brand-action-hover);
+  background: var(--brand-action-strong-hover);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  background: var(--brand-action-active);
+  background: var(--brand-action-strong-active);
   transform: translateY(0);
 }
 
@@ -989,7 +991,7 @@ Knowledge graph visuals should be structured, not chaotic.
 
 ```css
 .graph-node-current {
-  background: var(--brand-action);
+  background: var(--brand-action-strong);
   color: white;
   box-shadow: var(--shadow-orange-glow);
 }
@@ -1649,14 +1651,15 @@ Example:
   --brand-primary-hover: var(--green-600);
   --brand-primary-text: var(--text-inverse);
 
-  --button-primary-bg: var(--brand-action);
-  --button-primary-bg-hover: var(--brand-action-hover);
-  --button-primary-text: var(--text-inverse);
+  --button-primary-bg: var(--brand-action-strong);
+  --button-primary-bg-hover: var(--brand-action-strong-hover);
+  --button-primary-bg-active: var(--brand-action-strong-active);
+  --button-primary-text: var(--neutral-white);
 
   --quiz-answer-selected-bg: rgba(255, 122, 26, 0.08);
   --quiz-answer-correct-bg: rgba(0, 157, 140, 0.1);
 
-  --graph-node-current-bg: var(--brand-action);
+  --graph-node-current-bg: var(--brand-action-strong);
   --graph-node-mastered-bg: var(--brand-trust);
 }
 ```

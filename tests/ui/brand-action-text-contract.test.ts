@@ -84,11 +84,39 @@ describe('brand action label token', () => {
   });
 });
 
-// Marketing/landing visuals are protected; these keep text-white (RIN-797 PR).
-const PROTECTED = new Set([
-  'src/app/[locale]/(marketing)/contact/page.tsx',
-  'src/features/adaptive/components/sections/HeroSection.tsx',
-]);
+// RIN-1492: the filled primary controls carry a white label on the
+// theme-stable strong steps, so they read the same in both themes.
+function declaration(selector: string, property: string): string {
+  const start = css.indexOf(`  ${selector} {`);
+  if (start === -1) throw new Error(`block not found: ${selector}`);
+  const body = css.slice(start, css.indexOf('}', start)).replace(/\/\*[\s\S]*?\*\//g, '');
+  const value = new RegExp(`(?<![-\\w])${property}:\\s*([^;]+);`).exec(body)?.[1];
+  if (value === undefined) throw new Error(`${selector} sets no ${property}`);
+  return value.trim();
+}
+
+function colour(value: string, theme: 'light' | 'dark'): string {
+  const ref = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
+  if (ref) return resolve(ref, theme);
+  return value === 'white' ? '#ffffff' : value;
+}
+
+describe('filled primary controls keep a white label at AA', () => {
+  const cases = (['light', 'dark'] as const).flatMap((theme) =>
+    ['.btn-primary', '.btn-primary:hover', '.btn-primary:active', '.graph-node-current'].map(
+      (selector) => [selector, theme] as const,
+    ),
+  );
+
+  it.each(cases)('%s clears 4.5:1 in %s', (selector, theme) => {
+    const owner = selector.startsWith('.btn-primary') ? '.btn-primary' : selector;
+    const ratio = contrast(
+      colour(declaration(owner, 'color'), theme),
+      colour(declaration(selector, 'background'), theme),
+    );
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});
 
 function sourceFiles(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -105,7 +133,6 @@ describe('labels on --brand-action use the token', () => {
   it('no app-shell line pairs bg-brand-action with text-white', () => {
     const offenders = sourceFiles(path.join(ROOT, 'src'))
       .map((file) => path.relative(ROOT, file).split(path.sep).join('/'))
-      .filter((file) => !PROTECTED.has(file))
       .flatMap((file) =>
         fs
           .readFileSync(path.join(ROOT, file), 'utf8')
@@ -115,13 +142,13 @@ describe('labels on --brand-action use the token', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('FloatingSupportButton icon reads the token', () => {
+  it('FloatingSupportButton puts its white icon on the strong step (RIN-1492)', () => {
     const source = fs.readFileSync(
       path.join(ROOT, 'src/features/communications/components/FloatingSupportButton.tsx'),
       'utf8',
     );
-    expect(source).toContain('bg-accent text-brand-action-text');
-    expect(source).not.toMatch(white);
+    expect(source).toContain('bg-brand-action-strong text-white');
+    expect(source).not.toMatch(fill);
   });
 });
 

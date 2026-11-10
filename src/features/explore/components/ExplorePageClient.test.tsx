@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const session = vi.hoisted(() => ({ status: 'unauthenticated' as string }));
@@ -39,11 +39,28 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'en',
 }));
 
+// Settled responses by key predicate; a key with no match stays loading.
+const swrData = vi.hoisted(() => ({ settled: [] as { match: string; data: unknown }[] }));
+
 vi.mock('swr', () => ({
   default: (key: unknown) => {
     swrKeys.push(key);
+    const settled =
+      typeof key === 'string' ? swrData.settled.find(({ match }) => key.includes(match)) : null;
+    if (settled) {
+      return { data: settled.data, error: undefined, isLoading: false, mutate: vi.fn() };
+    }
     return { data: undefined, error: undefined, isLoading: key !== null, mutate: vi.fn() };
   },
+}));
+
+vi.mock('@/features/adaptive/mappers/dashboard.mapper', () => ({
+  toDashboardSubject: (subject: { id: string }) => ({
+    jobId: subject.id,
+    displayTitle: subject.id,
+    subjectId: subject.id,
+    filename: subject.id,
+  }),
 }));
 
 vi.mock('@/features/adaptive/hooks/use-start-adaptive-subject', () => ({
@@ -52,11 +69,11 @@ vi.mock('@/features/adaptive/hooks/use-start-adaptive-subject', () => ({
 
 vi.mock('@/features/adaptive/components/sections/Library', () => ({
   LibraryCardSkeleton: () => <div data-testid="adaptive-skeleton" />,
-  SubjectCard: () => null,
+  SubjectCard: () => <div data-testid="subject-card" />,
 }));
 
 vi.mock('@/features/quiz/components/QuizCard', () => ({
-  QuizCard: () => null,
+  QuizCard: () => <div data-testid="quiz-card" />,
   QuizCardSkeleton: () => <div data-testid="quiz-skeleton" />,
 }));
 
@@ -140,5 +157,86 @@ describe('ExplorePageClient session gating (RIN-680)', () => {
     expect(keys.some((key) => key.includes('mine=true'))).toBe(true);
     expect(keys).toContain('/api/adaptive/subjects');
     expect(screen.queryByRole('link', { name: 'signInCta' })).not.toBeInTheDocument();
+  });
+});
+
+/** The section panel whose heading is `titleKey` (the translation mock returns keys). */
+function sectionOf(titleKey: string) {
+  const section = screen.getByText(titleKey).closest('section');
+  if (!section) throw new Error(`no section for ${titleKey}`);
+  return within(section);
+}
+
+/** Responsive classes of each card slot, in order: what a viewport of each width shows. */
+function slotClasses(cards: HTMLElement[]) {
+  return cards.map((card) => card.parentElement?.className);
+}
+
+const ONE_ROW_SLOTS = ['grid', 'hidden md:grid', 'hidden xl:grid'];
+const QUIZ = (id: string) => ({
+  id,
+  title: id,
+  slug: id,
+  author: null,
+  visibility: 'public',
+  questionCount: 3,
+});
+
+describe('ExplorePageClient All tab: one row per signed-in section (RIN-1406)', () => {
+  beforeEach(() => {
+    swrKeys.length = 0;
+    swrData.settled = [];
+    search.params = new URLSearchParams();
+    session.status = 'authenticated';
+  });
+
+  it('loading: each per-user section shows one grid row of skeletons (1 mobile, 2 md, 3 xl)', () => {
+    render(<ExplorePageClient />);
+
+    const mineSkeletons = sectionOf('sections.mine.title').getAllByTestId('quiz-skeleton');
+    expect(slotClasses(mineSkeletons)).toEqual(ONE_ROW_SLOTS);
+    const adaptiveSkeletons =
+      sectionOf('sections.adaptive.title').getAllByTestId('adaptive-skeleton');
+    expect(slotClasses(adaptiveSkeletons)).toEqual(ONE_ROW_SLOTS);
+    // The community section is last on the page: nothing below it can shift.
+    expect(sectionOf('sections.quizzes.title').getAllByTestId('quiz-skeleton')).toHaveLength(4);
+  });
+
+  it('empty: the empty line keeps the height of the skeleton row it replaces', () => {
+    swrData.settled = [
+      { match: 'mine=true', data: { quizzes: [], pagination: null } },
+      { match: '/api/adaptive/subjects', data: [] },
+    ];
+    render(<ExplorePageClient />);
+
+    expect(screen.queryByTestId('adaptive-skeleton')).not.toBeInTheDocument();
+    // QuizCardSkeleton is 146px tall; LibraryCardSkeleton 196px, 212px from sm (scale: 144/192/208).
+    expect(screen.getByText('sections.mine.empty')).toHaveClass('min-h-36');
+    expect(screen.getByText('sections.adaptive.empty')).toHaveClass('min-h-48', 'sm:min-h-52');
+  });
+
+  it('populated: shows one row of owned quizzes and subjects, the rest stays behind View all', () => {
+    swrData.settled = [
+      {
+        match: 'mine=true',
+        data: { quizzes: ['q1', 'q2', 'q3', 'q4'].map(QUIZ), pagination: null },
+      },
+      { match: '/api/adaptive/subjects', data: [{ id: 's1' }, { id: 's2' }] },
+    ];
+    render(<ExplorePageClient />);
+
+    const mineCards = sectionOf('sections.mine.title').getAllByTestId('quiz-card');
+    expect(slotClasses(mineCards)).toEqual(ONE_ROW_SLOTS);
+    const subjectCards = sectionOf('sections.adaptive.title').getAllByTestId('subject-card');
+    expect(slotClasses(subjectCards)).toEqual(ONE_ROW_SLOTS.slice(0, 2));
+  });
+
+  it('the Your quizzes tab keeps its full grid of skeletons', () => {
+    search.params = new URLSearchParams('type=mine');
+    render(<ExplorePageClient />);
+
+    const skeletons = screen.getAllByTestId('quiz-skeleton');
+    expect(skeletons).toHaveLength(6);
+    expect(skeletons[5]?.parentElement).toHaveClass('grid-cols-1');
   });
 });

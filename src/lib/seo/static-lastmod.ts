@@ -26,4 +26,5 @@ export const STATIC_ROUTE_LASTMOD: Readonly<Record<StaticPublicRoute, string>> =
   '/contact': '2026-07-30',
   '/blog': '2026-11-10',
   '/blog/authors': '2026-11-10',
+  '/try/pdf': '2026-11-10',
 };

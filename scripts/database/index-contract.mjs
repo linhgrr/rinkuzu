@@ -433,6 +433,16 @@ export const INDEX_CONTRACT = Object.freeze([
   required('starter-quizzes.quiz', 'starterquizzes', { quiz: 1 }, { unique: true }),
   required('starter-quizzes.order', 'starterquizzes', { order: 1 }),
 
+  // IndexNow batch queue (RIN-1500): public URLs waiting for the next ping.
+  // The TTL drops a URL that never got sent, so the collection cannot grow.
+  required('indexnow-pending-urls.url', 'indexnowpendingurls', { url: 1 }, { unique: true }),
+  required(
+    'indexnow-pending-urls.retention',
+    'indexnowpendingurls',
+    { queuedAt: 1 },
+    { expireAfterSeconds: 3 * 24 * 60 * 60 },
+  ),
+
   // Admin-curated topic hubs (RIN-1248): tens of topics, a quiz in at most one topic.
   required('quiz-topics.slug', 'quiztopics', { slug: 1 }, { unique: true }),
   required('quiz-topics.order', 'quiztopics', { order: 1 }),

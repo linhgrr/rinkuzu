@@ -13,6 +13,8 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/contact',
   '/blog',
   '/blog/authors',
+  // Guest PDF tool; `/try/pdf/play` and guest-draft URLs stay `noindex` and out of the sitemap (RIN-1497).
+  '/try/pdf',
   // Blog post and author routes come from content/blog (getBlogSitemapRoutes, RIN-406).
 ] as const;
 

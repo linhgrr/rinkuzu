@@ -16,6 +16,7 @@ import {
   evaluateQuizAttempt,
   InvalidQuizAttemptAnswersError,
 } from '@/services/quiz/quiz-attempt-evaluation';
+import { guestDraftSnapshotSlug } from '@/shared/constants/guest-draft';
 
 type Clock = () => Date;
 
@@ -24,14 +25,6 @@ const DRAFT_NOT_READY: ServiceFailure = {
   error: 'Guest draft not found',
   statusCode: 404,
 };
-
-/**
- * Snapshot slug of a guest-draft attempt. A guest draft has no Quiz slug; this one is
- * reserved (no Quiz slug starts with `guest-draft-`) and stays stable per draft.
- */
-function guestDraftSnapshotSlug(draftId: string): string {
-  return `guest-draft-${draftId}`;
-}
 
 /** Same statuses as the RIN-912 submit: bad answers 400, a reused key 409. */
 function submitFailure(error: unknown): ServiceFailure {

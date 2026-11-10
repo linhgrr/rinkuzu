@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { quizProgressAnswerSchema } from '@/dtos/quiz';
+import { quizProgressAnswerSchema, type PlayableQuizQuestionDto } from '@/dtos/quiz';
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { GUEST_DRAFT_ENTRIES } from '@/shared/constants/guest-draft';
 
@@ -29,6 +29,12 @@ export const guestDraftAttemptRequestSchema = z
     idempotencyKey: z.uuid(),
   })
   .strict();
+
+/** A ready guest draft to play: no correct answers leave the server. */
+export interface GuestDraftPlayDto {
+  title: string;
+  questions: PlayableQuizQuestionDto[];
+}
 
 export interface GuestDraftStatusDto {
   status: 'processing' | 'ready' | 'failed';

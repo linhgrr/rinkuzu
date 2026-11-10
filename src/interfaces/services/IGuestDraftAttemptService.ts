@@ -1,12 +1,7 @@
-import type { PlayableQuizQuestionDto, QuizAttemptResultDto } from '@/dtos/quiz';
+import type { GuestDraftPlayDto } from '@/dtos/guest-draft';
+import type { QuizAttemptResultDto } from '@/dtos/quiz';
 import type { QuizAttemptAnswer } from '@/entities/QuizAttempt';
 import type { ServiceResult } from '@/interfaces/services/types';
-
-/** A ready guest draft to play: no correct answers leave the server. */
-export interface GuestDraftPlayDto {
-  title: string;
-  questions: PlayableQuizQuestionDto[];
-}
 
 export interface GuestDraftAttemptInput {
   /** The guest draft token (identifies the draft). */

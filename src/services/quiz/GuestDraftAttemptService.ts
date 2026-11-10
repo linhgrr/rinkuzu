@@ -3,14 +3,14 @@ import type { IGuestDraftQuizSource } from '@/interfaces/repositories/IGuestQuiz
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type {
   GuestDraftAttemptInput,
-  GuestDraftPlayDto,
   IGuestDraftAttemptService,
 } from '@/interfaces/services/IGuestDraftAttemptService';
 import type { ServiceFailure, ServiceResult } from '@/interfaces/services/types';
+import type { GuestDraftPlayDto } from '@/dtos/guest-draft';
 import type { QuizAttemptResultDto } from '@/dtos/quiz';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { logger } from '@/lib/logger';
-import { copyQuizQuestionFields } from '@/lib/quiz/question-fields';
+import { GuestDraftDtoMapper } from '@/mappers/quiz/GuestDraftDtoMapper';
 import { QuizAttemptDtoMapper } from '@/mappers/quiz/QuizAttemptDtoMapper';
 import {
   evaluateQuizAttempt,
@@ -33,6 +33,22 @@ export function guestDraftSnapshotSlug(draftId: string): string {
   return `guest-draft-${draftId}`;
 }
 
+/** Same statuses as the RIN-912 submit: bad answers 400, a reused key 409. */
+function submitFailure(error: unknown): ServiceFailure {
+  const known =
+    error instanceof InvalidQuizAttemptAnswersError
+      ? 400
+      : error instanceof QuizAttemptIdempotencyConflictError
+        ? 409
+        : null;
+  if (known !== null) return { success: false, error: (error as Error).message, statusCode: known };
+  logger.error(
+    { errorClass: error instanceof Error ? error.name : typeof error },
+    'Guest draft attempt failed',
+  );
+  return { success: false, error: 'Failed to submit quiz attempt', statusCode: 500 };
+}
+
 /**
  * Play and a server-scored attempt on a ready guest draft (RIN-1446 item 4). The attempt is
  * a RIN-912 guest attempt: the same evaluation, the same repository write, owned only by the
@@ -49,23 +65,15 @@ export class GuestDraftAttemptService implements IGuestDraftAttemptService {
   async play(token: string): Promise<ServiceResult<GuestDraftPlayDto>> {
     const draft = await this.drafts.findReadyByTokenHash(hashGuestClaimToken(token));
     if (!draft) return DRAFT_NOT_READY;
-    return {
-      success: true,
-      data: {
-        title: draft.title,
-        questions: draft.questions.map((question) => ({
-          ...copyQuizQuestionFields(question),
-          type: question.type,
-        })),
-      },
-    };
+    return { success: true, data: GuestDraftDtoMapper.toPlay(draft) };
   }
 
   async submit(input: GuestDraftAttemptInput): Promise<ServiceResult<QuizAttemptResultDto>> {
     const draft = await this.drafts.findReadyByTokenHash(hashGuestClaimToken(input.token));
     if (!draft) return DRAFT_NOT_READY;
     try {
-      const evaluation = evaluateQuizAttempt(draft.questions, input.answers);
+      const { answers, score, correctAnswers, totalQuestions, wrongQuestions } =
+        evaluateQuizAttempt(draft.questions, input.answers);
       const slug = guestDraftSnapshotSlug(draft.id);
       const attempt = await this.attempts.recordSubmittedAttempt({
         guestClaimTokenHash: hashGuestClaimToken(input.guestClaimToken),
@@ -78,38 +86,22 @@ export class GuestDraftAttemptService implements IGuestDraftAttemptService {
           slug,
           questions: draft.questions,
         },
-        answers: evaluation.answers,
-        score: evaluation.score,
-        correctAnswers: evaluation.correctAnswers,
-        totalQuestions: evaluation.totalQuestions,
-        wrongQuestions: evaluation.wrongQuestions,
+        answers,
+        score,
+        correctAnswers,
+        totalQuestions,
+        wrongQuestions,
         takenAt: this.now(),
       });
-      return {
-        success: true,
-        data: QuizAttemptDtoMapper.toResultDto(
-          attempt.id,
-          attempt.score,
-          attempt.correctAnswers,
-          attempt.totalQuestions,
-        ),
-      };
-    } catch (error) {
-      if (error instanceof InvalidQuizAttemptAnswersError) {
-        return { success: false, error: error.message, statusCode: 400 };
-      }
-      if (error instanceof QuizAttemptIdempotencyConflictError) {
-        return { success: false, error: error.message, statusCode: 409 };
-      }
-      logger.error(
-        { errorClass: error instanceof Error ? error.name : typeof error },
-        'Guest draft attempt failed',
+      const result = QuizAttemptDtoMapper.toResultDto(
+        attempt.id,
+        attempt.score,
+        attempt.correctAnswers,
+        attempt.totalQuestions,
       );
-      return {
-        success: false,
-        error: 'Failed to submit quiz attempt',
-        statusCode: 500,
-      };
+      return { success: true, data: result };
+    } catch (error) {
+      return submitFailure(error);
     }
   }
 }

@@ -29,7 +29,13 @@ interface PersonalDataDetection {
   fieldCount: number;
 }
 
-const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/u;
+/**
+ * The lookbehind starts a match only where a local-part run starts. Without it a
+ * long run with no `@` (`aaaa…`, `1.1.1…`) was rescanned from every position:
+ * quadratic, about 3.5 ms per 2000-character field (RIN-1513). Same matches.
+ */
+const EMAIL =
+  /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/u;
 
 /** Digit groups joined by single spaces, dots or dashes; a leading `+` is kept. */
 const DIGIT_TOKEN = /\+?\d+(?:[ .-]\d+)*/gu;

@@ -542,6 +542,56 @@ describe('QuizRepository indexing reads (RIN-840)', () => {
     expect(projection).toMatchObject({ _id: 0, slug: 1, title: 1, createdAt: 1, updatedAt: 1 });
     expect(projection).not.toHaveProperty('questions');
     expect(JSON.stringify(projection['leadQuestionTexts'])).toContain('$slice');
+    // The sitemap reads no user (RIN-1469).
+    expect(JSON.stringify(pipeline)).not.toContain('$lookup');
+  });
+
+  // RIN-1469: related-quiz cards show the author, read after the limit with name and avatar only.
+  it('reads each author name and avatar after the limit with withAuthor', async () => {
+    quizModelMocks.aggregate.mockResolvedValue([
+      {
+        slug: 'algebra-basics',
+        title: 'Algebra Basics',
+        questionCount: 12,
+        leadQuestionTexts: [],
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        authorIdentity: [{ displayName: 'Fake Teacher', avatar: 'https://example.com/a.png' }],
+      },
+      {
+        slug: 'orphan',
+        title: 'Orphan',
+        questionCount: 6,
+        leadQuestionTexts: [],
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        authorIdentity: [],
+      },
+    ]);
+    const repository = new QuizRepository();
+
+    const rows = await repository.findPublicSitemapEntries({
+      excludeAuthorIds: [],
+      limit: 40,
+      withAuthor: true,
+    });
+
+    expect(rows.map((row) => row.author)).toEqual([
+      { name: null, displayName: 'Fake Teacher', avatar: 'https://example.com/a.png' },
+      null,
+    ]);
+    const pipeline = quizModelMocks.aggregate.mock.calls[0]?.[0] as Record<string, unknown>[];
+    expect(pipeline[2]).toEqual({ $limit: 40 });
+    expect(pipeline[3]).toEqual({
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 0, name: 1, displayName: 1, avatar: 1 } }],
+        as: 'authorIdentity',
+      },
+    });
+    expect((pipeline[4] as { $project: Record<string, unknown> }).$project).toMatchObject({
+      authorIdentity: 1,
+    });
   });
 
   it('returns the first question texts with the page metadata', async () => {

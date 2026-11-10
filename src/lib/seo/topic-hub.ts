@@ -4,7 +4,6 @@ import { logger } from '@/lib/logger';
 import { markdownToPlainText } from '@/lib/markdown/plain-text';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { canonicalFor } from '@/lib/seo';
-import { isQuickRoundEligible } from '@/shared/constants/quick-round';
 import { HUB_ENTRY } from '@/shared/constants/starter-quiz';
 
 /**
@@ -35,19 +34,13 @@ export function buildTopicHubDescription(intro: string): string {
 }
 
 /**
- * "Chơi ngay" on a hub card (B3, E17): the quiz's round, with `entry=hub` and the
- * topic slug for attribution. Nothing about the learner is in the link.
+ * A hub card's link (E17, RIN-1469): the quiz's landing with `entry=hub` and the
+ * topic slug, which the landing's CTAs carry on into the round. Nothing about
+ * the learner is in the link.
  */
-export function topicHubPlayHref(
-  quiz: { slug: string; questionCount: number },
-  topicSlug: string,
-): string {
-  const params = new URLSearchParams({
-    mode: isQuickRoundEligible(quiz.questionCount) ? 'quick' : 'full',
-    entry: HUB_ENTRY,
-    topic: topicSlug,
-  });
-  return `/quiz/${routePathSegment(quiz.slug)}?${params.toString()}`;
+export function topicHubQuizHref(quizSlug: string, topicSlug: string): string {
+  const params = new URLSearchParams({ entry: HUB_ENTRY, topic: topicSlug });
+  return `/quiz/${routePathSegment(quizSlug)}?${params.toString()}`;
 }
 
 interface TopicHubJsonLdLabels {

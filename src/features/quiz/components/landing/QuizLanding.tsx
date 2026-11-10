@@ -7,7 +7,7 @@ import { routePathSegment } from '@/lib/routing/routeParams';
 import { cn } from '@/lib/utils';
 import { QuizCard } from '@/features/quiz/components/QuizCard';
 import { ReportQuizPageLink } from '@/features/quiz/components/ReportQuizPageLink';
-import { QUIZ_LANDING_ENTRY } from '@/shared/constants/starter-quiz';
+import { HUB_ENTRY, QUIZ_LANDING_ENTRY } from '@/shared/constants/starter-quiz';
 import type {
   QuizLandingPreviewQuestion,
   QuizLandingViewModel,
@@ -31,6 +31,13 @@ const PRIMARY_CTA =
   'btn btn-primary h-auto min-h-12 w-full whitespace-normal px-4 text-center text-base bg-brand-action-strong text-white hover:bg-brand-action-strong-hover sm:w-auto sm:px-8';
 
 const SECONDARY_CTA = 'btn btn-secondary h-auto min-h-12 whitespace-normal text-center';
+
+/** The CTAs' attribution: `entry=quiz_landing`, or the hub's `entry=hub&topic=` the visitor came with (RIN-1469). */
+function landingEntryQuery(hubEntry: QuizLandingViewModel['hubEntry']): string {
+  const params = new URLSearchParams({ entry: hubEntry ? HUB_ENTRY : QUIZ_LANDING_ENTRY });
+  if (hubEntry?.topic) params.set('topic', hubEntry.topic);
+  return params.toString();
+}
 
 function quizHref(locale: string, slug: string, query?: string): string {
   const path = `/${locale}/quiz/${routePathSegment(slug)}`;
@@ -104,7 +111,7 @@ export async function QuizLanding({
     getTranslations({ locale, namespace: 'quiz.landing' }),
     getTranslations({ locale, namespace: 'quiz' }),
   ]);
-  const entry = `entry=${QUIZ_LANDING_ENTRY}`;
+  const entry = landingEntryQuery(landing.hubEntry);
   const fullHref = quizHref(locale, landing.slug, `mode=full&${entry}`);
   const primaryHref = landing.quickRoundEligible
     ? quizHref(locale, landing.slug, `mode=quick&${entry}`)
@@ -190,11 +197,10 @@ export async function QuizLanding({
                     quiz={{
                       title: quiz.title,
                       slug: quiz.slug,
-                      author: null,
+                      author: quiz.author,
                       visibility: 'public',
                       questionCount: quiz.questionCount,
                     }}
-                    showAuthor={false}
                   />
                 </li>
               ))}

@@ -159,11 +159,19 @@ export interface QuizMetadataDto extends QuizListItemDto {
   contentLocale: 'vi' | 'en';
 }
 
+/** The author line of a public quiz card (RIN-1469): the same fields Explore shows, no email or id. */
+export interface PublicQuizAuthorDto {
+  name: string | null;
+  displayName: string | null;
+  avatar: string | null;
+}
+
 /** A link to another indexable public quiz on a quiz landing (RIN-1241 C12). */
 export interface RelatedQuizDto {
   slug: string;
   title: string;
   questionCount: number;
+  author: PublicQuizAuthorDto | null;
 }
 
 export interface RelatedQuizzesQueryDto {

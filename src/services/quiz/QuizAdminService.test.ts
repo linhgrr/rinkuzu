@@ -373,6 +373,7 @@ describe('QuizAdminService', () => {
   });
   // RIN-1241 C12: the landing links only indexable quizzes in its own language, never itself.
   describe('getRelatedPublicQuizzes', () => {
+    // RIN-1469: each row carries its author's name and avatar for the card (fake people).
     function row(slug: string, title: string, questionCount = 12) {
       return {
         slug,
@@ -380,6 +381,7 @@ describe('QuizAdminService', () => {
         questionCount,
         leadQuestionTexts: [],
         createdAt: new Date('2026-11-01T00:00:00Z'),
+        author: slug === 'b' ? null : { name: `Tác giả ${slug}`, displayName: null, avatar: null },
       };
     }
 
@@ -411,12 +413,18 @@ describe('QuizAdminService', () => {
       });
 
       expect(related).toEqual([
-        { slug: 'a', title: 'Chương 3 Lịch sử Đảng', questionCount: 20 },
-        { slug: 'b', title: 'Chương 4 Triết học', questionCount: 12 },
+        {
+          slug: 'a',
+          title: 'Chương 3 Lịch sử Đảng',
+          questionCount: 20,
+          author: { name: 'Tác giả a', displayName: null, avatar: null },
+        },
+        { slug: 'b', title: 'Chương 4 Triết học', questionCount: 12, author: null },
       ]);
       expect(findPublicSitemapEntries).toHaveBeenCalledWith({
         excludeAuthorIds: ['507f191e810c19729de860ff'],
         limit: 40,
+        withAuthor: true,
       });
     });
 

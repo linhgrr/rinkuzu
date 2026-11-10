@@ -22,6 +22,8 @@ import { buildQuizSeoDescription, isQuizIndexable } from '@/lib/seo/quiz-indexab
 import { logger } from '@/lib/logger';
 import { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
 import { TOPIC_HUB_LOCALE, topicHubPath } from '@/lib/seo/topic-hub';
+import { HUB_ENTRY } from '@/shared/constants/starter-quiz';
+import { QUIZ_TOPIC_SLUG_PATTERN } from '@/shared/constants/quiz-topic';
 
 type QuizTopic = Awaited<
   ReturnType<ReturnType<typeof getQuizTopicHubService>['getQuizTopicContext']>
@@ -102,6 +104,13 @@ function reportViewer(
   };
 }
 
+/** `?entry=hub` from a hub card, with its topic when the slug is valid; null for any other entry. */
+function landingHubEntry(query: QuizPageSearchParams): QuizLandingViewModel['hubEntry'] {
+  if (firstValue(query['entry']) !== HUB_ENTRY) return null;
+  const topic = firstValue(query['topic']);
+  return { topic: topic && QUIZ_TOPIC_SLUG_PATTERN.test(topic) ? topic : null };
+}
+
 interface LandingRequest {
   slug: string;
   locale: string;
@@ -115,7 +124,8 @@ interface LandingRequest {
 /**
  * The landing view (RIN-1241, Designer spec on RIN-1247) shows for an indexable
  * public quiz opened without `mode`, `entry` or `retryOf`, to anyone but its
- * owner. Everyone else gets the player exactly as before.
+ * owner. Everyone else gets the player exactly as before. A topic hub card's
+ * `entry=hub` link also gets the landing, and its CTAs keep that entry (RIN-1469).
  */
 async function loadQuizLanding({
   slug,
@@ -127,7 +137,8 @@ async function loadQuizLanding({
   authorName,
 }: LandingRequest): Promise<QuizLandingViewModel | null> {
   if (quiz.visibility !== 'public') return null;
-  if (query['mode'] !== undefined || query['entry'] !== undefined) return null;
+  const hubEntry = landingHubEntry(query);
+  if (query['mode'] !== undefined || (query['entry'] !== undefined && !hubEntry)) return null;
   if (query['retryOf'] !== undefined) return null;
   if (viewerId && quiz.author?.id === viewerId) return null;
   const metadata = await loadQuizMetadata(slug);
@@ -162,6 +173,7 @@ async function loadQuizLanding({
     related,
     relatedSameTopic: sameTopic !== null,
     topic: topic ? { name: topic.name, href: `/${locale}${topicHubPath(topic.slug)}` } : null,
+    hubEntry,
   });
 }
 

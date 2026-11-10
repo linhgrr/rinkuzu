@@ -1,8 +1,12 @@
+import type { PublicQuizAuthorDto } from '@/dtos/quiz';
+
 /** One indexable quiz on a topic hub (RIN-1248, rendered by RIN-1249). */
 export interface QuizTopicHubQuizDto {
   slug: string;
   title: string;
   questionCount: number;
+  /** For the card's author line (RIN-1469). */
+  author: PublicQuizAuthorDto | null;
   /** ISO date of the last change, for the hub's sitemap `lastModified`. */
   updatedAt: string;
 }

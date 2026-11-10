@@ -269,13 +269,18 @@ export class QuizAdminService {
     contentLocale,
     limit,
   }: RelatedQuizzesQueryDto): Promise<RelatedQuizDto[]> {
-    const rows = await this.findIndexablePublicRows(RELATED_QUIZ_WINDOW);
+    const rows = await this.findIndexablePublicRows(RELATED_QUIZ_WINDOW, true);
     const related: RelatedQuizDto[] = [];
     for (const row of rows) {
       if (related.length >= limit) break;
       if (row.slug === excludeSlug) continue;
       if (detectQuizContentLocale(row.title, row.leadQuestionTexts) !== contentLocale) continue;
-      related.push({ slug: row.slug, title: row.title, questionCount: row.questionCount });
+      related.push({
+        slug: row.slug,
+        title: row.title,
+        questionCount: row.questionCount,
+        author: row.author ?? null,
+      });
     }
     return related;
   }
@@ -285,13 +290,20 @@ export class QuizAdminService {
    * company accounts (RIN-840), quizzes under 5 questions and quizzes with a
    * personal-data flag or a report hold (RIN-1341) are excluded in the query, so the limit counts only indexable quizzes.
    */
-  private async findIndexablePublicRows(limit: number): Promise<PublicQuizSitemapRecord[]> {
+  private async findIndexablePublicRows(
+    limit: number,
+    withAuthor = false,
+  ): Promise<PublicQuizSitemapRecord[]> {
     const candidates = await this.quizRepository.findNonIndexableOwnerCandidates();
     const excludeAuthorIds: string[] = [];
     for (const owner of candidates) {
       if (isNonIndexableQuizOwner(owner)) excludeAuthorIds.push(owner.id);
     }
-    const rows = await this.quizRepository.findPublicSitemapEntries({ excludeAuthorIds, limit });
+    const rows = await this.quizRepository.findPublicSitemapEntries({
+      excludeAuthorIds,
+      limit,
+      ...(withAuthor ? { withAuthor } : {}),
+    });
     return rows.filter((row) =>
       isQuizIndexable({
         visibility: 'public',

@@ -53,6 +53,13 @@ export interface QuizMetadataRecord {
   leadQuestionTexts?: readonly string[];
 }
 
+/** Who made a public quiz, as its card shows them (RIN-1469): no email or id. */
+export interface PublicQuizAuthorRecord {
+  name: string | null;
+  displayName: string | null;
+  avatar: string | null;
+}
+
 export interface PublicQuizSitemapRecord {
   slug: string;
   title: string;
@@ -61,12 +68,16 @@ export interface PublicQuizSitemapRecord {
   leadQuestionTexts: readonly string[];
   createdAt: Date;
   updatedAt?: Date;
+  /** Read only with `withAuthor`; null for a deleted author. */
+  author?: PublicQuizAuthorRecord | null;
 }
 
 export interface PublicQuizSitemapQuery {
   /** Owners whose public quizzes stay out of the sitemap. */
   excludeAuthorIds: readonly string[];
   limit: number;
+  /** Also read each quiz's author for its card (related quizzes, RIN-1469); the sitemap does not. */
+  withAuthor?: boolean;
 }
 
 export interface CreateQuizData {

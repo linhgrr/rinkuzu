@@ -164,12 +164,6 @@ const nextConfig = {
   // Server Actions are enabled by default.
   reactCompiler: true,
   experimental: {
-    // Inline the (Tailwind, atomic) CSS into the HTML instead of a render-blocking
-    // <link>. With the external stylesheet, the first paint of the landing hero waited
-    // for it while the JS chunks loaded and ran, which put 1.5–2.5 s of render delay on
-    // the mobile LCP (RIN-1514). Applies to every page; client navigations still use
-    // <link> tags, so only the first document of a visit carries the CSS.
-    inlineCss: true,
     optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react', 'framer-motion'],
   },
   images: {

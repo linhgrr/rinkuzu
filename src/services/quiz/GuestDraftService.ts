@@ -11,13 +11,16 @@ import type {
   GuestDraftUpstream,
   GuestDraftView,
   IGuestDraftService,
+  GuestDraftEventContext,
   UpstreamGuestDraft,
+  UpstreamGuestDraftResult,
 } from '@/interfaces/services/IGuestDraftService';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import { GUEST_DRAFT_TTL_MS } from '@/shared/constants/guest-draft';
 
 type Clock = () => Date;
-type UpstreamQuestion = UpstreamGuestDraft['questions'][number];
+type UpstreamQuestion = NonNullable<UpstreamGuestDraft['questions']>[number];
+type UpstreamFailure = Extract<UpstreamGuestDraftResult, { ok: false }>;
 
 const FAILED_UPSTREAM_STATUSES = new Set(['failed', 'cancelled', 'expired']);
 
@@ -29,6 +32,10 @@ function viewOf(record: GuestDraftRecord, progressPercent = 0): GuestDraftView {
     questionCount: record.questionCount,
     failureReason: record.failureReason,
   };
+}
+
+function upstreamError({ status, code, meta }: UpstreamFailure): GuestDraftResult {
+  return { ok: false, error: 'upstream', status, code, meta };
 }
 
 function isIndex(value: unknown, options: readonly string[]): value is number {
@@ -71,13 +78,14 @@ export class GuestDraftService implements IGuestDraftService {
     }
     const reservation = await this.limiter.reserve(input.ip);
     if (!reservation.ok) {
-      return { ok: false, error: 'limit', ...reservation };
+      const { scope, retryAfterSeconds } = reservation;
+      return { ok: false, error: 'limit', scope, retryAfterSeconds };
     }
     const created = await this.upstream.create(input.pdf);
     if (!created.ok) {
       // No draft was made, so neither slot paid for anything.
       await Promise.all([this.limiter.refundIp(input.ip), this.limiter.refundDaily()]);
-      return { ok: false, error: 'upstream', ...created };
+      return upstreamError(created);
     }
     const record = await this.repository.create({
       tokenHash,
@@ -99,7 +107,7 @@ export class GuestDraftService implements IGuestDraftService {
     if (!upstream.ok) {
       // A draft the API no longer has will never finish.
       if (upstream.status === 404) return this.fail(record, 'expired', ip);
-      return { ok: false, error: 'upstream', ...upstream };
+      return upstreamError(upstream);
     }
     const { draft } = upstream;
     if (draft.status === 'completed') return this.ready(record, draft, ip);
@@ -144,7 +152,7 @@ export class GuestDraftService implements IGuestDraftService {
     return { ok: true, draft: viewOf({ ...record, status: 'failed', failureReason: reason }) };
   }
 
-  private context(record: GuestDraftRecord) {
+  private context(record: GuestDraftRecord): GuestDraftEventContext {
     return { draftId: record.id, locale: record.locale, entry: record.entry };
   }
 }

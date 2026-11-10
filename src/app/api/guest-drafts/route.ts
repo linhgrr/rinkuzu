@@ -28,10 +28,9 @@ async function isPdf(file: File): Promise<boolean> {
   return new TextDecoder().decode(head) === PDF_MAGIC;
 }
 
-async function readUpload(request: NextRequest): Promise<File | null> {
+async function readForm(request: NextRequest): Promise<FormData | null> {
   try {
-    const file = (await request.formData()).get('file');
-    return file instanceof File ? file : null;
+    return await request.formData();
   } catch {
     return null;
   }
@@ -46,16 +45,17 @@ export async function POST(request: NextRequest) {
   const declaredLength = Number(request.headers.get('content-length') ?? 0);
   if (declaredLength > GUEST_DRAFT_MAX_PDF_BYTES + MULTIPART_SLACK_BYTES) return tooLarge();
 
-  const url = new URL(request.url);
+  const form = await readForm(request);
   const fields = createGuestDraftFieldsSchema.safeParse({
     token: request.headers.get(GUEST_DRAFT_TOKEN_HEADER),
-    locale: url.searchParams.get('locale'),
-    entry: url.searchParams.get('entry'),
+    locale: form?.get('locale'),
+    entry: form?.get('entry'),
   });
   if (!fields.success) return apiErr('validation_error', 'Invalid guest draft request', 400);
 
-  const file = await readUpload(request);
-  if (!file || file.size === 0) return apiErr('validation_error', 'A PDF file is required', 400);
+  const file = form?.get('file');
+  if (!(file instanceof File) || file.size === 0)
+    return apiErr('validation_error', 'A PDF file is required', 400);
   if (file.size > GUEST_DRAFT_MAX_PDF_BYTES) return tooLarge();
   if (file.type !== 'application/pdf' || !(await isPdf(file))) {
     return apiErr('unsupported_media_type', 'Only PDF files are accepted', 415);

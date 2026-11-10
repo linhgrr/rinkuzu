@@ -24,16 +24,15 @@ const READY = {
 
 function upload(
   file: File | null,
-  {
-    token = TOKEN,
-    query = '?locale=en&entry=landing',
-  }: { token?: string | null; query?: string } = {},
+  { token = TOKEN, entry = 'landing' }: { token?: string | null; entry?: string } = {},
 ): NextRequest {
   const form = new FormData();
+  form.append('locale', 'en');
+  form.append('entry', entry);
   if (file) form.append('file', file);
   const headers = new Headers({ 'x-forwarded-for': '203.0.113.7' });
   if (token) headers.set('x-guest-draft-token', token);
-  return new NextRequest(`http://localhost/api/guest-drafts${query}`, {
+  return new NextRequest('http://localhost/api/guest-drafts', {
     method: 'POST',
     headers,
     body: form,
@@ -86,7 +85,7 @@ describe('POST /api/guest-drafts', () => {
 
   it.each([
     ['no token', { token: null }],
-    ['a bad entry', { query: '?locale=en&entry=elsewhere' }],
+    ['a bad entry', { entry: 'elsewhere' }],
   ])('400s %s', async (_label, options) => {
     expect((await POST(upload(pdfFile(), options))).status).toBe(400);
     expect(createMock).not.toHaveBeenCalled();

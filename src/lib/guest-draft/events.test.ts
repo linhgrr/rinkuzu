@@ -32,10 +32,9 @@ describe('createGuestDraftEvents', () => {
         { ...base, reason: 'ocr_failed' },
       ],
     ]);
-    for (const [, , properties] of capture.mock.calls as unknown as [string, string, object][]) {
-      expect(Object.keys(properties)).not.toEqual(
-        expect.arrayContaining(['ip', 'token', 'fileName', 'title']),
-      );
+    const sentKeys = capture.mock.calls.flatMap((call) => Object.keys(call.at(2) ?? {}));
+    for (const forbidden of ['ip', 'token', 'fileName', 'title']) {
+      expect(sentKeys).not.toContain(forbidden);
     }
   });
 });

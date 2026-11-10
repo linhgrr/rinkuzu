@@ -31,10 +31,7 @@ export function GuestCreateHubPage() {
           className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2"
           aria-label={t('chooseMethod')}
         >
-          <Card
-            hover
-            className="overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40 p-0 hover:border-brand-trust/35"
-          >
+          <Card className="overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40 p-0">
             <CardContent className="flex min-h-56 flex-col p-5 sm:p-6">
               <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                 {t('guestHub.title')}

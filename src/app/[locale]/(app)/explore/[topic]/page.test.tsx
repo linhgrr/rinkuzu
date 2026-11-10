@@ -3,6 +3,7 @@ import { createTranslator, NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
 import viExplore from '../../../../../../messages/vi/explore.json';
+import viProfile from '../../../../../../messages/vi/profile.json';
 
 type HubService = ReturnType<typeof getQuizTopicHubService>;
 type QuizTopicHubDto = NonNullable<Awaited<ReturnType<HubService['getTopicWithIndexableQuizzes']>>>;
@@ -62,7 +63,7 @@ const params = (locale = 'vi', topic = 'sinh-hoc') => ({
 async function renderHub() {
   const page = await TopicHubPage(params());
   return render(
-    <NextIntlClientProvider locale="vi" messages={{}}>
+    <NextIntlClientProvider locale="vi" messages={{ profile: viProfile }}>
       {page}
     </NextIntlClientProvider>,
   );
@@ -117,7 +118,11 @@ describe('topic hub page (B3, B7)', () => {
     const breadcrumb = screen.getByRole('navigation', { name: 'Đường dẫn' });
     expect(within(breadcrumb).getByText('Sinh học')).toHaveAttribute('aria-current', 'page');
 
-    expect(screen.getByRole('region', { name: 'Chọn một bộ đề' })).toBeInTheDocument();
+    const list = screen.getByRole('region', { name: 'Chọn một bộ đề' });
+    // RIN-1466: the shared QuizCard, with its title as an h3 under the list's h2.
+    expect(within(list).getAllByRole('article')).toHaveLength(3);
+    expect(within(list).getByRole('heading', { level: 3, name: 'Đề sinh 1' })).toBeInTheDocument();
+    expect(within(list).getByText('40 câu hỏi')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Đề sinh 1' })).toHaveAttribute(
       'href',
       '/vi/quiz/de-sinh-1',

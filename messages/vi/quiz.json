@@ -186,8 +186,7 @@
     "questionNumber": "Câu {number}",
     "relatedTitle": "Quiz khác trên RinKuzu",
     "relatedTopicTitle": "Quiz cùng chủ đề",
-    "topicHubLink": "Xem tất cả quiz {topic}",
-    "relatedCount": "{count} câu hỏi"
+    "topicHubLink": "Xem tất cả quiz {topic}"
   },
   "pdfViewer": {
     "title": "Tài liệu PDF",

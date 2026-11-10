@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { createTranslator } from 'next-intl';
+import { createTranslator, NextIntlClientProvider } from 'next-intl';
+import viProfile from '../../../../../messages/vi/profile.json';
 import viQuiz from '../../../../../messages/vi/quiz.json';
 import type { QuizLandingViewModel } from '@/features/quiz/types/quiz-landing-view-model';
 
@@ -49,7 +50,12 @@ function landingWith(overrides: Partial<QuizLandingViewModel> = {}): QuizLanding
 }
 
 async function render(landing: QuizLandingViewModel, signedIn = false): Promise<string> {
-  return renderToStaticMarkup(await QuizLanding({ locale: 'vi', landing, signedIn }));
+  // Related quizzes use the shared QuizCard (RIN-1466), which reads the client intl context.
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale="vi" messages={{ profile: viProfile }}>
+      {await QuizLanding({ locale: 'vi', landing, signedIn })}
+    </NextIntlClientProvider>,
+  );
 }
 
 describe('QuizLanding (RIN-1247)', () => {
@@ -70,7 +76,8 @@ describe('QuizLanding (RIN-1247)', () => {
     const html = await render(landingWith());
 
     expect(html.match(/<h1\b/gu)).toHaveLength(1);
-    expect(html.match(/<h[1-6]\b/gu)).toEqual(['<h1', '<h2', '<h2']);
+    // Related quiz titles are h3s under the related h2 (shared QuizCard, RIN-1466).
+    expect(html.match(/<h[1-6]\b/gu)).toEqual(['<h1', '<h2', '<h2', '<h3']);
     expect(html).toContain('Xem trước 5 câu đầu');
     expect(html.match(/<ol\b/gu)).toHaveLength(1);
     expect(html).toContain('Câu hỏi số 1');
@@ -83,6 +90,10 @@ describe('QuizLanding (RIN-1247)', () => {
 
     expect(html).toContain('Quiz khác trên RinKuzu');
     expect(html).toContain('href="/vi/quiz/hoa-hoc"');
+    // RIN-1466: the shared QuizCard, without an author line or a play link.
+    expect(html).toMatch(/<article\b[^>]*>[\s\S]*12 câu hỏi[\s\S]*<h3\b[^>]*>Hóa học 10<\/h3>/u);
+    expect(html).not.toContain('RinKuzu learner');
+    expect(html).not.toContain('entry=hub');
   });
 
   it('hides the related block when there is nothing to link', async () => {
@@ -139,13 +150,15 @@ describe('QuizLanding (RIN-1247)', () => {
 
   it('ends with the quiz-level report link for the viewer (RIN-1344)', async () => {
     const html = renderToStaticMarkup(
-      await QuizLanding({
-        locale: 'vi',
-        landing: landingWith(),
-        signedIn: true,
-        viewerEmail: 'learner@example.com',
-        ownedByViewer: false,
-      }),
+      <NextIntlClientProvider locale="vi" messages={{ profile: viProfile }}>
+        {await QuizLanding({
+          locale: 'vi',
+          landing: landingWith(),
+          signedIn: true,
+          viewerEmail: 'learner@example.com',
+          ownedByViewer: false,
+        })}
+      </NextIntlClientProvider>,
     );
 
     expect(html).toContain('<footer');

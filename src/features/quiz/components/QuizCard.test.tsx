@@ -64,3 +64,57 @@ describe('QuizCard', () => {
     expect(screen.getByText('premiumStatus_withdrawn')).toBeInTheDocument();
   });
 });
+
+// RIN-1466: one card everywhere. Hubs and related quizzes carry no author, and the
+// hub adds a one-tap play link next to the landing link.
+describe('QuizCard play CTA and author', () => {
+  const quiz = {
+    title: 'Đề sinh 1',
+    slug: 'de-sinh-1',
+    author: null,
+    visibility: 'public' as const,
+    questionCount: 8,
+  };
+
+  it('adds a labelled play link below the landing link', async () => {
+    const { container } = render(
+      <QuizCard
+        quiz={quiz}
+        showAuthor={false}
+        play={{
+          href: '/quiz/de-sinh-1?mode=quick&entry=hub&topic=sinh-hoc',
+          label: 'Chơi ngay',
+          ariaLabel: 'Chơi ngay: Đề sinh 1',
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Đề sinh 1' })).toHaveAttribute(
+      'href',
+      '/quiz/de-sinh-1',
+    );
+    const play = screen.getByRole('link', { name: 'Chơi ngay: Đề sinh 1' });
+    expect(play).toHaveAttribute('href', '/quiz/de-sinh-1?mode=quick&entry=hub&topic=sinh-hoc');
+    expect(play).toHaveTextContent('Chơi ngay');
+    expect(play).toHaveClass('min-h-11');
+    expect(screen.queryByText('RinKuzu learner')).toBeNull();
+    expect(screen.queryByLabelText('quizActions')).toBeNull();
+    expect((await axe(container)).violations).toEqual([]);
+  });
+
+  it('keeps the author line and no play link by default', () => {
+    render(<QuizCard quizId="quiz-id" quiz={quiz} />);
+
+    expect(screen.getByText('RinKuzu learner')).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+  });
+
+  it('encodes the slug in the landing link', () => {
+    render(<QuizCard quiz={{ ...quiz, slug: 'đề sinh' }} showAuthor={false} />);
+
+    expect(screen.getByRole('link', { name: 'Đề sinh 1' })).toHaveAttribute(
+      'href',
+      `/quiz/${encodeURIComponent('đề sinh')}`,
+    );
+  });
+});

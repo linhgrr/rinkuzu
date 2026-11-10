@@ -1,0 +1,46 @@
+# IndexNow ping after each production deploy (RIN-1501, spec RIN-1496 AC 2).
+#
+# Vercel posts a GitHub deployment status for every deployment. Only a
+# `success` on the `Production` environment runs the job, so preview
+# deployments never ping. The script needs no npm packages and always exits
+# 0: an IndexNow failure never fails a deploy.
+
+name: IndexNow
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indexnow-${{ github.event.deployment.id }}
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    # Reads the previous production deployment to know which pages changed.
+    permissions:
+      contents: read
+      deployments: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          ref: ${{ github.event.deployment.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+
+      - name: Ping IndexNow with the pages this deploy changed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --no-warnings
+        run: node scripts/indexnow-deploy.mjs

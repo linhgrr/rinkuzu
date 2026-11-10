@@ -362,6 +362,11 @@ jobs:
           NEXT_SKIP_TYPECHECK: '1'
         run: npm run build
 
+      # The performance job (base rebuild + Lighthouse) is deferred to master, so
+      # without this a route over its absolute cap only turns master red (RIN-1427).
+      - name: Check absolute route bundle-size caps
+        run: node scripts/check-route-size-caps.mjs
+
       - name: Compute production build identity
         id: build-identity
         run: |

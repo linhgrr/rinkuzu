@@ -1,10 +1,10 @@
 import type {
-  EmailResponseDto,
   PasswordResetRequestResultDto,
   PasswordResetResultDto,
   RegisterAccountDto,
   RegisterAccountResponseDto,
   VerificationResendResultDto,
+  VerifyEmailResponseDto,
 } from '@/dtos/auth';
 import type { AuthRequestContext } from '@/entities/AuthAccount';
 import { defaultLocale } from '@/i18n/config';
@@ -127,7 +127,7 @@ export class AuthAccountService implements IAuthAccountService {
   async verifyEmail(
     rawToken: string,
     context: AuthRequestContext,
-  ): Promise<ServiceResult<EmailResponseDto>> {
+  ): Promise<ServiceResult<VerifyEmailResponseDto>> {
     try {
       const account = await this.repository.verifyEmail(hashToken(rawToken), new Date());
       if (!account) {
@@ -138,9 +138,9 @@ export class AuthAccountService implements IAuthAccountService {
         };
       }
       // Drafts first: their claim moves the draft's attempts onto the new quiz (RIN-1447).
-      if (account.guestDraftHashes?.length) {
-        await this.claimGuestDrafts(account.id, account.guestDraftHashes);
-      }
+      const claimedQuizSlug = account.guestDraftHashes?.length
+        ? await this.claimGuestDrafts(account.id, account.guestDraftHashes)
+        : null;
       if (account.guestClaimHashes?.length) {
         await this.claimGuestAttempts(account.id, account.guestClaimHashes);
       }
@@ -148,7 +148,10 @@ export class AuthAccountService implements IAuthAccountService {
         userId: account.id,
         email: account.email,
       });
-      return { success: true, data: AuthAccountDtoMapper.toEmailResponse(account.email) };
+      return {
+        success: true,
+        data: AuthAccountDtoMapper.toVerifyEmailResponse(account.email, claimedQuizSlug),
+      };
     } catch (error) {
       logger.error({ error }, 'Verify-email error');
       return { success: false, error: 'Failed to verify email', statusCode: 500 };
@@ -322,15 +325,23 @@ export class AuthAccountService implements IAuthAccountService {
    * Attaches the guest results stored at sign-up before the learner signs in, so the
    * result and history survive a link opened in another browser (RIN-1310). A failure
    * never fails the verification; only the error class is logged, never a hash.
+   * Returns the newest claimed quiz's slug, so the verifying browser's Retake opens it
+   * (RIN-1487); null when nothing was claimed or the claim failed.
    */
-  private async claimGuestDrafts(userId: string, hashes: readonly string[]): Promise<void> {
+  private async claimGuestDrafts(
+    userId: string,
+    hashes: readonly string[],
+  ): Promise<string | null> {
     try {
-      await this.guestDrafts?.claimHashed(userId, hashes);
+      const slugs = (await this.guestDrafts?.claimHashed(userId, hashes)) ?? [];
+      // Newest draft first, as in the sign-in claim (RIN-1485).
+      return slugs[0] ?? null;
     } catch (error) {
       logger.error(
         { errorName: error instanceof Error ? error.name : 'unknown' },
         'Guest draft claim at verification failed',
       );
+      return null;
     }
   }
 

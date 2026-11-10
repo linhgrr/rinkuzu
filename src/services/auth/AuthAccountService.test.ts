@@ -288,7 +288,7 @@ describe('AuthAccountService', () => {
     const guestDrafts = {
       claimHashed: vi.fn(async () => {
         order.push('drafts');
-        return ['fake-quiz'];
+        return ['newest-fake-quiz', 'older-fake-quiz'];
       }),
     };
     guestAttempts.claimHashed.mockImplementation(async () => {
@@ -320,8 +320,10 @@ describe('AuthAccountService', () => {
       guestClaimHashes: ['hash-1'],
       guestDraftHashes: ['draft-hash-1'],
     });
-    await expect(withDrafts.verifyEmail('valid', context)).resolves.toMatchObject({
+    // Only the newest claimed quiz's slug goes back (RIN-1487): no token, hash or id.
+    await expect(withDrafts.verifyEmail('valid', context)).resolves.toEqual({
       success: true,
+      data: { email: identity.email, claimedQuizSlug: 'newest-fake-quiz' },
     });
     expect(guestDrafts.claimHashed).toHaveBeenCalledWith(identity.id, ['draft-hash-1']);
     expect(order).toEqual(['drafts', 'attempts']);
@@ -339,8 +341,27 @@ describe('AuthAccountService', () => {
     );
     repository.verifyEmail.mockResolvedValue({ ...identity, guestDraftHashes: ['draft-hash-1'] });
 
-    await expect(withDrafts.verifyEmail('valid', context)).resolves.toMatchObject({
+    await expect(withDrafts.verifyEmail('valid', context)).resolves.toEqual({
       success: true,
+      data: { email: identity.email },
+    });
+  });
+
+  it('returns no slug when no stored draft could be claimed (RIN-1487)', async () => {
+    const guestDrafts = { claimHashed: vi.fn(async () => []) };
+    const withDrafts = new AuthAccountService(
+      repository,
+      notifier,
+      audit,
+      scheduler,
+      guestAttempts,
+      guestDrafts,
+    );
+    repository.verifyEmail.mockResolvedValue({ ...identity, guestDraftHashes: ['draft-hash-1'] });
+
+    await expect(withDrafts.verifyEmail('valid', context)).resolves.toEqual({
+      success: true,
+      data: { email: identity.email },
     });
   });
 

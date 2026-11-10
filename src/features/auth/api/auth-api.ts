@@ -4,6 +4,7 @@ import type {
   AuthActionResult,
   RegisterAccountInput,
   ResetPasswordInput,
+  VerifyEmailResult,
 } from '@/features/auth/types/auth-api';
 
 type AuthSuccessMeta = {
@@ -41,8 +42,25 @@ export async function resetPassword(input: ResetPasswordInput): Promise<AuthActi
   return postAuthAction('/api/auth/reset-password', input);
 }
 
-export async function verifyEmail(token: string): Promise<AuthActionResult> {
-  return postAuthAction('/api/auth/verify-email', { token });
+type VerifyEmailData = {
+  claimedQuizSlug?: unknown;
+};
+
+export async function verifyEmail(token: string): Promise<VerifyEmailResult> {
+  const response = await fetchApiResponse<VerifyEmailData, AuthSuccessMeta>(
+    '/api/auth/verify-email',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    },
+  );
+  const message = response.meta?.message;
+  const slug = response.data?.claimedQuizSlug;
+  return {
+    ...(message === undefined ? {} : { message }),
+    ...(typeof slug === 'string' && slug ? { claimedQuizSlug: slug } : {}),
+  };
 }
 
 export async function resendVerificationEmail(

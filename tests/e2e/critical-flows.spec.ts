@@ -439,6 +439,12 @@ async function seedReadyGuestDraft(
   return { id, token, apiDraftId };
 }
 
+/** `auth.verifyEmailSuccess` in each locale (RIN-1487). */
+const VERIFY_EMAIL_SUCCESS = {
+  en: 'Email verified. You can now sign in.',
+  vi: 'Email đã được xác minh. Bạn có thể đăng nhập ngay.',
+} as const;
+
 /** What the guest upload page leaves in the browser (`guest-draft-claims.ts`), set once. */
 async function storeGuestDraftToken(page: Page, token: string): Promise<void> {
   await page.addInitScript((value) => {
@@ -1543,19 +1549,112 @@ test.describe('production critical paths', () => {
         // The quiz now follows the normal public rule: anyone can open it.
         await otherPage.goto(`/en/quiz/${String(quiz?.['slug'])}`);
         await expect(otherPage.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+
+        // RIN-1487: only the verifying browser learns the claimed quiz. Signed in here, the
+        // claim finds nothing, so the draft player shows the expired card's library link.
+        if (!user) throw new Error('registered user missing');
+        await login(page, { email, id: user._id });
+        await page.goto('/en/try/pdf/play');
+        await expect(
+          page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.expiredTitle }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('link', { name: GUEST_UPLOAD_COPY.en.library }),
+        ).toHaveAttribute('href', '/en/my-quizzes');
       } finally {
         await other.close();
         await cleanupGuestDraft(fixture.db, draft);
         await Promise.all([
           fixture.db.collection('auditlogs').deleteMany({ email }),
           fixture.db.collection('auth_rate_limits').deleteMany({
-            key: /^auth:(?:register_ip|verify_email_ip):/,
+            key: /^auth:(?:register_ip|verify_email_ip|guest_draft_claim_user|guest_draft_claim_ip):/,
           }),
+          fixture.db
+            .collection('auth_rate_limits')
+            .deleteMany({ key: { $in: [...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] } }),
         ]);
         await fixture.db.collection('users').deleteMany({ email });
       }
     });
   });
+
+  for (const locale of ['en', 'vi'] as const) {
+    test(`opens the quiz the verification claimed from Retake in the verifying browser (${locale}) @critical-quiz-guest-draft-claim`, async ({
+      page,
+      baseURL,
+    }, testInfo) => {
+      // RIN-1487: with email/password signup the draft is claimed at verification, so the
+      // sign-in claim finds nothing. The verify page remembers the claimed quiz instead.
+      testInfo.setTimeout(90_000);
+      await withDatabaseFixture(testInfo, async (fixture) => {
+        const draft = await seedReadyGuestDraft(fixture.db);
+        const email = `e2e-draft-${randomUUID().slice(0, 12)}@example.com`;
+        const origin = new URL(baseURL ?? 'http://localhost:3000').origin;
+        try {
+          await storeGuestDraftToken(page, draft.token);
+          // The register form's token hand-off is covered above; here only the verification.
+          const registered = await page.request.post('/api/auth/register', {
+            data: { email, password: E2E_PASSWORD, guestDraftTokens: [draft.token], locale },
+            headers: { origin },
+          });
+          expect(registered.ok()).toBe(true);
+
+          const verificationToken = randomUUID().replace(/-/g, '').repeat(2);
+          await fixture.db.collection('users').updateOne(
+            { email },
+            {
+              $set: {
+                emailVerificationTokenHash: createHash('sha256')
+                  .update(verificationToken, 'utf8')
+                  .digest('hex'),
+              },
+            },
+          );
+          await page.goto(`/${locale}/verify-email?token=${verificationToken}`);
+          await expect(page.getByText(VERIFY_EMAIL_SUCCESS[locale])).toBeVisible();
+
+          const quiz = await fixture.db
+            .collection('quizzes')
+            .findOne({ sourceDraftId: draft.apiDraftId });
+          const claimedSlug = String(quiz?.['slug']);
+          await expect
+            .poll(() =>
+              page.evaluate(
+                () =>
+                  (
+                    JSON.parse(
+                      window.localStorage.getItem('rinkuzu.claimedGuestDraft.v1') ?? 'null',
+                    ) as { slug?: string } | null
+                  )?.slug ?? null,
+              ),
+            )
+            .toBe(claimedSlug);
+
+          const user = await fixture.db.collection('users').findOne({ email });
+          if (!user) throw new Error('registered user missing');
+          await login(page, { email, id: user._id });
+          // Retake on the draft result (its href) and the draft player open the claimed quiz.
+          await page.goto(`/${locale}/quiz/guest-draft-play`);
+          await expect(page).toHaveURL(new RegExp(`/${locale}/quiz/${claimedSlug}$`));
+          await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+          await page.goto(`/${locale}/try/pdf/play`);
+          await expect(page).toHaveURL(new RegExp(`/${locale}/quiz/${claimedSlug}$`));
+        } finally {
+          await cleanupGuestDraft(fixture.db, draft);
+          await Promise.all([
+            fixture.db.collection('auditlogs').deleteMany({ email }),
+            fixture.db.collection('auth_rate_limits').deleteMany({
+              key: /^auth:(?:register_ip|verify_email_ip|guest_draft_claim_user|guest_draft_claim_ip):/,
+            }),
+            fixture.db
+              .collection('auth_rate_limits')
+              .deleteMany({ key: { $in: [...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] } }),
+          ]);
+          await fixture.db.collection('users').deleteMany({ email });
+        }
+      });
+    });
+  }
 
   test('claims a guest draft the browser holds on email sign-in @critical-quiz-guest-draft-claim', async ({
     page,

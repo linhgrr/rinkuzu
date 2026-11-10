@@ -20,7 +20,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import type { GuestDraftEntry } from '@/shared/constants/guest-draft';
 
 /** How often the page asks for progress while the draft is processing. */
-export const GUEST_DRAFT_POLL_MS = 2_000;
+const GUEST_DRAFT_POLL_MS = 2_000;
 /** Pause on the "Quiz ready" card before opening the player. */
 const READY_REDIRECT_MS = 800;
 

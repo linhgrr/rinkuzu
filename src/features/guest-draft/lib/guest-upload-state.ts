@@ -5,11 +5,11 @@ import type {
 } from '@/features/guest-draft/types/guest-draft-view-model';
 
 /** Stop waiting after this long and offer a retry (UI spec RIN-1445, section 3). */
-export const GUEST_DRAFT_TIMEOUT_MS = 120_000;
+const GUEST_DRAFT_TIMEOUT_MS = 120_000;
 /** Consecutive status-check failures before the page gives up and offers a retry. */
-export const GUEST_DRAFT_MAX_POLL_ERRORS = 3;
+const GUEST_DRAFT_MAX_POLL_ERRORS = 3;
 
-export type GuestUploadPhase =
+type GuestUploadPhase =
   | 'idle'
   | 'checking'
   | 'chosen'
@@ -19,7 +19,7 @@ export type GuestUploadPhase =
   | 'failed'
   | 'cap';
 
-export type GuestUploadAlert = Exclude<GuestDraftRefusal, 'cap'>;
+type GuestUploadAlert = Exclude<GuestDraftRefusal, 'cap'>;
 
 export interface GuestUploadState {
   phase: GuestUploadPhase;

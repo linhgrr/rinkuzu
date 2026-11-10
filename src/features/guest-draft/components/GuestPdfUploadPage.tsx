@@ -104,7 +104,7 @@ export function GuestPdfUploadPage({ entry }: { entry: GuestDraftEntry }) {
   const flow = useGuestPdfDraft(entry);
 
   return (
-    <main className="min-h-[100dvh] bg-neutral-50 px-4 py-8 sm:px-6">
+    <main className="min-h-dvh bg-neutral-50 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-xl space-y-6">
         <Pill>{t('badge')}</Pill>
         <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">

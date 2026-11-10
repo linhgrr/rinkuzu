@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  GUEST_DRAFT_TIMEOUT_MS,
   guestUploadReducer,
   initialGuestUploadState,
   type GuestUploadState,
@@ -37,7 +36,7 @@ describe('guestUploadReducer (RIN-1448)', () => {
       type: 'progressed',
       run: started.run,
       progress: processing,
-      now: GUEST_DRAFT_TIMEOUT_MS + 1,
+      now: 120_001, // past the two-minute timeout
     });
     expect(next.phase).toBe('failed');
   });

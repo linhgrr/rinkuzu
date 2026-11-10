@@ -91,6 +91,19 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
     expect(screen.getByRole('button', { name: 'Tạo quiz' })).toBeDisabled();
   });
 
+  it('renders the server copy after the widget, so the widget stays first (RIN-1498)', () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={messages.en}>
+        <GuestPdfUploadPage entry="create">
+          <section data-testid="seo-copy">How it works</section>
+        </GuestPdfUploadPage>
+      </NextIntlClientProvider>,
+    );
+    const submit = screen.getByRole('button', { name: 'Create quiz' });
+    const copy = screen.getByTestId('seo-copy');
+    expect(submit.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('refuses a PDF over 10 pages in the browser and uploads nothing', async () => {
     getPdfPageCount.mockResolvedValue(11);
     renderPage();

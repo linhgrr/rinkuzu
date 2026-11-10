@@ -10,12 +10,13 @@ export interface IIndexNowNotifier {
  * Why a quiz page changed for search (RIN-1500). `indexability`: the caller
  * compared the quiz before and after (`quizSearchChanged`). `index-hold`: only
  * the report hold changed, so the notifier also checks the other gates.
+ * `made-public`: a Premium reject or a failed submission set the quiz public
+ * inside a repository transaction, so the caller knows only its id; the
+ * notifier reads the slug and checks every gate.
  */
-export interface QuizIndexNowChange {
-  quizId: string;
-  slug: string;
-  cause: 'indexability' | 'index-hold';
-}
+export type QuizIndexNowChange =
+  | { quizId: string; slug: string; cause: 'indexability' | 'index-hold' }
+  | { quizId: string; cause: 'made-public' };
 
 /**
  * Queues a quiz page and its topic hub for IndexNow (RIN-1500). Fire-and-forget

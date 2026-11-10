@@ -73,3 +73,17 @@ export function notifyQuizSearchChange(
   if (!notifier || !quizSearchChanged(before, after)) return;
   notifyQuizIndexNow(notifier, { quizId: after.id, slug: after.slug, cause: 'indexability' });
 }
+
+/**
+ * Notifies IndexNow about a quiz that was just created, when its page is
+ * indexable apart from the owner (the notifier checks the owner): a new public
+ * quiz with enough questions and no personal-data flag. A Premium submission
+ * (`personal`) or a thin quiz sends nothing.
+ */
+export function notifyQuizCreated(
+  notifier: IQuizIndexNowNotifier | undefined,
+  quiz: QuizSearchFacts & { id: string; slug: string },
+): void {
+  if (!notifier || !isIndexableApartFromOwner(quiz)) return;
+  notifyQuizIndexNow(notifier, { quizId: quiz.id, slug: quiz.slug, cause: 'indexability' });
+}

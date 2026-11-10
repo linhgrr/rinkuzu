@@ -1,4 +1,5 @@
 import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
+import { quizIndexNowNotifier } from '@/lib/indexnow-factory';
 import { PremiumQuizRepository } from '@/repositories/PremiumQuizRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
@@ -26,6 +27,7 @@ export function getPremiumQuizService(): PremiumQuizService {
       new QuizAttemptProgressRepository(),
       premiumRepository,
       rejectMailNotifier,
+      quizIndexNowNotifier,
     );
   }
   return premiumQuizService;

@@ -38,13 +38,19 @@ const TOPIC: QuizTopicRecord = {
 
 function service(record: QuizMetadataRecord | null, topic: QuizTopicRecord | null = TOPIC) {
   return new QuizIndexNowService({
-    quizzes: { findMetadataBySlug: vi.fn(async () => record) },
+    quizzes: {
+      findMetadataBySlug: vi.fn(async (slug: string) =>
+        record?.quiz.slug === slug ? record : null,
+      ),
+      findById: vi.fn(async (id: string) => (record?.quiz.id === id ? record.quiz : null)),
+    },
     topics: { findPublishedTopicByQuizId: vi.fn(async () => topic) },
   });
 }
 
 const FLIP: QuizIndexNowChange = { quizId: QUIZ_ID, slug: 'fake-sinh-hoc', cause: 'indexability' };
 const HOLD: QuizIndexNowChange = { ...FLIP, cause: 'index-hold' };
+const MADE_PUBLIC: QuizIndexNowChange = { quizId: QUIZ_ID, cause: 'made-public' };
 
 describe('QuizIndexNowService.urlsFor (RIN-1500)', () => {
   it('returns the quiz page in its own language and its published hub', async () => {
@@ -88,5 +94,31 @@ describe('QuizIndexNowService.urlsFor (RIN-1500)', () => {
       owner: null,
     };
     expect(await service(flagged).urlsFor(HOLD)).toEqual([]);
+  });
+
+  it('reads the slug of a quiz made public and sends it when it is indexable', async () => {
+    expect(await service({ quiz: quiz(), owner: null }).urlsFor(MADE_PUBLIC)).toEqual([
+      QUIZ_URL,
+      HUB_URL,
+    ]);
+    expect(await service(null).urlsFor(MADE_PUBLIC)).toEqual([]);
+  });
+
+  it('sends nothing for a quiz made public that is held, thin, flagged or still hidden', async () => {
+    const held = {
+      quiz: quiz({ indexHold: { reason: 'reported', since: new Date('2026-11-01T00:00:00Z') } }),
+      owner: null,
+    };
+    const thin = { quiz: quiz({ questionCount: 3 }), owner: null };
+    const flagged = {
+      quiz: quiz({
+        contentFlags: { personalData: true, kinds: ['phone'], checkedAt: new Date() },
+      }),
+      owner: null,
+    };
+    const hidden = { quiz: quiz({ visibility: 'personal' }), owner: null };
+    for (const record of [held, thin, flagged, hidden]) {
+      expect(await service(record).urlsFor(MADE_PUBLIC)).toEqual([]);
+    }
   });
 });

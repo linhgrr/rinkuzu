@@ -15,7 +15,7 @@ import type {
 } from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale } from '@/lib/seo/quiz-indexability';
-import { notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
+import { notifyQuizCreated, notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
 import type { DeleteResultDto } from '@/dtos/common';
 import type { ServiceFailure } from '@/interfaces/services/types';
 import { ServiceResult } from '@/interfaces/services/types';
@@ -138,8 +138,9 @@ export class QuizCrudService {
     for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt += 1) {
       const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt}`;
 
+      let created: Quiz;
       try {
-        return await this.quizRepository.create({
+        created = await this.quizRepository.create({
           title,
           ...(description !== undefined && { description }),
           slug,
@@ -155,7 +156,11 @@ export class QuizCrudService {
         if (!isMongoDuplicateKeyErrorForField(error, 'slug')) {
           throw error;
         }
+        continue;
       }
+      // RIN-1500: only a quiz this call created; a draft replay returns earlier.
+      notifyQuizCreated(this.quizIndexNow, created);
+      return created;
     }
 
     throw new QuizCreationError('slug_conflict', 'Could not generate a unique quiz slug');

@@ -5,7 +5,7 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { getQuizService } from '@/lib/quiz-factory';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { parseParamsAndBody } from '@/lib/api/validated';
 import { submitQuizDraftRequestSchema } from '@/dtos/quiz-draft';
 import { quizDraftIdRouteParamsSchema } from '@/dtos/quiz';
@@ -52,6 +52,20 @@ async function markDraftSubmitted(
   }
 }
 
+type RetainedSource = { s3Key: string; fileHash: string | null | undefined };
+
+async function readRetainedSource(
+  draftId: string,
+  quizId: string,
+  userId: string,
+): Promise<RetainedSource> {
+  const retainedDraft = await fetchQuizDraftServer(draftId, userId);
+  if (!retainedDraft || !retainedDraft.pdf.retainedForPremium || !retainedDraft.pdf.s3Key) {
+    throw new QuizDraftSynchronizationError(draftId, quizId);
+  }
+  return { s3Key: retainedDraft.pdf.s3Key, fileHash: retainedDraft.pdf.fileHash };
+}
+
 export const POST = withAuth(async (request: NextRequest, { params, userId, session }) => {
   try {
     const parsed = await parseParamsAndBody(request, params, {
@@ -81,6 +95,16 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
       );
       if (existing.success && existing.data) {
         if (submitToPremium) {
+          // RIN-1413: a failed first submission set the quiz public again.
+          // Save it private first, like the first submit, or the new
+          // submission could never be approved (RIN-1346).
+          const privatized = await quizService.updateQuiz(
+            existingDraft.submittedQuizId,
+            { submitToPremium: true },
+            userId,
+            session.user.role,
+          );
+          if (!privatized.success) return apiServiceErr(privatized);
           await premiumService.submitSavedQuiz(userId, {
             quizId: existingDraft.submittedQuizId,
             rightsAttested: true,
@@ -110,17 +134,22 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
     });
 
     const quizId = quiz.id;
-    await markDraftSubmitted(id, quizId, userId, session.user.role, submitToPremium);
-    if (submitToPremium) {
-      const retainedDraft = await fetchQuizDraftServer(id, userId);
-      if (!retainedDraft || !retainedDraft.pdf.retainedForPremium || !retainedDraft.pdf.s3Key) {
-        throw new QuizDraftSynchronizationError(id, quizId);
-      }
+    let retainedSource: RetainedSource | null = null;
+    try {
+      await markDraftSubmitted(id, quizId, userId, session.user.role, submitToPremium);
+      if (submitToPremium) retainedSource = await readRetainedSource(id, quizId, userId);
+    } catch (error) {
+      // RIN-1413: the quiz was saved private for Premium but never reached a
+      // submission; set it public again, then answer as before.
+      if (submitToPremium) await premiumService.restorePublicWithoutSubmission(quizId);
+      throw error;
+    }
+    if (retainedSource) {
       await premiumService.submitSavedQuiz(userId, {
         quizId,
         rightsAttested: true,
-        sourceObjectKey: retainedDraft.pdf.s3Key,
-        ...(retainedDraft.pdf.fileHash ? { documentFingerprint: retainedDraft.pdf.fileHash } : {}),
+        sourceObjectKey: retainedSource.s3Key,
+        ...(retainedSource.fileHash ? { documentFingerprint: retainedSource.fileHash } : {}),
       });
     }
 

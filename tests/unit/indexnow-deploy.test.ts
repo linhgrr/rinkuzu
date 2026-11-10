@@ -46,8 +46,8 @@ function json(body: unknown, status = 200): Response {
 function fakeNetwork(indexNowStatuses: Array<number | 'network-error'> = [200]) {
   const indexNowBodies: unknown[] = [];
   const statuses = [...indexNowStatuses];
-  const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-    const url = String(input);
+  const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
+    const url = input instanceof Request ? input.url : String(input);
     if (url === 'https://www.rinkuzu.app/sitemap.xml') return new Response(SITEMAP);
     if (url.startsWith('https://api.github.com/repos/acme/web/deployments?')) {
       return json([
@@ -70,7 +70,8 @@ function fakeNetwork(indexNowStatuses: Array<number | 'network-error'> = [200]) 
     }
     throw new Error(`unexpected request ${url}`);
   });
-  return { fetch: fetchMock as unknown as typeof fetch, fetchMock, indexNowBodies };
+  const fetchFn: typeof fetch = fetchMock;
+  return { fetch: fetchFn, fetchMock, indexNowBodies };
 }
 
 function deps(
@@ -143,7 +144,7 @@ describe('findPreviousProductionDeployTime', () => {
     });
     expect(since?.toISOString()).toBe('2026-11-08T10:05:00.000Z');
     const [, init] = network.fetchMock.mock.calls[0] ?? [];
-    expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer fake-token');
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer fake-token');
   });
 
   it('returns null when the GitHub API fails', async () => {
@@ -151,7 +152,7 @@ describe('findPreviousProductionDeployTime', () => {
       repo: 'acme/web',
       currentDeploymentId: 300,
       currentCreatedAt: null,
-      fetch: (async () => new Response('nope', { status: 403 })) as unknown as typeof fetch,
+      fetch: async () => new Response('nope', { status: 403 }),
     });
     expect(since).toBeNull();
   });
@@ -249,7 +250,7 @@ describe('run', () => {
   });
 
   it('exits 0 without pinging when the sitemap is unavailable or --since is invalid', async () => {
-    const down = (async () => new Response('down', { status: 503 })) as unknown as typeof fetch;
+    const down: typeof fetch = async () => new Response('down', { status: 503 });
     const network = { ...fakeNetwork(), fetch: down };
     const { deps: unavailable, lines } = deps(network, { argv: ['--since', '2026-11-01'] });
     await expect(run(unavailable)).resolves.toBe(0);

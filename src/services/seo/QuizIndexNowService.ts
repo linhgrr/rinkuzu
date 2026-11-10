@@ -9,7 +9,7 @@ import { topicHubPath } from '@/lib/seo/topic-hub-urls';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 
 export interface QuizIndexNowServiceDeps {
-  quizzes: Pick<IQuizRepository, 'findMetadataBySlug'>;
+  quizzes: Pick<IQuizRepository, 'findMetadataBySlug' | 'findById'>;
   topics: Pick<IQuizTopicHubRepository, 'findPublishedTopicByQuizId'>;
 }
 
@@ -23,19 +23,23 @@ export class QuizIndexNowService {
   constructor(private readonly deps: QuizIndexNowServiceDeps) {}
 
   async urlsFor(change: QuizIndexNowChange): Promise<string[]> {
-    const record = await this.deps.quizzes.findMetadataBySlug(change.slug);
+    const slug = await this.slugFor(change);
+    if (slug === null) return [];
+    const record = await this.deps.quizzes.findMetadataBySlug(slug);
     if (!record || record.quiz.id !== change.quizId) return [];
     if (record.owner && isNonIndexableQuizOwner(record.owner)) return [];
     const { quiz } = record;
-    // A hold set or lifted on a hidden, thin or flagged quiz changes nothing public.
+    // A hold set or lifted on a hidden, thin or flagged quiz changes nothing
+    // public. A quiz made public counts only when it is now indexable: it was
+    // private before, so a held, thin or flagged one stays out either way.
     if (
-      change.cause === 'index-hold' &&
+      change.cause !== 'indexability' &&
       !isQuizIndexable({
         visibility: quiz.visibility,
         ownerIndexable: true,
         questionCount: quiz.questionCount ?? quiz.questions.length,
         personalDataFlagged: isPersonalDataFlagged(quiz.contentFlags),
-        indexHold: false,
+        indexHold: change.cause === 'made-public' && quiz.indexHold !== undefined,
       })
     ) {
       return [];
@@ -46,5 +50,11 @@ export class QuizIndexNowService {
     const topic = await this.deps.topics.findPublishedTopicByQuizId(change.quizId);
     if (topic) urls.push(canonicalFor(topic.locale, topicHubPath(topic.slug)));
     return urls;
+  }
+
+  private async slugFor(change: QuizIndexNowChange): Promise<string | null> {
+    if (change.cause !== 'made-public') return change.slug;
+    const stored = await this.deps.quizzes.findById(change.quizId);
+    return stored?.slug ?? null;
   }
 }

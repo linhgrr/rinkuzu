@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { locales } from '@/i18n/config';
 
 const optionalHttpUrlSchema = z.url().nullable().optional();
+// The UI locale of the page that opened Ask Rin-chan: the API answers in it (RIN-1264, RIN-1270).
+const askRinLocaleSchema = z.enum(locales).optional();
 
 export const askRinContextRequestSchema = z.discriminatedUnion('source', [
   z.strictObject({
@@ -11,11 +14,13 @@ export const askRinContextRequestSchema = z.discriminatedUnion('source', [
     optionImages: z.array(optionalHttpUrlSchema).max(20).default([]),
     conceptName: z.string().trim().max(500).nullable().optional(),
     bloomLevel: z.number().int().min(1).max(6).nullable().optional(),
+    locale: askRinLocaleSchema,
   }),
   z.strictObject({
     source: z.literal('adaptive'),
     sessionId: z.string().trim().min(1).max(160),
     exerciseId: z.string().trim().min(1).max(160),
+    locale: askRinLocaleSchema,
   }),
 ]);
 

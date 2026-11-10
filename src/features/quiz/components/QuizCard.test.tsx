@@ -42,6 +42,9 @@ describe('QuizCard', () => {
     );
 
     expect(screen.getByLabelText('quizActions')).toHaveClass('size-11');
+    // RIN-1527: ink/70 alone is 5.5:1 at rest; stacking opacity-70 on it made 3:1.
+    expect(screen.getByLabelText('quizActions')).toHaveClass('text-ink/70');
+    expect(screen.getByLabelText('quizActions').className).not.toMatch(/(^|\s)opacity-/);
     expect(screen.getByRole('button', { name: 'deleteQuiz' })).toHaveClass('text-error');
     expect((await axe(container)).violations).toEqual([]);
   });

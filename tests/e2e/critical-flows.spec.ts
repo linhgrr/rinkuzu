@@ -1725,7 +1725,17 @@ test.describe('production critical paths', () => {
           // Signed out, no redirect to sign-in.
           await page.goto(`/${locale}/try/pdf?entry=landing`);
           await expect(page).toHaveURL(new RegExp(`/${locale}/try/pdf\\?entry=landing$`));
-          await page.locator('input[type="file"]').setInputFiles({
+          // A file set before hydration lands in the server-rendered input with no React
+          // handler attached, so the create button never enables (flaked on PR #456).
+          const fileInput = page.locator('input[type="file"]');
+          await expect
+            .poll(() =>
+              fileInput.evaluate((node) =>
+                Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+              ),
+            )
+            .toBe(true);
+          await fileInput.setInputFiles({
             name: 'fake-notes.pdf',
             mimeType: 'application/pdf',
             buffer: await fakeOnePagePdf(),

@@ -54,5 +54,52 @@
     "makeAgain": "Make it again",
     "goToLibrary": "Go to my library",
     "loading": "Loading your quiz…"
+  },
+  "seo": {
+    "howTitle": "How it works",
+    "steps": {
+      "upload": {
+        "title": "Upload a PDF",
+        "body": "Choose a PDF of up to {pages} pages: lecture notes, a textbook chapter or slides."
+      },
+      "generate": {
+        "title": "Rinkuzu writes the questions",
+        "body": "Rin reads your document and writes up to {questions} multiple-choice questions, usually in about a minute."
+      },
+      "play": {
+        "title": "Play the quiz, sign up to save it",
+        "body": "Play the quiz straight away. Sign up free to keep it; otherwise it is deleted after {hours} hours."
+      }
+    },
+    "limitsTitle": "Free trial limits",
+    "limits": {
+      "pages": "Up to {pages} pages per PDF",
+      "size": "Up to {mb} MB per file",
+      "questions": "Up to {questions} questions per quiz",
+      "kept": "Kept for {hours} hours unless you sign up"
+    },
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "free": {
+        "q": "Is the PDF to quiz generator free?",
+        "a": "Yes. Making and playing a quiz from your PDF costs nothing. The number of no-account tries per day is limited, and signing up is free too."
+      },
+      "account": {
+        "q": "Do I need an account?",
+        "a": "No. Upload a PDF and play the quiz without signing up or giving an email address."
+      },
+      "files": {
+        "q": "Which files can I upload?",
+        "a": "PDF files only, up to {pages} pages and {mb} MB. PDFs with selectable text work best; scanned image PDFs are harder to read."
+      },
+      "expiry": {
+        "q": "What happens to my quiz after {hours} hours?",
+        "a": "If you have not signed up, the quiz and your file are deleted {hours} hours after you make them. Only you can open them until then."
+      },
+      "keep": {
+        "q": "How do I keep my quiz?",
+        "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
+      }
+    }
   }
 }

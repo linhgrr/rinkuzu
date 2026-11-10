@@ -1,6 +1,8 @@
 import { Link } from '@/i18n/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { getTranslations } from 'next-intl/server';
+import { TryQuizCard } from '@/features/landing/components/TryQuizCard';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { BLOG_FEED_PATH, blogFeedAlternates } from '@/lib/blog/feed';
 import {
@@ -39,6 +41,7 @@ export default async function BlogIndexPage({ params }: Props) {
   const isVi = locale === 'vi';
   const blogLocale = toBlogLocale(locale);
   const posts = getBlogIndexPosts(blogLocale);
+  const t = await getTranslations({ locale, namespace: 'blog' });
 
   return (
     <article className="min-h-screen bg-white">
@@ -74,8 +77,17 @@ export default async function BlogIndexPage({ params }: Props) {
         </div>
       </header>
 
-      {/* Post list */}
+      {/* Post list, after the quiz card (RIN-1258: no post on the index) */}
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">
+        <TryQuizCard
+          labels={{
+            heading: t('tryQuiz.heading'),
+            meta: t('tryQuiz.meta'),
+            button: t('tryQuiz.button'),
+          }}
+          position="blog_index"
+          locale={locale}
+        />
         {posts.map((post, index) => (
           <Link
             key={post.slug}

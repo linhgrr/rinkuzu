@@ -24,3 +24,8 @@ export interface IStarterQuizReadRepository {
   listStarterQuizEntries(): Promise<StarterQuizEntryRecord[]>;
   findStarterQuizCandidates(quizIds: string[]): Promise<StarterQuizCandidateRecord[]>;
 }
+
+/** The quiz a blog post's card names (RIN-1258), with the same eligibility fields; null when none. */
+export interface IQuizCandidateBySlugRepository {
+  findQuizCandidateBySlug(slug: string): Promise<StarterQuizCandidateRecord | null>;
+}

@@ -215,6 +215,42 @@ describe('DashboardRepository starter quiz lookups', () => {
     expect(projection).not.toHaveProperty('questions');
   });
 
+  it('finds the blog card quiz by its slug or a former one (RIN-1258)', async () => {
+    const quizId = new Types.ObjectId();
+    starterMocks.quizAggregate.mockResolvedValueOnce([
+      {
+        _id: quizId,
+        slug: 'fake-blog-quiz',
+        title: 'Fake blog quiz',
+        visibility: 'public',
+        questionCount: 12,
+        isPremium: false,
+      },
+    ]);
+    const repository = new DashboardRepository();
+
+    await expect(repository.findQuizCandidateBySlug('fake-old-slug')).resolves.toEqual({
+      quizId: quizId.toString(),
+      slug: 'fake-blog-quiz',
+      title: 'Fake blog quiz',
+      visibility: 'public',
+      questionCount: 12,
+      isPremium: false,
+    });
+    const pipeline = starterMocks.quizAggregate.mock.calls[0]?.[0] as Array<
+      Record<string, unknown>
+    >;
+    expect(pipeline[0]).toEqual({
+      $match: { $or: [{ slug: 'fake-old-slug' }, { slugAliases: 'fake-old-slug' }] },
+    });
+  });
+
+  it('returns null when no quiz has the slug (RIN-1258)', async () => {
+    starterMocks.quizAggregate.mockResolvedValueOnce([]);
+
+    await expect(new DashboardRepository().findQuizCandidateBySlug('nope')).resolves.toBeNull();
+  });
+
   it('skips the database when no quiz id is valid', async () => {
     const repository = new DashboardRepository();
 

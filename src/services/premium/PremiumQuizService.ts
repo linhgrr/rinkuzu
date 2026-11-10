@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
+import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type {
   IPremiumQuizRepository,
   IPremiumSubmissionRecoveryRepository,
@@ -33,6 +34,7 @@ import type {
 } from '@/dtos/premium-quiz';
 import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 import { logger } from '@/lib/logger';
+import { notifyQuizIndexNow } from '@/lib/seo/quiz-search-change';
 import { getAuthorId } from '@/services/quiz/quiz-helpers';
 import { can, resolveEntitlements } from '@/lib/entitlements';
 import { env } from '@/lib/env';
@@ -313,6 +315,7 @@ export class PremiumQuizService {
     private readonly attemptRepository: IQuizAttemptProgressRepository,
     private readonly submissionRecovery?: IPremiumSubmissionRecoveryRepository,
     private readonly decisionNotifier?: IPremiumDecisionNotifier,
+    private readonly quizIndexNow?: IQuizIndexNowNotifier,
   ) {}
 
   async assertCanContribute(userId: string): Promise<void> {
@@ -407,7 +410,9 @@ export class PremiumQuizService {
   private async restorePublic(quizId: string): Promise<boolean> {
     if (!this.submissionRecovery) return false;
     try {
-      return await this.submissionRecovery.restorePublicAfterFailedSubmission(quizId);
+      const restored = await this.submissionRecovery.restorePublicAfterFailedSubmission(quizId);
+      if (restored) this.notifyMadePublic(quizId);
+      return restored;
     } catch (error) {
       logger.error({ error, quizId }, 'Premium submission failed and the quiz stayed private');
       return false;
@@ -479,8 +484,14 @@ export class PremiumQuizService {
       ...(input.note === undefined ? {} : { note: input.note }),
       ...(input.overrideReason === undefined ? {} : { overrideReason: input.overrideReason }),
     });
+    if (result.quizMadePublic === true) this.notifyMadePublic(result.submission.sourceQuizId);
     if (input.decision === 'reject') await this.queueRejectEmail(result);
     return result;
+  }
+
+  /** RIN-1500: the quiz is public now and may be indexable; never throws. */
+  private notifyMadePublic(quizId: string): void {
+    notifyQuizIndexNow(this.quizIndexNow, { quizId, cause: 'made-public' });
   }
 
   /** The author's reject email (RIN-1348); a failure to queue it never undoes the decision. */

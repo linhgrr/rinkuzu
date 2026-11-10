@@ -906,3 +906,76 @@ describe('QuizCrudService.updateQuiz IndexNow (RIN-1500)', () => {
     ).resolves.toMatchObject({ success: true });
   });
 });
+
+describe('QuizCrudService create IndexNow (RIN-1500)', () => {
+  const indexable = createQuizEntity({ questionCount: 8 });
+  const queued = { quizId, slug: indexable.slug, cause: 'indexability' };
+
+  function setup(created: Quiz, overrides: Partial<IQuizRepository> = {}) {
+    const quizRepository = createQuizRepository({
+      create: vi.fn().mockResolvedValue(created),
+      findBySourceDraftId: vi.fn().mockResolvedValue(null),
+      ...overrides,
+    });
+    const quizIndexNow = { quizChanged: vi.fn() };
+    const service = new QuizCrudService(quizRepository, undefined, undefined, quizIndexNow);
+    return { service, quizIndexNow };
+  }
+
+  it('queues a new public quiz with enough questions, from a save or a draft', async () => {
+    const { service, quizIndexNow } = setup(indexable);
+    await service.createQuiz(authorId, createRequest);
+    await service.createQuizFromDraft(authorId, 'draft-1', createRequest);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledTimes(2);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledWith(queued);
+  });
+
+  it('queues the slug the quiz was finally stored under', async () => {
+    const renamed = { ...indexable, slug: 'algebra-basics-1' };
+    const { service, quizIndexNow } = setup(renamed, {
+      create: vi
+        .fn()
+        .mockRejectedValueOnce({ code: 11000, keyPattern: { slug: 1 } })
+        .mockResolvedValueOnce(renamed),
+    });
+    await service.createQuiz(authorId, createRequest);
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledExactlyOnceWith({
+      ...queued,
+      slug: 'algebra-basics-1',
+    });
+  });
+
+  it('queues nothing for a Premium submission, a thin quiz, a flagged quiz or a draft replay', async () => {
+    const premium = setup({ ...indexable, visibility: 'personal' });
+    await premium.service.createQuiz(authorId, { ...createRequest, submitToPremium: true });
+    const thin = setup(createQuizEntity({ questionCount: 4 }));
+    await thin.service.createQuiz(authorId, createRequest);
+    const flagged = setup({
+      ...indexable,
+      contentFlags: {
+        personalData: true,
+        kinds: ['email'],
+        checkedAt: new Date('2026-11-01T00:00:00Z'),
+      },
+    });
+    await flagged.service.createQuiz(authorId, createRequest);
+    const replay = setup(indexable, {
+      findBySourceDraftId: vi.fn().mockResolvedValue(createQuizEntity({ questionCount: 8 })),
+    });
+    await replay.service.createQuizFromDraft(authorId, 'draft-1', createRequest);
+
+    for (const { quizIndexNow } of [premium, thin, flagged, replay]) {
+      expect(quizIndexNow.quizChanged).not.toHaveBeenCalled();
+    }
+  });
+
+  it('still creates the quiz when the notifier throws', async () => {
+    const { service, quizIndexNow } = setup(indexable);
+    quizIndexNow.quizChanged.mockImplementation(() => {
+      throw new Error('fake notifier failure');
+    });
+    await expect(service.createQuiz(authorId, createRequest)).resolves.toMatchObject({
+      id: quizId,
+    });
+  });
+});

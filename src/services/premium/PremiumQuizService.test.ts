@@ -746,3 +746,95 @@ describe('PremiumQuizService.restorePublicWithoutSubmission (RIN-1413)', () => {
     await expect(service.restorePublicWithoutSubmission('quiz-1')).resolves.toBe(false);
   });
 });
+
+describe('PremiumQuizService IndexNow when a quiz goes public (RIN-1500)', () => {
+  function setupWithIndexNow() {
+    const base = setup();
+    const recovery: Mocked<IPremiumSubmissionRecoveryRepository> = {
+      restorePublicAfterFailedSubmission: vi.fn(),
+    };
+    const quizIndexNow = { quizChanged: vi.fn() };
+    const service = new PremiumQuizService(
+      base.quizRepository,
+      base.premiumRepository,
+      base.attemptRepository,
+      recovery,
+      base.notifier,
+      quizIndexNow,
+    );
+    return { ...base, service, recovery, quizIndexNow };
+  }
+
+  const rejected = (quizMadePublic: boolean) => ({
+    submission: { ...publication(), status: 'rejected' as const },
+    awardedCredits: 0,
+    rewardLocked: false,
+    quizMadePublic,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('queues the source quiz after a reject made it public', async () => {
+    const { service, premiumRepository, quizIndexNow } = setupWithIndexNow();
+    const result = rejected(true);
+    premiumRepository.decide.mockResolvedValue(result);
+
+    await service.decide('507f191e810c19729de860ef', result.submission.id, {
+      decision: 'reject',
+      credits: 0,
+    });
+
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledExactlyOnceWith({
+      quizId: result.submission.sourceQuizId,
+      cause: 'made-public',
+    });
+  });
+
+  it('queues nothing when the reject left the quiz private', async () => {
+    const { service, premiumRepository, quizIndexNow } = setupWithIndexNow();
+    premiumRepository.decide.mockResolvedValue(rejected(false));
+
+    await service.decide('507f191e810c19729de860ef', publication().id, {
+      decision: 'reject',
+      credits: 0,
+    });
+
+    expect(quizIndexNow.quizChanged).not.toHaveBeenCalled();
+  });
+
+  it('queues the quiz only when a failed submission set it back to public', async () => {
+    const { service, recovery, quizIndexNow } = setupWithIndexNow();
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValueOnce(true);
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValueOnce(false);
+    recovery.restorePublicAfterFailedSubmission.mockRejectedValueOnce(new Error('still down'));
+
+    await service.restorePublicWithoutSubmission('quiz-1');
+    await service.restorePublicWithoutSubmission('quiz-2');
+    await service.restorePublicWithoutSubmission('quiz-3');
+
+    expect(quizIndexNow.quizChanged).toHaveBeenCalledExactlyOnceWith({
+      quizId: 'quiz-1',
+      cause: 'made-public',
+    });
+  });
+
+  it('keeps the decision and the restore when the notifier throws', async () => {
+    const { service, premiumRepository, recovery, quizIndexNow } = setupWithIndexNow();
+    quizIndexNow.quizChanged.mockImplementation(() => {
+      throw new Error('fake notifier failure');
+    });
+    const result = rejected(true);
+    premiumRepository.decide.mockResolvedValue(result);
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    await expect(
+      service.decide('507f191e810c19729de860ef', result.submission.id, {
+        decision: 'reject',
+        credits: 0,
+      }),
+    ).resolves.toBe(result);
+    await expect(service.restorePublicWithoutSubmission('quiz-1')).resolves.toBe(true);
+  });
+});

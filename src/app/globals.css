@@ -520,6 +520,23 @@
     }
   }
 
+  /*
+   * The same for the fixed top bar of the signed-in app (RIN-1423). Without it,
+   * focusing or scrolling to an element above the viewport parks it right under
+   * the bar: hidden from keyboard users (WCAG 2.4.11), and a tap during the
+   * smooth scroll that follows lands on the bar instead. Heights match
+   * `.topbar` in AppChromeLayout.module.css.
+   */
+  html:has([data-app-topbar]) {
+    scroll-padding-top: var(--space-16);
+  }
+
+  @media (min-width: 1024px) {
+    html:has([data-app-topbar]) {
+      scroll-padding-top: var(--app-chrome-height);
+    }
+  }
+
   /* The sticky 64 px header of the marketing content pages (RIN-1519): keep
      anchor targets (blog TOC headings) and focus moves clear of it. */
   html:has(.marketing-header) {

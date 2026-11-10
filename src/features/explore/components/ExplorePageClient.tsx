@@ -11,9 +11,7 @@ import { Button } from '@/components/ui/Button';
 import Pagination from '@/components/ui/Pagination';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { LibraryCardSkeleton, SubjectCard } from '@/features/adaptive/components/sections/Library';
 import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
-import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 import type {
   QuizListItemViewModel,
   QuizListViewModel,
@@ -21,7 +19,16 @@ import type {
 import { getSubjects } from '@/features/adaptive/lib/adaptive-api-methods';
 import { toDashboardSubject } from '@/features/adaptive/mappers/dashboard.mapper';
 import { useStartAdaptiveSubject } from '@/features/adaptive/hooks/use-start-adaptive-subject';
-import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
+import {
+  ADAPTIVE_ROW_MIN_HEIGHT,
+  ALL_SECTION_LIMIT,
+  AdaptiveGridSkeleton,
+  AdaptiveResults,
+  QUIZ_ROW_MIN_HEIGHT,
+  QuizGridSkeleton,
+  QuizResults,
+  SectionEmpty,
+} from '@/features/explore/components/ExploreGrids';
 import { ExploreSearchInput } from '@/features/explore/components/ExploreSearchInput';
 import {
   buildQuizSearchKey,
@@ -33,30 +40,8 @@ import {
 import { ROUTES } from '@/shared/constants/routes';
 
 const SEARCH_TYPES: SearchType[] = ['all', 'mine', 'adaptive', 'quizzes'];
-const ALL_SECTION_LIMIT = 4;
 const PAGE_SIZE = 12;
 const EMPTY_QUIZZES: QuizListItemViewModel[] = [];
-
-function QuizGridSkeleton({ count = ALL_SECTION_LIMIT }: { count?: number }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: count }, (_, index) => (
-        <QuizCardSkeleton key={`quiz-search-skeleton-${index}`} />
-      ))}
-    </div>
-  );
-}
-
-function AdaptiveGridSkeleton({ count = ALL_SECTION_LIMIT }: { count?: number }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: count }, (_, index) => (
-        <LibraryCardSkeleton key={`adaptive-search-skeleton-${index}`} />
-      ))}
-    </div>
-  );
-}
-
 function EmptyState({ hasQuery }: { hasQuery: boolean }) {
   const t = useTranslations('explore');
 
@@ -102,44 +87,6 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
       >
         {t('signInCta')}
       </Link>
-    </div>
-  );
-}
-
-function QuizResults({ quizzes }: { quizzes: QuizListItemViewModel[] }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {quizzes.map((quiz) => (
-        <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />
-      ))}
-    </div>
-  );
-}
-
-function AdaptiveResults({
-  subjects,
-  loadingJobId,
-  onOpenSubject,
-}: {
-  subjects: DashboardSubject[];
-  loadingJobId: string | null;
-  onOpenSubject: (jobId: string) => void;
-}) {
-  const t = useTranslations('adaptiveLearning.dashboard');
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {subjects.map((subject) => (
-        <SubjectCard
-          key={subject.jobId}
-          subject={subject}
-          loading={loadingJobId === subject.jobId}
-          deleting={false}
-          busy={loadingJobId !== null}
-          onOpenSubject={onOpenSubject}
-          t={t}
-        />
-      ))}
     </div>
   );
 }
@@ -320,13 +267,16 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                 {isSignedOut ? (
                   ownedSignedOut
                 ) : ownedLoading ? (
-                  <QuizGridSkeleton />
+                  <QuizGridSkeleton oneRow />
                 ) : ownedError ? (
                   <SectionError onRetry={() => void retryOwned()} />
                 ) : ownedQuizzes.length > 0 ? (
-                  <QuizResults quizzes={ownedQuizzes} />
+                  <QuizResults quizzes={ownedQuizzes} oneRow />
                 ) : (
-                  <p className="font-home text-sm text-ink-muted">{t('sections.mine.empty')}</p>
+                  <SectionEmpty
+                    message={t('sections.mine.empty')}
+                    minHeight={QUIZ_ROW_MIN_HEIGHT}
+                  />
                 )}
               </SurfaceCard>
 
@@ -340,7 +290,7 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                 {isSignedOut ? (
                   adaptiveSignedOut
                 ) : adaptiveLoading ? (
-                  <AdaptiveGridSkeleton />
+                  <AdaptiveGridSkeleton oneRow />
                 ) : adaptiveError ? (
                   <SectionError onRetry={() => void retryAdaptive()} />
                 ) : visibleSubjects.length > 0 ? (
@@ -348,9 +298,13 @@ function ExploreContent({ hubLinks }: ExplorePageClientProps) {
                     subjects={visibleSubjects}
                     loadingJobId={loadingJobId}
                     onOpenSubject={(jobId) => void startSubject(jobId)}
+                    oneRow
                   />
                 ) : (
-                  <p className="font-home text-sm text-ink-muted">{t('sections.adaptive.empty')}</p>
+                  <SectionEmpty
+                    message={t('sections.adaptive.empty')}
+                    minHeight={ADAPTIVE_ROW_MIN_HEIGHT}
+                  />
                 )}
               </SurfaceCard>
 

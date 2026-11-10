@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import { imgVector14 } from './constants';
 import { Reveal } from './Reveal';

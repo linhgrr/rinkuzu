@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import {
   imgChatGptImageApr22026At121506Am1,

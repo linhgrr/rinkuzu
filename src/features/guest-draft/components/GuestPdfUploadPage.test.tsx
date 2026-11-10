@@ -39,10 +39,13 @@ import { GuestPdfUploadPage } from './GuestPdfUploadPage';
 
 const messages = { en: { guestDraft: enGuest }, vi: { guestDraft: viGuest } } as const;
 
-function renderPage(locale: 'en' | 'vi' = 'en') {
+function renderPage(
+  locale: 'en' | 'vi' = 'en',
+  { entry }: { entry?: 'create' } = { entry: 'create' },
+) {
   return render(
     <NextIntlClientProvider locale={locale} messages={messages[locale]}>
-      <GuestPdfUploadPage entry="create" />
+      <GuestPdfUploadPage entry={entry} />
     </NextIntlClientProvider>,
   );
 }
@@ -76,12 +79,13 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('starts idle with the trial limits and a disabled Create quiz button', () => {
     renderPage('vi');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Biến PDF của bạn thành quiz, làm ngay',
+      'Tạo câu hỏi trắc nghiệm từ PDF, làm ngay',
     );
     expect(screen.getByText('PDF, tối đa 10 trang và 4 MB')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tạo quiz' })).toBeDisabled();
@@ -157,6 +161,17 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
     expect(screen.getByRole('button', { name: 'Play now' })).toHaveFocus();
     await act(() => vi.advanceTimersByTimeAsync(800));
     expect(push).toHaveBeenCalledWith('/try/pdf/play');
+  });
+
+  it('uploads with entry=seo when there is no ?entry= and the referrer is a search engine', async () => {
+    createGuestDraft.mockResolvedValue(processing);
+    vi.spyOn(document, 'referrer', 'get').mockReturnValue('https://www.google.com/');
+    renderPage('en', {});
+    await choose(pdf());
+    fireEvent.click(await screen.findByRole('button', { name: 'Create quiz' }));
+
+    expect(await screen.findByText('40% done • 3 questions')).toBeInTheDocument();
+    expect(createGuestDraft).toHaveBeenCalledWith(expect.objectContaining({ entry: 'seo' }));
   });
 
   it('Cancel returns to the chosen file', async () => {

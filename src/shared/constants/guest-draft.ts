@@ -1,7 +1,10 @@
 /** Guest quiz drafts (RIN-1441): a signed-out visitor turns their own PDF into a quiz. */
 
-/** Where the guest started; carried on every guest_draft_* event. */
-export const GUEST_DRAFT_ENTRIES = ['landing', 'create', 'blog', 'quiz_landing'] as const;
+/**
+ * Where the guest started; carried on every guest_draft_* event. `seo`: no known `?entry=`
+ * and a search engine referrer (RIN-1497).
+ */
+export const GUEST_DRAFT_ENTRIES = ['landing', 'create', 'blog', 'quiz_landing', 'seo'] as const;
 export type GuestDraftEntry = (typeof GUEST_DRAFT_ENTRIES)[number];
 
 export const GUEST_DRAFT_STATUSES = ['processing', 'ready', 'failed'] as const;

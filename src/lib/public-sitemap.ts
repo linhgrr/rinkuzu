@@ -4,7 +4,7 @@ import { getBlogSitemapRoutes } from '@/lib/blog/posts';
 import { serializeDate } from '@/lib/date-serialization';
 import { loadPublicQuizSitemapEntries } from '@/lib/public-quiz-sitemap';
 import { canonicalFor, languageAlternates } from '@/lib/seo';
-import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
+import { DATED_STATIC_PUBLIC_ROUTES, INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 import { loadIndexableTopicHubs, topicHubPath } from '@/lib/seo/topic-hub';
 
 function toEntry(
@@ -52,6 +52,13 @@ export async function buildPublicSitemapEntries(
   for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
     for (const locale of locales) {
       pushEntry(toEntry(locale, route));
+    }
+  }
+
+  for (const route of DATED_STATIC_PUBLIC_ROUTES) {
+    const lastModified = new Date(`${route.lastModified}T00:00:00.000Z`);
+    for (const locale of locales) {
+      pushEntry(toEntry(locale, route.path, lastModified));
     }
   }
 

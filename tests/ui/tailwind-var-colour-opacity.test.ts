@@ -95,7 +95,7 @@ describe('Tailwind opacity modifiers on var() colours (RIN-1524)', () => {
   });
 
   it('leaves hex palette colours untouched', () => {
-    const { colors } = (projectConfig.theme?.extend ?? {}) as { colors: Record<string, unknown> };
-    expect((colors.green as Record<string, unknown>)[500]).toBe('#22a06b');
+    const extend = projectConfig.theme?.extend as { colors: { green: Record<string, string> } };
+    expect(extend.colors.green['500']).toBe('#22a06b');
   });
 });

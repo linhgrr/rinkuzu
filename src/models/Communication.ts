@@ -55,6 +55,8 @@ const OUTBOX_KINDS = [
   'review_reminder_d5',
   /** One per account for its lifetime, 24 h after signup (RIN-999). */
   'activation_nudge',
+  /** One per rejected Premium submission, to its author (RIN-1348). */
+  'premium_decision',
 ] as const;
 export type OutboxKind = (typeof OUTBOX_KINDS)[number];
 
@@ -63,6 +65,7 @@ const OUTBOX_ENTITY_TYPES = [
   'feedback_conversation',
   'attempt',
   'user',
+  'premium_submission',
   /** Path B review email (RIN-1364): `entityId` is the learner, the anchor fields name the completion. */
   'adaptive_completion',
 ] as const;

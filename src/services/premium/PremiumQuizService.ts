@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
 import type {
   IPremiumQuizRepository,
   IPremiumSubmissionRecoveryRepository,
@@ -311,6 +312,7 @@ export class PremiumQuizService {
     private readonly premiumRepository: IPremiumQuizRepository,
     private readonly attemptRepository: IQuizAttemptProgressRepository,
     private readonly submissionRecovery?: IPremiumSubmissionRecoveryRepository,
+    private readonly decisionNotifier?: IPremiumDecisionNotifier,
   ) {}
 
   async assertCanContribute(userId: string): Promise<void> {
@@ -460,7 +462,7 @@ export class PremiumQuizService {
     submissionId: string,
     input: DecidePremiumSubmissionRequestDto,
   ): Promise<PremiumDecisionResult> {
-    return this.premiumRepository.decide({
+    const result = await this.premiumRepository.decide({
       submissionId,
       reviewerId,
       decision: input.decision,
@@ -468,6 +470,27 @@ export class PremiumQuizService {
       ...(input.note === undefined ? {} : { note: input.note }),
       ...(input.overrideReason === undefined ? {} : { overrideReason: input.overrideReason }),
     });
+    if (input.decision === 'reject') await this.queueRejectEmail(result);
+    return result;
+  }
+
+  /** The author's reject email (RIN-1348); a failure to queue it never undoes the decision. */
+  private async queueRejectEmail(result: PremiumDecisionResult): Promise<void> {
+    if (!this.decisionNotifier || result.submission.status !== 'rejected') return;
+    try {
+      await this.decisionNotifier.queueRejectEmail({
+        submission: result.submission,
+        quizMadePublic: result.quizMadePublic === true,
+      });
+    } catch (error) {
+      logger.warn(
+        {
+          submissionId: result.submission.id,
+          errorName: error instanceof Error ? error.name : 'unknown',
+        },
+        'Premium reject email not queued',
+      );
+    }
   }
 
   async createReviewDispatch(

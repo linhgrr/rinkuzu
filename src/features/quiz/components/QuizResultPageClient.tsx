@@ -31,6 +31,7 @@ import { QuestionReviewList } from '@/features/quiz/components/result/QuestionRe
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
+import { isGuestDraftSlug } from '@/shared/constants/guest-draft';
 import type { QuizShareTarget } from '@/features/quiz/components/result/ShareResultButton';
 import { claimStoredGuestAttempts } from '@/features/quiz/api/guest-claim-api';
 import { findGuestClaimToken } from '@/features/quiz/lib/guest-claims';
@@ -714,7 +715,7 @@ function GuestScoreOnlyResult({
   redoLabel,
   resultPath,
   score,
-  showSaveCard,
+  saveVariant,
   t,
 }: {
   backHomeLabel: string;
@@ -722,7 +723,8 @@ function GuestScoreOnlyResult({
   redoLabel: string;
   resultPath: string;
   score: number;
-  showSaveCard: boolean;
+  /** The guest sign-up card, or null for a signed-in reader. */
+  saveVariant: 'scoreOnly' | 'draft' | null;
   t: (key: string) => string;
 }) {
   return (
@@ -738,7 +740,7 @@ function GuestScoreOnlyResult({
             <p className="text-4xl font-bold text-brand-trust">{score}%</p>
           </CardContent>
         </Card>
-        {showSaveCard ? <GuestSaveResultCard resultPath={resultPath} variant="scoreOnly" /> : null}
+        {saveVariant ? <GuestSaveResultCard resultPath={resultPath} variant={saveVariant} /> : null}
         <QuizResultActions
           backHomeLabel={backHomeLabel}
           encodedSlug={encodedSlug}
@@ -764,7 +766,10 @@ function QuizResultContent() {
   const urlScore = parseUrlScore(get('score'));
   const { status: sessionStatus } = useSession();
   const reader = toResultReader(sessionStatus);
-  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const routeSlug = useRequiredRouteParam('slug');
+  const encodedSlug = routePathSegment(routeSlug);
+  // A quiz from the visitor's own PDF (RIN-1448): "sign up to save this quiz and your result".
+  const draftResult = isGuestDraftSlug(routeSlug);
   const viewer: ResultViewer = reader === 'member' ? 'signed_in' : reader;
   const { state, dispatch, stats, toggleBookmark, removeBookmark, retryLoad } =
     useQuizResultPageData(attemptId, locale, reader, guestUserEmail);
@@ -804,7 +809,7 @@ function QuizResultContent() {
         redoLabel={tProfile('redo')}
         resultPath={resultPath}
         score={urlScore}
-        showSaveCard={reader === 'guest'}
+        saveVariant={reader === 'guest' ? (draftResult ? 'draft' : 'scoreOnly') : null}
         t={t}
       />
     );
@@ -837,7 +842,9 @@ function QuizResultContent() {
       }
       formatCorrectAnswer={formatCorrectAnswerText}
       guestSaveCard={
-        reader === 'guest' ? <GuestSaveResultCard resultPath={resultPath} variant="review" /> : null
+        reader === 'guest' ? (
+          <GuestSaveResultCard resultPath={resultPath} variant={draftResult ? 'draft' : 'review'} />
+        ) : null
       }
       onCancelRemove={() => dispatch({ type: 'setBookmarkToRemove', questionIndex: null })}
       onConfirmRemove={() =>

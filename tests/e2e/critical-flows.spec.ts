@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
+import { PDFDocument } from 'pdf-lib';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './support/auth-rate-limit-keys';
 import { createE2EUserEmail } from './support/fixture-identifiers';
@@ -407,8 +408,10 @@ interface SeededGuestDraft {
 }
 
 /** A ready guest draft, as the status poll leaves it (RIN-1447): no OCR in e2e. */
-async function seedReadyGuestDraft(db: Db): Promise<SeededGuestDraft> {
-  const token = randomBytes(32).toString('base64url');
+async function seedReadyGuestDraft(
+  db: Db,
+  token: string = randomBytes(32).toString('base64url'),
+): Promise<SeededGuestDraft> {
   const id = new ObjectId();
   const apiDraftId = `e2e-guest-${randomUUID()}`;
   const now = new Date();
@@ -446,6 +449,55 @@ async function storeGuestDraftToken(page: Page, token: string): Promise<void> {
       JSON.stringify([{ token: value, createdAt: Date.now() }]),
     );
   }, token);
+}
+
+/** A one-page PDF the browser check accepts (RIN-1448); its content never reaches OCR. */
+async function fakeOnePagePdf(): Promise<Buffer> {
+  const doc = await PDFDocument.create();
+  doc.addPage();
+  return Buffer.from(await doc.save());
+}
+
+const GUEST_UPLOAD_COPY = {
+  en: {
+    create: 'Create quiz',
+    notice: /Kept for 24 hours/,
+    finish: /finish \(1\/1 answered\)/i,
+    submit: 'Submit Quiz',
+    saveTitle: 'Sign up to save this quiz and your result',
+  },
+  vi: {
+    create: 'Tạo quiz',
+    notice: /Chỉ lưu 24 giờ/,
+    finish: /hoàn thành \(1\/1 đã trả lời\)/i,
+    submit: 'Nộp bài',
+    saveTitle: 'Đăng ký để lưu quiz này và kết quả',
+  },
+} as const;
+
+/** The upload answer when the draft is ready at once (no OCR in e2e). */
+const READY_GUEST_DRAFT_BODY = JSON.stringify({
+  success: true,
+  data: {
+    status: 'ready',
+    progressPercent: 100,
+    title: 'E2E guest draft quiz',
+    questionCount: 1,
+    failureReason: null,
+  },
+});
+
+async function finishOneQuestionQuiz(
+  page: Page,
+  copy: (typeof GUEST_UPLOAD_COPY)[keyof typeof GUEST_UPLOAD_COPY],
+): Promise<void> {
+  await chooseOption(page, 'Mitochondria');
+  const desktopSubmit = page.getByRole('button', { name: copy.submit, exact: true });
+  if (await desktopSubmit.isVisible()) {
+    await desktopSubmit.click();
+  } else {
+    await page.getByRole('button', { name: copy.finish }).click();
+  }
 }
 
 async function cleanupGuestDraft(db: Db, draft: SeededGuestDraft): Promise<void> {
@@ -1536,6 +1588,83 @@ test.describe('production critical paths', () => {
       }
     });
   });
+
+  for (const locale of ['en', 'vi'] as const) {
+    test(`uploads a PDF signed out, plays it and claims it on sign-in (${locale}) @critical-quiz-guest-draft-upload`, async ({
+      page,
+    }, testInfo) => {
+      // RIN-1448: the upload call is answered in the browser with a ready draft seeded under
+      // the page's own token (no OCR in e2e); play, attempt, result and claim are real.
+      await withDatabaseFixture(testInfo, async (fixture) => {
+        const copy = GUEST_UPLOAD_COPY[locale];
+        const seeded: { draft?: SeededGuestDraft } = {};
+        await page.addInitScript(() => {
+          window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+        });
+        await page.route('**/api/guest-drafts', async (route) => {
+          const token = route.request().headers()['x-guest-draft-token'] ?? '';
+          seeded.draft = await seedReadyGuestDraft(fixture.db, token);
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: READY_GUEST_DRAFT_BODY,
+          });
+        });
+        const authorOf = async () => {
+          const apiDraftId = seeded.draft?.apiDraftId;
+          if (!apiDraftId) return null;
+          const quiz = await fixture.db
+            .collection('quizzes')
+            .findOne({ sourceDraftId: apiDraftId });
+          return quiz ? String(quiz['author']) : null;
+        };
+        try {
+          // Signed out, no redirect to sign-in.
+          await page.goto(`/${locale}/try/pdf?entry=landing`);
+          await expect(page).toHaveURL(new RegExp(`/${locale}/try/pdf\\?entry=landing$`));
+          await page.locator('input[type="file"]').setInputFiles({
+            name: 'fake-notes.pdf',
+            mimeType: 'application/pdf',
+            buffer: await fakeOnePagePdf(),
+          });
+          await page.getByRole('button', { name: copy.create, exact: true }).click();
+
+          await page.waitForURL(new RegExp(`/${locale}/try/pdf/play$`));
+          await expect(page.getByText(copy.notice)).toBeVisible();
+          await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+          await finishOneQuestionQuiz(page, copy);
+          await page.waitForURL(new RegExp(`/${locale}/quiz/guest-draft-play/result\\?attemptId=`));
+          await expect(page.getByRole('heading', { name: copy.saveTitle })).toBeVisible();
+
+          // Signing in claims the draft into the account (RIN-1447).
+          await login(page, fixture.target);
+          await expect.poll(authorOf, { timeout: 15_000 }).toBe(fixture.target.id.toHexString());
+          // Both claim calls are done (each clears its store last), so the claim's progress
+          // write has landed before the fixture cleanup counts the learner's progress.
+          await expect
+            .poll(
+              () =>
+                page.evaluate(() => [
+                  window.localStorage.getItem('rinkuzu.guestDrafts.v1'),
+                  window.localStorage.getItem('rinkuzu.guestClaims.v1'),
+                ]),
+              { timeout: 15_000 },
+            )
+            .toEqual([null, null]);
+        } finally {
+          if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
+          await fixture.db.collection('auth_rate_limits').deleteMany({
+            key: {
+              $in: [
+                `auth:guest_draft_claim_user:${fixture.target.id.toHexString()}`,
+                ...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS,
+              ],
+            },
+          });
+        }
+      });
+    });
+  }
 
   test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
     page,

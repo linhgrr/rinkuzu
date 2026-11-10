@@ -78,6 +78,8 @@ interface DesktopQuizLayoutProps {
   notice?: ReactNode;
   /** Pill beside the title, e.g. "Retry: 3 questions" (RIN-917). */
   titleBadge?: string;
+  /** Report and discussion; off for a guest draft, which has no quiz page (RIN-1448). */
+  community?: boolean;
   t: TranslateFn;
 }
 
@@ -344,6 +346,7 @@ export function DesktopQuizLayout({
   submit,
   notice,
   titleBadge,
+  community = true,
   t,
 }: DesktopQuizLayoutProps) {
   const [discussionLoaded, setDiscussionLoaded] = useState(
@@ -383,23 +386,25 @@ export function DesktopQuizLayout({
               answer={userAnswers[currentQuestionIndex]}
               questionCount={questions.length}
               headerActions={
-                <>
-                  <ReportQuiz
-                    quizSlug={slug}
-                    quizTitle={quizTitle}
-                    questionId={currentQuestion.id}
-                    questionNumber={currentQuestionIndex + 1}
-                    questionText={currentQuestion.question}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => setDiscussionCollapsed(!discussion.collapsed)}
-                    className="border-green-200 text-brand-trust hover:border-green-300 hover:bg-green-50"
-                    title={t('discussion')}
-                  >
-                    {t('discussion')}
-                  </Button>
-                </>
+                community ? (
+                  <>
+                    <ReportQuiz
+                      quizSlug={slug}
+                      quizTitle={quizTitle}
+                      questionId={currentQuestion.id}
+                      questionNumber={currentQuestionIndex + 1}
+                      questionText={currentQuestion.question}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setDiscussionCollapsed(!discussion.collapsed)}
+                      className="border-green-200 text-brand-trust hover:border-green-300 hover:bg-green-50"
+                      title={t('discussion')}
+                    >
+                      {t('discussion')}
+                    </Button>
+                  </>
+                ) : null
               }
               onSelectAnswer={selectAnswer}
               onPrevious={previousQuestion}

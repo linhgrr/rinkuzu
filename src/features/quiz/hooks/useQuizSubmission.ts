@@ -7,6 +7,13 @@ import { withPending } from '@/lib/async/with-pending';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizEntryAttribution } from '@/shared/constants/starter-quiz';
 
+/** A submit that is not `/api/quiz/<slug>/attempt`: a guest draft (RIN-1448). */
+export type QuizAttemptSubmitter = (input: {
+  answers: QuizAnswer[];
+  idempotencyKey: string;
+  guestClaimToken: string;
+}) => Promise<{ attemptId: string; score: number }>;
+
 interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestion[] }> {
   slug: string;
   quiz: TQuiz | null;
@@ -19,6 +26,8 @@ interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestio
   questionIndices?: number[];
   /** Tracked entry point (RIN-1242), stored on the attempt by the API (RIN-1256). */
   attribution?: QuizEntryAttribution;
+  /** Replaces the slug submit; always a guest attempt with a fresh claim token. */
+  submitAttempt?: QuizAttemptSubmitter;
   onSubmitSuccess: (attemptId: string, score: number) => void | Promise<void>;
   onSubmitStart?: () => void;
   /** Receives the thrown value; the caller turns it into localized copy (RIN-753). */
@@ -42,6 +51,7 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
   retryOfAttemptId,
   questionIndices,
   attribution,
+  submitAttempt,
   onSubmitSuccess,
   onSubmitStart,
   onSubmitError,
@@ -60,21 +70,8 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
     setSubmitting(pending);
   };
 
-  const submitQuizAnswers = async (answersToSubmit: QuizAnswer[]) => {
-    if (!quiz) return;
-
-    const answers = mapAnswersToOriginalOrder(quiz, answersToSubmit);
-    const fingerprint = JSON.stringify({ slug, answers, sessionEmail: sessionEmail ?? null });
-    if (idempotencyRef.current?.fingerprint !== fingerprint) {
-      idempotencyRef.current = {
-        fingerprint,
-        key: crypto.randomUUID(),
-        guestClaimToken: sessionEmail ? null : createGuestClaimToken(),
-      };
-    }
-    const pending = idempotencyRef.current;
-
-    const data = await submitQuizAttemptViewModel({
+  const submitSlugAttempt = (answers: QuizAnswer[], pending: PendingSubmission) =>
+    submitQuizAttemptViewModel({
       slug,
       answers,
       idempotencyKey: pending.key,
@@ -85,6 +82,28 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       ...(attribution?.post ? { post: attribution.post } : {}),
       ...(attribution?.topic ? { topic: attribution.topic } : {}),
     });
+
+  const submitQuizAnswers = async (answersToSubmit: QuizAnswer[]) => {
+    if (!quiz) return;
+
+    const answers = mapAnswersToOriginalOrder(quiz, answersToSubmit);
+    const fingerprint = JSON.stringify({ slug, answers, sessionEmail: sessionEmail ?? null });
+    if (idempotencyRef.current?.fingerprint !== fingerprint) {
+      idempotencyRef.current = {
+        fingerprint,
+        key: crypto.randomUUID(),
+        guestClaimToken: sessionEmail && !submitAttempt ? null : createGuestClaimToken(),
+      };
+    }
+    const pending = idempotencyRef.current;
+
+    const data = await (submitAttempt && pending.guestClaimToken
+      ? submitAttempt({
+          answers,
+          idempotencyKey: pending.key,
+          guestClaimToken: pending.guestClaimToken,
+        })
+      : submitSlugAttempt(answers, pending));
 
     if (pending.guestClaimToken) {
       addGuestClaim({

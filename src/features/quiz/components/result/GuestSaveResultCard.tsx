@@ -12,9 +12,26 @@ import { ROUTES } from '@/shared/constants/routes';
 interface GuestSaveResultCardProps {
   /** Locale-unprefixed result URL to come back to after sign-in (no email, no token). */
   resultPath: string;
-  /** `review`: the attempt loaded; `scoreOnly`: only the score from the URL (no review promise). */
-  variant: 'review' | 'scoreOnly';
+  /**
+   * `review`: the attempt loaded; `scoreOnly`: only the score from the URL (no review promise);
+   * `draft`: a quiz from the visitor's own PDF, deleted after 24 h unless they sign up (RIN-1448).
+   */
+  variant: 'review' | 'scoreOnly' | 'draft';
 }
+
+const COPY_KEYS = {
+  review: { title: 'guestSaveTitle', body: 'guestSaveBody', google: 'guestSaveWithGoogle' },
+  scoreOnly: {
+    title: 'guestSaveTitle',
+    body: 'guestSaveScoreOnlyBody',
+    google: 'guestSaveWithGoogle',
+  },
+  draft: {
+    title: 'guestDraftSaveTitle',
+    body: 'guestDraftSaveBody',
+    google: 'guestDraftSaveWithGoogle',
+  },
+} as const;
 
 const LINK_CLASS =
   'inline-flex min-h-11 items-center text-sm font-medium text-brand-trust underline hover:text-brand-trust-hover';
@@ -25,21 +42,20 @@ export function GuestSaveResultCard({ resultPath, variant }: GuestSaveResultCard
   const locale = useLocale();
   const titleId = useId();
   const googleCallbackUrl = resolveAuthCallback(resultPath, locale).browserUrl;
+  const copy = COPY_KEYS[variant];
 
   return (
     <section aria-labelledby={titleId} className="mb-6">
       <Card variant="bordered" className="border-green-200 bg-green-50 p-6 text-center">
         <HiOutlineLightBulb className="mx-auto mb-2 size-6 text-brand-trust" aria-hidden="true" />
         <h2 id={titleId} className="font-semibold text-brand-trust">
-          {t('guestSaveTitle')}
+          {t(copy.title)}
         </h2>
-        <p className="mt-1 text-sm text-brand-trust">
-          {variant === 'review' ? t('guestSaveBody') : t('guestSaveScoreOnlyBody')}
-        </p>
+        <p className="mt-1 text-sm text-brand-trust">{t(copy.body)}</p>
         <div className="mx-auto mt-4 w-full sm:max-w-xs">
           <GoogleAuthButton
             callbackUrl={googleCallbackUrl}
-            label={t('guestSaveWithGoogle')}
+            label={t(copy.google)}
             describedBy={titleId}
           />
         </div>

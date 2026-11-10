@@ -1,11 +1,16 @@
-import type { GuestDraftStatusDto } from '@/dtos/guest-draft';
+import type { GuestDraftPlayDto, GuestDraftStatusDto } from '@/dtos/guest-draft';
+import type { QuizAttemptResultDto } from '@/dtos/quiz';
+import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 import type {
+  GuestDraftAttemptInput,
   GuestDraftProgress,
   GuestDraftRefusal,
+  SubmittedGuestDraftAttempt,
 } from '@/features/guest-draft/types/guest-draft-view-model';
 import { ApiResponseError, fetchApiData } from '@/lib/api/client';
 import {
   GUEST_DRAFT_LIMIT_REASON,
+  GUEST_DRAFT_PLAY_SLUG,
   GUEST_DRAFT_TOKEN_HEADER,
   type GuestDraftEntry,
 } from '@/shared/constants/guest-draft';
@@ -70,4 +75,44 @@ export async function fetchGuestDraftProgress(token: string): Promise<GuestDraft
     body: JSON.stringify({ token }),
   });
   return toProgress(dto);
+}
+
+/** The questions of a ready guest draft as the player's quiz (RIN-1448). 404: gone or not ready. */
+export async function fetchGuestDraftPlay(token: string): Promise<QuizPlayViewModel> {
+  const dto = await fetchApiData<GuestDraftPlayDto>('/api/guest-drafts/play', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  const now = new Date().toISOString();
+  return {
+    id: GUEST_DRAFT_PLAY_SLUG,
+    slug: GUEST_DRAFT_PLAY_SLUG,
+    title: dto.title,
+    author: null,
+    folder: null,
+    visibility: 'public',
+    questionCount: dto.questions.length,
+    createdAt: now,
+    updatedAt: now,
+    questions: dto.questions,
+  };
+}
+
+/** `POST /api/guest-drafts/attempt`: scored on the server, stored as a RIN-912 guest attempt. */
+export async function submitGuestDraftAttempt(
+  token: string,
+  input: GuestDraftAttemptInput,
+): Promise<SubmittedGuestDraftAttempt> {
+  const dto = await fetchApiData<QuizAttemptResultDto>('/api/guest-drafts/attempt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, ...input }),
+  });
+  return { attemptId: dto.attemptId, score: dto.score };
+}
+
+/** True when the draft is gone (expired, claimed, another browser): show the expired card. */
+export function isGuestDraftGone(error: unknown): boolean {
+  return error instanceof ApiResponseError && error.status === 404;
 }

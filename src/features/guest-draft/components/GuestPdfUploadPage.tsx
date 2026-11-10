@@ -99,7 +99,7 @@ function FlowBody({ flow }: { flow: Flow }) {
 }
 
 /** `/try/pdf` (RIN-1448): a signed-out visitor turns their own PDF into a quiz and plays it. */
-export function GuestPdfUploadPage({ entry }: { entry: GuestDraftEntry }) {
+export function GuestPdfUploadPage({ entry }: { entry?: GuestDraftEntry | undefined }) {
   const t = useTranslations('guestDraft.upload');
   const flow = useGuestPdfDraft(entry);
 

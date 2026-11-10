@@ -1,11 +1,11 @@
 {
   "meta": {
-    "title": "Biến PDF của bạn thành quiz, không cần tài khoản",
-    "description": "Tải một PDF ngắn lên và làm quiz từ nó ngay, không cần tài khoản."
+    "title": "Tạo câu hỏi trắc nghiệm từ PDF miễn phí | RinKuzu",
+    "description": "Tạo quiz từ PDF miễn phí: tải PDF lên, Rin soạn tối đa 10 câu hỏi trắc nghiệm để bạn làm ngay, không cần tài khoản."
   },
   "upload": {
     "badge": "Không cần tài khoản",
-    "title": "Biến PDF của bạn thành quiz, làm ngay",
+    "title": "Tạo câu hỏi trắc nghiệm từ PDF, làm ngay",
     "subtitle": "Tối đa {pages} trang và {mb} MB. Rin tạo tối đa 10 câu hỏi, bạn làm luôn, không cần chỉnh sửa.",
     "dropzoneLabel": "Tài liệu PDF",
     "clickToUpload": "Nhấn để tải lên",

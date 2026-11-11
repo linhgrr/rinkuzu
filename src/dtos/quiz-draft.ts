@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { objectIdSchema } from '@/lib/validation/common';
 import { premiumRightsRefinement, quizComposeBaseFields } from '@/dtos/quiz';
+import { quizTextSchema } from '@/dtos/quiz-text-source';
 import type { components } from '@/generated/adaptive-api';
 
 type AdaptiveSchemas = components['schemas'];
@@ -23,6 +24,28 @@ export interface CreateQuizDraftInputDto {
   folderId?: QuizDraftCreateTransportDto['category_id'];
   description?: QuizDraftCreateTransportDto['description'];
   prompt?: QuizDraftCreateTransportDto['prompt'];
+  submitToPremium?: boolean;
+}
+
+/**
+ * `POST /api/quiz-drafts/text` (RIN-1538), snake_case like the API's draft create. Bounds
+ * mirror `QuizDraftCreateRequest`, so a bad request never reaches the API.
+ */
+export const createTextQuizDraftRequestSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  text: quizTextSchema,
+  description: z.string().max(1000).nullable().optional(),
+  category_id: objectIdSchema.nullable().optional(),
+  prompt: z.string().max(2000).nullable().optional(),
+  submit_to_premium: z.boolean().optional(),
+});
+
+export interface CreateTextQuizDraftInputDto {
+  title: string;
+  text: string;
+  folderId?: string | null;
+  description?: string;
+  prompt?: string;
   submitToPremium?: boolean;
 }
 

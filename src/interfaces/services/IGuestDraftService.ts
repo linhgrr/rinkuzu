@@ -1,5 +1,5 @@
 import type { components } from '@/generated/adaptive-api';
-import type { GuestDraftEntry } from '@/shared/constants/guest-draft';
+import type { GuestDraftEntry, GuestDraftSource } from '@/shared/constants/guest-draft';
 
 export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'];
 
@@ -22,6 +22,8 @@ export type UpstreamGuestDraftResult =
 /** The API's guest-draft endpoints, called with the service token and no user. */
 export interface GuestDraftUpstream {
   create(pdf: Blob): Promise<UpstreamGuestDraftResult>;
+  /** Pasted text (RIN-1538): no OCR, same draft shape, caps and TTL as a PDF draft. */
+  createFromText(text: string): Promise<UpstreamGuestDraftResult>;
   get(apiDraftId: string): Promise<UpstreamGuestDraftResult>;
   remove(apiDraftId: string): Promise<void>;
 }
@@ -30,9 +32,13 @@ export interface GuestDraftEventContext {
   draftId: string;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
+  source: GuestDraftSource;
 }
 
-/** Server-side guest_draft_* events: locale and entry only, never content, IP or token. */
+/**
+ * Server-side guest_draft_* events: locale, entry and source only, never content (file or
+ * pasted text), IP or token.
+ */
 export interface GuestDraftEvents {
   started(context: GuestDraftEventContext): Promise<void>;
   ready(context: GuestDraftEventContext): Promise<void>;
@@ -40,12 +46,20 @@ export interface GuestDraftEvents {
   claimed(context: GuestDraftEventContext): Promise<void>;
 }
 
-export interface GuestDraftCreateInput {
+interface GuestDraftCreateBase {
   token: string;
-  pdf: Blob;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   ip: string | null;
+}
+
+export interface GuestDraftCreateInput extends GuestDraftCreateBase {
+  pdf: Blob;
+}
+
+/** The text is passed to the API and never stored, logged or sent to analytics here. */
+export interface GuestTextDraftCreateInput extends GuestDraftCreateBase {
+  text: string;
 }
 
 export interface GuestDraftView {
@@ -70,6 +84,8 @@ export type GuestDraftResult =
 
 export interface IGuestDraftService {
   create(input: GuestDraftCreateInput): Promise<GuestDraftResult>;
+  /** Same token check, per-IP and global caps and attempt record as `create` (RIN-1538). */
+  createFromText(input: GuestTextDraftCreateInput): Promise<GuestDraftResult>;
   /** `ip` is the polling request's: a failed draft gives its per-IP slot back (AC8). */
   status(token: string, ip: string | null): Promise<GuestDraftResult>;
 }

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
-import { classifyGuestDraftError } from './guest-draft-api';
+import { classifyGuestDraftError, createGuestTextDraft } from './guest-draft-api';
 
 const refused = (status: number, meta: Record<string, unknown> = {}) =>
   new ApiResponseError({ message: 'refused', status, payload: null, meta });
@@ -14,5 +14,43 @@ describe('classifyGuestDraftError (RIN-1448)', () => {
     expect(classifyGuestDraftError(refused(415))).toBe('not_pdf');
     expect(classifyGuestDraftError(refused(503))).toBe('upload_error');
     expect(classifyGuestDraftError(new TypeError('Failed to fetch'))).toBe('upload_error');
+  });
+});
+
+describe('createGuestTextDraft (RIN-1538)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('posts the text as JSON with the token in a header and maps the progress', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        {
+          success: true,
+          data: {
+            status: 'processing',
+            progressPercent: 12.6,
+            title: null,
+            questionCount: 0,
+            failureReason: null,
+          },
+        },
+        { status: 201 },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const progress = await createGuestTextDraft({
+      text: 'Fake notes',
+      token: 'T'.repeat(43),
+      locale: 'en',
+      entry: 'create',
+    });
+
+    expect(progress).toEqual({ status: 'processing', percent: 13, questionCount: 0, title: null });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(String(url)).toBe('/api/guest-drafts/text');
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe(JSON.stringify({ text: 'Fake notes', locale: 'en', entry: 'create' }));
+    expect(new Headers(init?.headers).get('x-guest-draft-token')).toBe('T'.repeat(43));
+    expect(String(url)).not.toContain('T'.repeat(43));
   });
 });

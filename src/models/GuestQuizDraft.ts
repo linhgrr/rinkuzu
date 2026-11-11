@@ -3,13 +3,15 @@ import mongoose, { Schema } from 'mongoose';
 import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
 import {
   GUEST_DRAFT_ENTRIES,
+  GUEST_DRAFT_SOURCES,
   GUEST_DRAFT_STATUSES,
   type GuestDraftEntry,
+  type GuestDraftSource,
   type GuestDraftStatus,
 } from '@/shared/constants/guest-draft';
 
 /**
- * A quiz a signed-out visitor generated from their own PDF (RIN-1441). Kept out of the
+ * A quiz a signed-out visitor generated from their own PDF (RIN-1441) or pasted text (RIN-1538). Kept out of the
  * `Quiz` collection on purpose: lists, sitemap, search and admin pages read `Quiz`, and a
  * guest draft must appear in none of them. Only the SHA-256 of the browser's token is
  * stored; the TTL index deletes an unclaimed draft 24 h after it was created.
@@ -22,6 +24,8 @@ export interface GuestQuizDraftDocument {
   questions: QuizQuestionDocument[];
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
+  /** Absent on drafts made before RIN-1538, which were all PDF drafts. */
+  source?: GuestDraftSource;
   failureReason?: string;
   expiresAt: Date;
   createdAt: Date;
@@ -37,6 +41,7 @@ const GuestQuizDraftSchema = new Schema<GuestQuizDraftDocument>(
     questions: { type: [QuizQuestionSchema], default: [] },
     locale: { type: String, enum: ['vi', 'en'], required: true },
     entry: { type: String, enum: GUEST_DRAFT_ENTRIES, required: true },
+    source: { type: String, enum: GUEST_DRAFT_SOURCES, default: 'pdf', immutable: true },
     failureReason: { type: String, maxlength: 64 },
     expiresAt: { type: Date, required: true },
   },

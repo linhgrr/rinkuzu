@@ -1,5 +1,9 @@
 import type { QuizQuestion } from '@/entities/Quiz';
-import type { GuestDraftEntry, GuestDraftStatus } from '@/shared/constants/guest-draft';
+import type {
+  GuestDraftEntry,
+  GuestDraftSource,
+  GuestDraftStatus,
+} from '@/shared/constants/guest-draft';
 
 /** A question copied from the API draft; correct answers stay on the server. */
 export type GuestDraftQuestion =
@@ -26,6 +30,7 @@ export interface GuestDraftRecord {
   questionCount: number;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
+  source: GuestDraftSource;
   failureReason: string | null;
 }
 
@@ -34,6 +39,7 @@ export interface NewGuestDraft {
   apiDraftId: string;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
+  source: GuestDraftSource;
   expiresAt: Date;
 }
 
@@ -60,6 +66,7 @@ export interface ClaimableGuestDraft {
   questions: GuestDraftQuestion[];
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
+  source: GuestDraftSource;
 }
 
 /** The claim side of the guest draft store; never logs or returns a hash. */

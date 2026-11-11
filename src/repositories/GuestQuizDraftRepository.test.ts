@@ -25,15 +25,18 @@ describe('GuestQuizDraftRepository', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('creates a processing draft and maps it to a record', async () => {
-    model.create.mockResolvedValue({ toObject: () => stored });
+    model.create.mockResolvedValue({ toObject: () => ({ ...stored, source: 'text' }) });
     const record = await repository.create({
       tokenHash: 'a'.repeat(64),
       apiDraftId: 'api-draft-1',
       locale: 'en',
       entry: 'landing',
+      source: 'text',
       expiresAt: new Date(0),
     });
-    expect(model.create).toHaveBeenCalledWith(expect.objectContaining({ status: 'processing' }));
+    expect(model.create).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'processing', source: 'text' }),
+    );
     expect(record).toEqual({
       id: id.toString(),
       apiDraftId: 'api-draft-1',
@@ -42,8 +45,16 @@ describe('GuestQuizDraftRepository', () => {
       questionCount: 0,
       locale: 'en',
       entry: 'landing',
+      source: 'text',
       failureReason: null,
     });
+  });
+
+  it('reads a draft stored before RIN-1538 (no source) as a PDF draft', async () => {
+    const exec = vi.fn().mockResolvedValueOnce(stored);
+    model.findOne.mockReturnValue({ lean: () => ({ exec }) });
+
+    expect(await repository.findByTokenHash('h')).toMatchObject({ source: 'pdf' });
   });
 
   it('finds by token hash, or returns null', async () => {

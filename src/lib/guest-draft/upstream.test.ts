@@ -5,7 +5,8 @@ vi.mock('@/lib/adaptive/config', () => ({
   buildAdaptiveServiceHeaders: () => ({ 'x-service-token': 'fake-service-token' }),
   resolveAdaptiveProxyTimeoutMs: () => 1_000,
 }));
-vi.mock('@/lib/logger', () => ({ logger: { warn: vi.fn() } }));
+const { warn } = vi.hoisted(() => ({ warn: vi.fn() }));
+vi.mock('@/lib/logger', () => ({ logger: { warn } }));
 
 import { createGuestDraftUpstream } from '@/lib/guest-draft/upstream';
 
@@ -81,5 +82,46 @@ describe('createGuestDraftUpstream', () => {
     fetchMock.mockResolvedValueOnce(respond(200, {}));
     await createGuestDraftUpstream().remove('x');
     expect(fetchMock.mock.calls.at(-1)?.[1]?.method).toBe('DELETE');
+  });
+
+  it('creates from pasted text as JSON to the text route, service token only (RIN-1538)', async () => {
+    fetchMock.mockResolvedValue(respond(201, { success: true, data: { draft } }));
+
+    const result = await createGuestDraftUpstream().createFromText('Fake pasted notes');
+
+    expect(result).toEqual({ ok: true, draft });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe('http://api.test/api/quiz/guest-drafts/text');
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe(JSON.stringify({ text: 'Fake pasted notes' }));
+    expect(init?.headers).toMatchObject({
+      'x-service-token': 'fake-service-token',
+      'content-type': 'application/json',
+    });
+    expect(init?.headers).not.toHaveProperty('x-user-id');
+  });
+
+  it('returns the API refusal of a text, and never logs the text on a network error', async () => {
+    fetchMock.mockResolvedValueOnce(
+      respond(413, {
+        error: {
+          code: 'validation_error',
+          meta: { reason: 'guest_text_too_long', limit_chars: 20000 },
+        },
+      }),
+    );
+    expect(await createGuestDraftUpstream().createFromText('x')).toEqual({
+      ok: false,
+      status: 413,
+      code: 'validation_error',
+      meta: { reason: 'guest_text_too_long', limit_chars: 20000 },
+    });
+
+    warn.mockClear();
+    fetchMock.mockRejectedValueOnce(new TypeError('network'));
+    expect(await createGuestDraftUpstream().createFromText('Fake secret notes')).toMatchObject({
+      status: 503,
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('Fake secret notes');
   });
 });

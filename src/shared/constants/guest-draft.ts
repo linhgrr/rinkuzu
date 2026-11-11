@@ -53,3 +53,7 @@ export function isGuestDraftSlug(slug: string): boolean {
  * RIN-1444). Shown on `/try/pdf` (RIN-1498); the API is the enforcer.
  */
 export const GUEST_DRAFT_MAX_QUESTIONS = 10;
+
+/** What a guest draft was made from (RIN-1538); carried on every guest_draft_* event. */
+export const GUEST_DRAFT_SOURCES = ['pdf', 'text'] as const;
+export type GuestDraftSource = (typeof GUEST_DRAFT_SOURCES)[number];

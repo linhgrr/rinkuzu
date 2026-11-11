@@ -12,15 +12,18 @@ import type {
   GuestDraftView,
   IGuestDraftService,
   GuestDraftEventContext,
+  GuestTextDraftCreateInput,
   UpstreamGuestDraft,
   UpstreamGuestDraftResult,
 } from '@/interfaces/services/IGuestDraftService';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
-import { GUEST_DRAFT_TTL_MS } from '@/shared/constants/guest-draft';
+import { GUEST_DRAFT_TTL_MS, type GuestDraftSource } from '@/shared/constants/guest-draft';
 
 type Clock = () => Date;
 type UpstreamQuestion = NonNullable<UpstreamGuestDraft['questions']>[number];
 type UpstreamFailure = Extract<UpstreamGuestDraftResult, { ok: false }>;
+type StartInput = Omit<GuestDraftCreateInput, 'pdf'>;
+type UpstreamStart = () => Promise<UpstreamGuestDraftResult>;
 
 const FAILED_UPSTREAM_STATUSES = new Set(['failed', 'cancelled', 'expired']);
 
@@ -76,7 +79,20 @@ export class GuestDraftService implements IGuestDraftService {
     private readonly now: Clock = () => new Date(),
   ) {}
 
-  async create(input: GuestDraftCreateInput): Promise<GuestDraftResult> {
+  create(input: GuestDraftCreateInput): Promise<GuestDraftResult> {
+    return this.start(input, 'pdf', () => this.upstream.create(input.pdf));
+  }
+
+  /** Pasted text (RIN-1538): the same caps budget, attempt record and events as a PDF. */
+  createFromText(input: GuestTextDraftCreateInput): Promise<GuestDraftResult> {
+    return this.start(input, 'text', () => this.upstream.createFromText(input.text));
+  }
+
+  private async start(
+    input: StartInput,
+    source: GuestDraftSource,
+    createUpstream: UpstreamStart,
+  ): Promise<GuestDraftResult> {
     const tokenHash = hashGuestClaimToken(input.token);
     if (await this.repository.findByTokenHash(tokenHash)) {
       return { ok: false, error: 'token_in_use' };
@@ -86,7 +102,7 @@ export class GuestDraftService implements IGuestDraftService {
       const { scope, retryAfterSeconds } = reservation;
       return { ok: false, error: 'limit', scope, retryAfterSeconds };
     }
-    const created = await this.upstream.create(input.pdf);
+    const created = await createUpstream();
     if (!created.ok) {
       // No draft for the guest: the IP slot comes back. The daily slot comes back only when
       // the API refused outright; after a timeout or 5xx extraction may already be running.
@@ -101,9 +117,10 @@ export class GuestDraftService implements IGuestDraftService {
       apiDraftId: created.draft.draft_id,
       locale: input.locale,
       entry: input.entry,
+      source,
       expiresAt: new Date(this.now().getTime() + GUEST_DRAFT_TTL_MS),
     });
-    await this.events.started({ draftId: record.id, locale: record.locale, entry: record.entry });
+    await this.events.started(this.context(record));
     return { ok: true, draft: viewOf(record, created.draft.progress.percent ?? 0) };
   }
 
@@ -174,6 +191,11 @@ export class GuestDraftService implements IGuestDraftService {
   }
 
   private context(record: GuestDraftRecord): GuestDraftEventContext {
-    return { draftId: record.id, locale: record.locale, entry: record.entry };
+    return {
+      draftId: record.id,
+      locale: record.locale,
+      entry: record.entry,
+      source: record.source,
+    };
   }
 }

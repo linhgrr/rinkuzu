@@ -19,7 +19,7 @@ import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPer
 
 type StoredGuestDraft = Pick<
   GuestQuizDraftDocument,
-  'apiDraftId' | 'status' | 'title' | 'questions' | 'locale' | 'entry' | 'failureReason'
+  'apiDraftId' | 'status' | 'title' | 'questions' | 'locale' | 'entry' | 'source' | 'failureReason'
 > & { _id: Types.ObjectId };
 
 const RECORD_PROJECTION = {
@@ -29,6 +29,7 @@ const RECORD_PROJECTION = {
   questions: 1,
   locale: 1,
   entry: 1,
+  source: 1,
   failureReason: 1,
 } as const;
 
@@ -41,6 +42,7 @@ function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
     questionCount: doc.questions.length,
     locale: doc.locale,
     entry: doc.entry,
+    source: doc.source ?? 'pdf',
     failureReason: doc.failureReason ?? null,
   };
 }
@@ -53,7 +55,7 @@ type StoredReadyDraft = {
 
 type StoredClaimableDraft = Pick<
   GuestQuizDraftDocument,
-  'apiDraftId' | 'title' | 'locale' | 'entry'
+  'apiDraftId' | 'title' | 'locale' | 'entry' | 'source'
 > & { _id: Types.ObjectId; questions: QuizQuestionDocument[] };
 
 /** Only the fields a guest question has: no subdocument `_id`, no images. */
@@ -122,7 +124,7 @@ export class GuestQuizDraftRepository
     // The TTL monitor runs about once a minute: `expiresAt` is checked here too.
     const docs = await GuestQuizDraftModel.find(
       { tokenHash: { $in: [...tokenHashes] }, status: 'ready', expiresAt: { $gt: now } },
-      { apiDraftId: 1, title: 1, questions: 1, locale: 1, entry: 1 },
+      { apiDraftId: 1, title: 1, questions: 1, locale: 1, entry: 1, source: 1 },
     )
       // Newest first, so the claim's first slug is the draft the guest played (RIN-1485).
       .sort({ _id: -1 })
@@ -135,6 +137,7 @@ export class GuestQuizDraftRepository
       questions: doc.questions.map(toGuestQuestion),
       locale: doc.locale,
       entry: doc.entry,
+      source: doc.source ?? 'pdf',
     }));
   }
 

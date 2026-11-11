@@ -73,7 +73,8 @@ export class GuestDraftClaimService implements IGuestDraftClaimService {
     // The draft's attempts belong to whoever holds the draft: they count toward activated.
     if (unowned.length > 0) await this.guestAttempts.claimHashed(userId, unowned);
     if (await this.drafts.deleteClaimed(draft.id)) {
-      await this.events.claimed({ draftId: draft.id, locale: draft.locale, entry: draft.entry });
+      const { locale, entry, source } = draft;
+      await this.events.claimed({ draftId: draft.id, locale, entry, source });
     }
     return quiz.slug;
   }

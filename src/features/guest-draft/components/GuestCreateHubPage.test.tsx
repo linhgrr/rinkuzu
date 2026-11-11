@@ -115,6 +115,49 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     );
   });
 
+  it('gives both cards one rhythm: title and text, then a separate actions group (RIN-1561)', () => {
+    renderHub('en');
+
+    const classes = (el: Element | null) => (el?.className ?? '').split(/\s+/);
+    const cards = screen.getAllByRole('heading', { level: 2 }).map((heading) => {
+      const textGroup = heading.parentElement as HTMLElement;
+      const body = textGroup.parentElement as HTMLElement;
+      return { heading, textGroup, body, actions: textGroup.nextElementSibling };
+    });
+    expect(cards).toHaveLength(2);
+    const [trial, account] = cards as [(typeof cards)[0], (typeof cards)[0]];
+
+    // Same padding and gaps in both cards: one shared class list, no per-card overrides.
+    expect(trial.body.className).toBe(account.body.className);
+    expect(trial.textGroup.className).toBe(account.textGroup.className);
+    expect(trial.actions?.className).toBe(account.actions?.className);
+    // Text and actions are two groups 24 px apart (gap-6), never an auto margin that
+    // collapses to 0 when the card is full (the 4 px text-on-button defect) or a min
+    // height that leaves a hole above the links.
+    expect(classes(trial.body)).toEqual(expect.arrayContaining(['flex', 'flex-col', 'gap-6']));
+    expect(trial.body.className).not.toMatch(/min-h-/);
+    // Title to text 8 px, closer than text to actions.
+    expect(classes(trial.textGroup)).toContain('space-y-2');
+    expect(within(trial.textGroup).getByText(/Upload a PDF/)).toBeInTheDocument();
+    expect(within(account.textGroup).getByText(/Sign in for the full limits/)).toBeInTheDocument();
+
+    // Each card: one button, then a text link 8 px below it.
+    const trialActions = within(trial.actions as HTMLElement).getAllByRole('link');
+    const accountActions = within(account.actions as HTMLElement).getAllByRole('link');
+    expect(trialActions.map((a) => a.textContent)).toEqual([
+      'Try it with your own PDF, no account needed',
+      'Or paste text',
+    ]);
+    expect(accountActions.map((a) => a.textContent)).toEqual(['Sign in', 'Create an account']);
+    expect(classes(trial.actions)).toEqual(expect.arrayContaining(['flex-col', 'gap-2']));
+    expect(classes(accountActions[0] ?? null)).toEqual(
+      expect.arrayContaining(['btn', 'btn-secondary', 'min-h-11', 'w-full']),
+    );
+    for (const link of [trialActions[1], accountActions[1]]) {
+      expect(classes(link ?? null)).toEqual(expect.arrayContaining(['min-h-11', 'underline']));
+    }
+  });
+
   it('has no axe violations', async () => {
     const { container } = renderHub('vi');
 

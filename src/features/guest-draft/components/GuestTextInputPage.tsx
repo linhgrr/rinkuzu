@@ -171,11 +171,13 @@ export function GuestTextInputPage({ entry, children }: GuestTextInputPageProps)
   return (
     <main className="min-h-dvh bg-neutral-50 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-xl space-y-6">
-        <Pill>{t('badge')}</Pill>
-        <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
-          {t('title')}
-        </h1>
-        <p className="text-base text-neutral-600">{t('subtitle', LIMITS)}</p>
+        <header className="space-y-3">
+          <Pill>{t('badge')}</Pill>
+          <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
+            {t('title')}
+          </h1>
+          <p className="text-base text-neutral-600">{t('subtitle', LIMITS)}</p>
+        </header>
         <FlowBody flow={flow} text={text} onTextChange={setText} />
         <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
           {t('higherLimits')}

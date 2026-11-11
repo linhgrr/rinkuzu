@@ -94,6 +94,7 @@ function receivedEvent(
       to,
       bcc: [],
       cc: [],
+      received_for: to,
       message_id: '<inbound@mail>',
       subject: 'Re: Bạn thấy trải nghiệm RinKuzu thế nào?',
       attachments: [],
@@ -107,6 +108,7 @@ function bouncedEvent(): Extract<WebhookEventPayload, { type: 'email.bounced' }>
     created_at: CREATED_AT,
     data: {
       email_id: 're_email_1',
+      message_id: '<re_email_1@example.com>',
       created_at: CREATED_AT,
       from: ENVIRONMENT['FEEDBACK_MAIL_FROM'] ?? '',
       to: [USER_EMAIL],
@@ -258,6 +260,53 @@ describe('out-of-order delivery events', () => {
   });
 });
 
+describe('inbox events (resend 6.37, RIN-1558)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.connectDB.mockResolvedValue(undefined);
+    mocks.webhook.findOne.mockResolvedValue(null);
+    mocks.webhook.create.mockResolvedValue({ status: 'processing', payloadDigest: 'digest' });
+    mocks.webhook.updateOne.mockResolvedValue({ modifiedCount: 1 });
+  });
+
+  const inboxEvents: WebhookEventPayload[] = [
+    {
+      type: 'inbox.email.received',
+      created_at: CREATED_AT,
+      data: { source: 'system', inbox_id: 'inbox_1', thread_id: 'thread_1', email_id: 'in_1' },
+    },
+    {
+      type: 'inbox.thread.assigned',
+      created_at: CREATED_AT,
+      data: {
+        source: 'dashboard',
+        inbox_id: 'inbox_1',
+        thread_id: 'thread_1',
+        assignee_email: 'agent@example.com',
+        assigned_by_email: null,
+        previous_assignee_email: null,
+      },
+    },
+  ];
+
+  it.each(inboxEvents)(
+    'records $type without a to field as processed and skips delivery handling',
+    async (event) => {
+      const result = await processResendWebhook(`evt-${event.type}`, 'digest', event);
+
+      expect(result).toEqual({ status: 'processed' });
+      expect(mocks.outbox.findOne).not.toHaveBeenCalled();
+      expect(mocks.outbox.updateOne).not.toHaveBeenCalled();
+      expect(mocks.contactState.updateOne).not.toHaveBeenCalled();
+      expect(mocks.conversation.updateOne).not.toHaveBeenCalled();
+      const completion = mocks.webhook.updateOne.mock.calls.find(
+        (call) => call[1]?.['$set']?.['status'] === 'processed',
+      );
+      expect(completion).toBeDefined();
+    },
+  );
+});
+
 function openedEvent(
   tags: Record<string, string> | null = { campaign: 'w1-review' },
 ): Extract<WebhookEventPayload, { type: 'email.opened' }> {
@@ -266,6 +315,7 @@ function openedEvent(
     created_at: CREATED_AT,
     data: {
       email_id: 're_review_1',
+      message_id: '<re_review_1@example.com>',
       created_at: CREATED_AT,
       from: 'RinKuzu <support@rinkuzu.app>',
       to: [USER_EMAIL],

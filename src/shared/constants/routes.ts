@@ -20,6 +20,8 @@ export const ROUTES = {
   REGISTER: '/register',
   CREATE_QUIZ: '/create',
   CREATE_QUIZ_PDF: '/create/pdf',
+  /** Signed-in quiz draft from pasted text (RIN-1542); lands in the normal draft review. */
+  CREATE_QUIZ_TEXT: '/create/text',
   /** The learner's own quizzes, including the ones a guest draft claim made (RIN-1485). */
   MY_QUIZZES: '/my-quizzes',
   ADAPTIVE_PIPELINE_DEBUG: '/adaptive/pipeline-debug',

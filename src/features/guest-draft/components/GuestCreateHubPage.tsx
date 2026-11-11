@@ -22,21 +22,21 @@ interface HubCardProps {
 
 /**
  * One rhythm for both hub cards (RIN-1561, Designer values in RIN-1553 round 2): padding
- * 16/20 px, title to text 12 px, text to actions at least 16 px. `mt-auto` only lines the
- * actions up when the desktop row stretches the shorter card; `pt-4` is the floor it can
- * never go under. No `min-h-*`: the grid row equalises the heights.
+ * 16/20 px, title to text 12 px, text to actions 16 px. The cards keep their own height
+ * (`items-start`): stretching the account card to the trial card's height and pushing its
+ * links down with `mt-auto` left a 99 px hole above them at 1440 px.
  */
 function HubCard({ title, body, className, children }: HubCardProps) {
   return (
     <Card className={cn('p-0', className)}>
-      <CardContent className="flex h-full flex-col p-4 sm:p-5">
+      <CardContent className="flex flex-col p-4 sm:p-5">
         <div className="space-y-3">
           <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
             {title}
           </h2>
           <p className="text-sm leading-6 text-neutral-600">{body}</p>
         </div>
-        <div className="mt-auto flex flex-col items-start pt-4">{children}</div>
+        <div className="flex flex-col items-start pt-4">{children}</div>
       </CardContent>
     </Card>
   );
@@ -60,7 +60,7 @@ export function GuestCreateHubPage() {
         </header>
 
         <section
-          className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2"
+          className="mt-6 grid grid-cols-1 items-start gap-5 md:grid-cols-2"
           aria-label={t('chooseMethod')}
         >
           <HubCard

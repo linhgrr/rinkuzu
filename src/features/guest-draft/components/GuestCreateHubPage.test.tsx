@@ -136,9 +136,12 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     expect(trial.actions.className).toBe(account.actions.className);
     expect(classes(trial.body)).toEqual(expect.arrayContaining(['p-4', 'sm:p-5']));
     // A min height plus mt-auto made the text sit on the button (gap 0) in one card and
-    // left a 52 px hole in the other; the pt-4 floor keeps text to control >= 16 px.
+    // left a 52 px hole in the other; pt-4 keeps text to control at 16 px in both.
     expect(trial.body.className).not.toMatch(/min-h-/);
-    expect(classes(trial.actions)).toEqual(expect.arrayContaining(['mt-auto', 'pt-4']));
+    expect(classes(trial.actions)).toContain('pt-4');
+    // No auto margin: with stretched equal-height cards it left a 99 px hole at 1440.
+    expect(trial.actions.className).not.toMatch(/mt-auto/);
+    expect(classes(trial.body.closest('section'))).toContain('items-start');
     expect(classes(trial.textGroup)).toContain('space-y-3');
     expect(within(trial.textGroup).getByText(/Upload a PDF/)).toBeInTheDocument();
     expect(within(account.textGroup).getByText(/Sign in for the full limits/)).toBeInTheDocument();

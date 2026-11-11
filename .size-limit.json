@@ -19,7 +19,7 @@
     {
       "name": "guest-try-pdf",
       "limit": "340 KiB",
-      "patterns": ["^/\\[locale\\]/try/pdf$"]
+      "patterns": ["^/\\[locale\\]/try/(?:pdf|text)$"]
     },
     {
       "name": "auth-recovery",
@@ -41,7 +41,7 @@
     {
       "name": "quiz-adaptive",
       "limit": "345 KiB",
-      "patterns": ["^/\\[locale\\]/(?:adaptive(?:/.*)?|quiz(?:/.*)?|try/pdf/play)$"]
+      "patterns": ["^/\\[locale\\]/(?:adaptive(?:/.*)?|quiz(?:/.*)?|try/(?:pdf|text)/play)$"]
     }
   ],
   "regression": {

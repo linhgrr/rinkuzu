@@ -460,7 +460,7 @@ jobs:
         run: bash scripts/ci-mongodb.sh start
 
       - name: Download the end-to-end artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: e2e-next-${{ github.sha }}
           path: .next
@@ -504,7 +504,7 @@ jobs:
         uses: ./.github/actions/node-env
 
       - name: Collect every shard's blob report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: e2e-blob-${{ github.sha }}-*
           merge-multiple: true
@@ -586,7 +586,7 @@ jobs:
             --commit-sha "$PERF_BASE_SHA"
 
       - name: Download the production build
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: next-production-${{ github.sha }}
           path: .next

@@ -10,6 +10,24 @@ updates:
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
     groups:
+      stryker:
+        patterns:
+          - '@stryker-mutator/*'
+        update-types:
+          - major
+          - minor
+          - patch
+      gate-pinned-tools:
+        patterns:
+          - jscpd
+          - '@redocly/cli'
+          - prettier
+          - react-doctor
+          - knip
+          - '@lhci/cli'
+        update-types:
+          - minor
+          - patch
       production-minor-patch:
         dependency-type: production
         update-types:
@@ -28,6 +46,10 @@ updates:
       day: monday
       time: '03:30'
       timezone: Asia/Ho_Chi_Minh
+    groups:
+      codeql:
+        patterns:
+          - 'github/codeql-action*'
 
   - package-ecosystem: docker
     directory: /

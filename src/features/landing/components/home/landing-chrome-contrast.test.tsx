@@ -1,4 +1,3 @@
-import type { PropsWithChildren } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -21,10 +20,6 @@ vi.mock('next/navigation', async (importOriginal) => ({
 }));
 
 vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: vi.fn() }));
-
-vi.mock('./Magnetic', () => ({
-  Magnetic: ({ children }: PropsWithChildren) => <>{children}</>,
-}));
 
 function renderChrome(isAuthenticated: boolean) {
   return render(

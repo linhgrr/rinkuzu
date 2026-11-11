@@ -56,7 +56,7 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
       expect(first).toHaveTextContent(cardA);
       expect(second).toHaveTextContent(cardB);
 
-      expect(screen.getByRole('link', { name: cta, exact: true })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: cta })).toHaveAttribute(
         'href',
         '/try/pdf?entry=create',
       );
@@ -106,7 +106,7 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     renderHub('en');
 
     const section = screen.getByRole('region', { name: 'Choose how to create your quiz' });
-    const cta = within(section).getByRole('link', { name: 'Upload a PDF', exact: true });
+    const cta = within(section).getByRole('link', { name: 'Upload a PDF' });
     expect(cta.className.split(/\s+/)).toEqual(
       expect.arrayContaining(['btn', 'btn-primary', 'w-full', 'whitespace-normal']),
     );

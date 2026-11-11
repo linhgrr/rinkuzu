@@ -114,13 +114,11 @@ export function GuestPdfUploadPage({ entry, children }: GuestPdfUploadPageProps)
   return (
     <main className="min-h-dvh bg-neutral-50 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-xl space-y-6">
-        <header className="space-y-3">
-          <Pill>{t('badge')}</Pill>
-          <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
-            {t('title')}
-          </h1>
-          <p className="text-base text-neutral-600">{t('subtitle', GUEST_DRAFT_LIMIT_COPY)}</p>
-        </header>
+        <Pill>{t('badge')}</Pill>
+        <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
+          {t('title')}
+        </h1>
+        <p className="text-base text-neutral-600">{t('subtitle', GUEST_DRAFT_LIMIT_COPY)}</p>
         <FlowBody flow={flow} />
         <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
           {t('higherLimits')}

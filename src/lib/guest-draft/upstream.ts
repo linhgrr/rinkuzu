@@ -13,6 +13,7 @@ import {
 import { logger } from '@/lib/logger';
 
 const GUEST_DRAFTS_PATH = '/quiz/guest-drafts';
+const GUEST_TEXT_DRAFTS_PATH = '/quiz/guest-drafts/text';
 
 type Envelope = {
   data?: { draft?: UpstreamGuestDraft };
@@ -39,11 +40,15 @@ async function toResult(response: Response): Promise<UpstreamGuestDraftResult> {
   return { ok: false, status: response.ok ? 502 : response.status, code, meta };
 }
 
-async function call(path: string, init: RequestInit): Promise<Response> {
+async function call(
+  path: string,
+  init: RequestInit,
+  extraHeaders: Record<string, string> = {},
+): Promise<Response> {
   // Service token only: the API refuses a guest call that carries a user id.
   return fetch(buildAdaptiveUrl(path), {
     ...init,
-    headers: { ...buildAdaptiveServiceHeaders(), accept: 'application/json' },
+    headers: { ...buildAdaptiveServiceHeaders(), ...extraHeaders, accept: 'application/json' },
     signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
     cache: 'no-store',
   });
@@ -67,6 +72,20 @@ export function createGuestDraftUpstream(): GuestDraftUpstream {
         return await toResult(await call(GUEST_DRAFTS_PATH, { method: 'POST', body: form }));
       } catch (error) {
         logger.warn({ errorName: (error as Error).name }, 'Guest draft create call failed');
+        return unavailable;
+      }
+    },
+    async createFromText(text) {
+      try {
+        const response = await call(
+          GUEST_TEXT_DRAFTS_PATH,
+          { method: 'POST', body: JSON.stringify({ text }) },
+          { 'content-type': 'application/json' },
+        );
+        return await toResult(response);
+      } catch (error) {
+        // The error name only: never the text.
+        logger.warn({ errorName: (error as Error).name }, 'Guest text draft create call failed');
         return unavailable;
       }
     },

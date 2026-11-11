@@ -26,6 +26,7 @@ function record(overrides: Partial<GuestDraftRecord> = {}): GuestDraftRecord {
     questionCount: 0,
     locale: 'en',
     entry: 'landing',
+    source: 'pdf',
     failureReason: null,
     ...overrides,
   };
@@ -61,7 +62,9 @@ const readyQuestions: UpstreamQuestions = [
 
 function setup(existing: GuestDraftRecord | null = null) {
   const repository = {
-    create: vi.fn(async (draft) => record({ apiDraftId: draft.apiDraftId, entry: draft.entry })),
+    create: vi.fn(async (draft) =>
+      record({ apiDraftId: draft.apiDraftId, entry: draft.entry, source: draft.source }),
+    ),
     findByTokenHash: vi.fn(async () => existing),
     markReady: vi.fn(async () => true),
     markFailed: vi.fn(async () => true),
@@ -73,6 +76,10 @@ function setup(existing: GuestDraftRecord | null = null) {
   } satisfies GuestDraftLimiter;
   const upstream = {
     create: vi.fn<GuestDraftUpstream['create']>(async () => ({
+      ok: true,
+      draft: upstreamDraft({ status: 'queued' }),
+    })),
+    createFromText: vi.fn<GuestDraftUpstream['createFromText']>(async () => ({
       ok: true,
       draft: upstreamDraft({ status: 'queued' }),
     })),
@@ -105,6 +112,7 @@ describe('GuestDraftService.create', () => {
       apiDraftId: 'api-draft-1',
       locale: 'en',
       entry: 'landing',
+      source: 'pdf',
       expiresAt: new Date('2026-11-11T03:00:00.000Z'),
     });
     expect(JSON.stringify(repository.create.mock.calls)).not.toContain(TOKEN);
@@ -112,6 +120,7 @@ describe('GuestDraftService.create', () => {
       draftId: '6730a0000000000000000001',
       locale: 'en',
       entry: 'landing',
+      source: 'pdf',
     });
   });
 
@@ -168,6 +177,104 @@ describe('GuestDraftService.create', () => {
 
     expect(await service.create(createInput)).toEqual({ ok: false, error: 'token_in_use' });
     expect(limiter.reserve).not.toHaveBeenCalled();
+  });
+});
+
+const PASTED = 'Fake notes about cells. '.repeat(20);
+const textInput = {
+  token: TOKEN,
+  text: PASTED,
+  locale: 'en' as const,
+  entry: 'create' as const,
+  ip: IP,
+};
+
+describe('GuestDraftService.createFromText (RIN-1538)', () => {
+  it('starts a text draft through the same caps, stores no text and emits source text', async () => {
+    const { service, repository, limiter, upstream, events } = setup();
+
+    const result = await service.createFromText(textInput);
+
+    expect(result).toMatchObject({ ok: true, draft: { status: 'processing' } });
+    expect(limiter.reserve).toHaveBeenCalledWith(IP);
+    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED);
+    expect(upstream.create).not.toHaveBeenCalled();
+    expect(repository.create).toHaveBeenCalledWith({
+      tokenHash: hashGuestClaimToken(TOKEN),
+      apiDraftId: 'api-draft-1',
+      locale: 'en',
+      entry: 'create',
+      source: 'text',
+      expiresAt: new Date('2026-11-11T03:00:00.000Z'),
+    });
+    expect(events.started).toHaveBeenCalledWith({
+      draftId: '6730a0000000000000000001',
+      locale: 'en',
+      entry: 'create',
+      source: 'text',
+    });
+    const stored = JSON.stringify([repository.create.mock.calls, events.started.mock.calls]);
+    expect(stored).not.toContain('Fake notes');
+    expect(stored).not.toContain(TOKEN);
+  });
+
+  it.each(['ip', 'daily'] as const)(
+    'shares the PDF budget: a %s cap spent by PDF drafts refuses a text draft',
+    async (scope) => {
+      const { service, limiter, upstream, repository } = setup();
+      // One limiter for both sources: the reservation a PDF would make is the same call.
+      limiter.reserve.mockResolvedValue({ ok: false, scope, retryAfterSeconds: 60 });
+
+      const result = await service.createFromText(textInput);
+
+      expect(result).toEqual({ ok: false, error: 'limit', scope, retryAfterSeconds: 60 });
+      expect(upstream.createFromText).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('refunds both slots when the API refuses the text with a 4xx', async () => {
+    const { service, limiter, upstream } = setup();
+    upstream.createFromText.mockResolvedValue({
+      ok: false,
+      status: 422,
+      code: 'validation_error',
+      meta: { reason: 'guest_text_too_short', limit_chars: 200 },
+    });
+
+    const result = await service.createFromText(textInput);
+
+    expect(result).toMatchObject({ ok: false, error: 'upstream', status: 422 });
+    expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+    expect(limiter.refundDaily).toHaveBeenCalledOnce();
+  });
+
+  it('refuses a token already used by any guest draft before touching the caps', async () => {
+    const { service, limiter } = setup(record());
+
+    expect(await service.createFromText(textInput)).toEqual({ ok: false, error: 'token_in_use' });
+    expect(limiter.reserve).not.toHaveBeenCalled();
+  });
+
+  it('carries source text on ready and failed', async () => {
+    const ready = setup(record({ source: 'text' }));
+    ready.upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ status: 'completed', title: 'T', questions: readyQuestions }),
+    });
+    await ready.service.status(TOKEN, IP);
+    expect(ready.events.ready).toHaveBeenCalledWith(expect.objectContaining({ source: 'text' }));
+
+    const failed = setup(record({ source: 'text' }));
+    failed.upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ status: 'failed', failure_reason: 'no_questions' }),
+    });
+    await failed.service.status(TOKEN, IP);
+    expect(failed.events.failed).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'text' }),
+      'no_questions',
+    );
   });
 });
 
@@ -288,7 +395,7 @@ describe('GuestDraftService.status', () => {
     expect(limiter.refundIp).toHaveBeenCalledWith(IP);
     expect(limiter.refundDaily).not.toHaveBeenCalled();
     expect(events.failed).toHaveBeenCalledWith(
-      { draftId: '6730a0000000000000000001', locale: 'en', entry: 'landing' },
+      { draftId: '6730a0000000000000000001', locale: 'en', entry: 'landing', source: 'pdf' },
       'ocr_failed',
     );
     expect(upstream.remove).toHaveBeenCalledWith('api-draft-1');

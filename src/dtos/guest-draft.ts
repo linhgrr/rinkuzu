@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { quizProgressAnswerSchema, type PlayableQuizQuestionDto } from '@/dtos/quiz';
+import { quizTextSchema } from '@/dtos/quiz-text-source';
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
 import { GUEST_DRAFT_ENTRIES } from '@/shared/constants/guest-draft';
 
@@ -10,6 +11,14 @@ export const createGuestDraftFieldsSchema = z.object({
   locale: z.enum(['vi', 'en']),
   entry: z.enum(GUEST_DRAFT_ENTRIES),
 });
+
+/**
+ * JSON body of `POST /api/guest-drafts/text` (RIN-1538) plus the header token. The text
+ * goes to the API and nowhere else: never logged, stored here or sent to analytics.
+ */
+export const createGuestTextDraftRequestSchema = createGuestDraftFieldsSchema
+  .extend({ text: quizTextSchema })
+  .strict();
 
 /**
  * `POST /api/guest-drafts/status` and `/play`: the token travels in the body, never in

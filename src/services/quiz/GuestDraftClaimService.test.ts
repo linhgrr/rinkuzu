@@ -17,6 +17,7 @@ const draft: ClaimableGuestDraft = {
   questions: [{ question: 'Q1?', options: ['a', 'b'], type: 'single', correctIndex: 1 }],
   locale: 'vi',
   entry: 'landing',
+  source: 'pdf',
 };
 
 function setup(found: ClaimableGuestDraft[] = [draft]) {
@@ -73,6 +74,7 @@ describe('GuestDraftClaimService (RIN-1447)', () => {
       draftId: draft.id,
       locale: 'vi',
       entry: 'landing',
+      source: 'pdf',
     });
     const forwarded = JSON.stringify([
       drafts.findClaimable.mock.calls,
@@ -80,6 +82,27 @@ describe('GuestDraftClaimService (RIN-1447)', () => {
       quizzes.createQuizFromDraft.mock.calls,
     ]);
     expect(forwarded).not.toContain(TOKEN);
+  });
+
+  it('claims a pasted-text draft exactly like a PDF one and keeps its source (RIN-1538)', async () => {
+    const textDraft: ClaimableGuestDraft = { ...draft, source: 'text' };
+    const { service, drafts, quizzes, guestAttempts, events } = setup([textDraft]);
+
+    await expect(service.claim('user-1', [TOKEN])).resolves.toEqual(['fake-biology-quiz']);
+
+    expect(quizzes.createQuizFromDraft).toHaveBeenCalledWith('user-1', 'api-draft-1', {
+      title: 'Fake biology quiz',
+      questions: textDraft.questions,
+      submitToPremium: false,
+    });
+    expect(guestAttempts.claimHashed).toHaveBeenCalledWith('user-1', ['hash-1']);
+    expect(drafts.deleteClaimed).toHaveBeenCalledWith(textDraft.id);
+    expect(events.claimed).toHaveBeenCalledWith({
+      draftId: textDraft.id,
+      locale: 'vi',
+      entry: 'landing',
+      source: 'text',
+    });
   });
 
   it('sends no second event when another tab deleted the draft first', async () => {

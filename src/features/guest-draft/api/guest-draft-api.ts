@@ -67,6 +67,34 @@ export async function createGuestDraft({
   return toProgress(dto);
 }
 
+interface CreateGuestTextDraftInput {
+  text: string;
+  token: string;
+  locale: 'vi' | 'en';
+  entry: GuestDraftEntry;
+}
+
+/**
+ * `POST /api/guest-drafts/text` (RIN-1538): pasted text instead of a PDF, same token header,
+ * caps and progress as `createGuestDraft`. Refusals: 422 `guest_text_too_short` and 413
+ * `guest_text_too_long`, each with `meta.limit_chars`.
+ *
+ * @public consumed by the /try/text page (RIN-1536 part C).
+ */
+export async function createGuestTextDraft({
+  text,
+  token,
+  locale,
+  entry,
+}: CreateGuestTextDraftInput): Promise<GuestDraftProgress> {
+  const dto = await fetchApiData<GuestDraftStatusDto>('/api/guest-drafts/text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [GUEST_DRAFT_TOKEN_HEADER]: token },
+    body: JSON.stringify({ text, locale, entry }),
+  });
+  return toProgress(dto);
+}
+
 /** `POST /api/guest-drafts/status`: the token in the body, never in a URL. */
 export async function fetchGuestDraftProgress(token: string): Promise<GuestDraftProgress> {
   const dto = await fetchApiData<GuestDraftStatusDto>('/api/guest-drafts/status', {

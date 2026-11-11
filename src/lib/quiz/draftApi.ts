@@ -5,6 +5,7 @@ import { fetchApiData } from '@/lib/api/client';
 import type {
   CreateQuizDraftInputDto,
   CreateManualQuizDraftInputDto,
+  CreateTextQuizDraftInputDto,
   PatchQuizDraftInputDto,
   QuizDraftListResponseDto,
   QuizDraftSingleResponseDto,
@@ -27,6 +28,28 @@ export async function createQuizDraft(input: CreateQuizDraftInputDto): Promise<Q
       s3_key: input.s3Key,
       file_name: input.fileName,
       file_size: input.fileSize,
+      category_id: input.folderId,
+      description: input.description,
+      prompt: input.prompt,
+      submit_to_premium: input.submitToPremium ?? false,
+    }),
+  });
+  return QuizDraftMapper.toViewModel(draft);
+}
+
+/**
+ * `POST /api/quiz-drafts/text` (RIN-1538): a draft from pasted text that lands in the normal
+ * draft review. Refusals: 422 `text_too_short` and 413 `text_too_long` with `meta.limit_chars`.
+ *
+ * @public consumed by the /create paste-text option (RIN-1536 part C).
+ */
+export async function createTextQuizDraft(input: CreateTextQuizDraftInputDto): Promise<QuizDraft> {
+  const { draft } = await fetchApiData<QuizDraftSingleResponseDto>('/api/quiz-drafts/text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: input.title,
+      text: input.text,
       category_id: input.folderId,
       description: input.description,
       prompt: input.prompt,

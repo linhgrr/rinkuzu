@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { QuizDraftTransportDto } from '@/dtos/quiz-draft';
 import { QuizDraftMapper } from '@/mappers/quiz/QuizDraftMapper';
 import { mapDraftStatus } from '@/lib/quiz/draftStatus';
+import { createTextQuizDraft } from '@/lib/quiz/draftApi';
 
 const transportDraft: QuizDraftTransportDto = {
   draft_id: 'draft-1',
@@ -136,5 +137,32 @@ describe('mapDraftStatus', () => {
     ['submitted', null],
   ] as const)('maps %s to %s', (status, expected) => {
     expect(mapDraftStatus(status)).toBe(expected);
+  });
+});
+
+describe('createTextQuizDraft (RIN-1538)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('posts snake_case fields with the text to the text draft route', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ success: true, data: { draft: transportDraft } }, { status: 201 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const draft = await createTextQuizDraft({
+      title: 'Fake notes',
+      text: 'Fake pasted text',
+      folderId: 'folder-1',
+    });
+
+    expect(draft.id).toBe('draft-1');
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(String(url)).toBe('/api/quiz-drafts/text');
+    expect(JSON.parse(String(init?.body))).toEqual({
+      title: 'Fake notes',
+      text: 'Fake pasted text',
+      category_id: 'folder-1',
+      submit_to_premium: false,
+    });
   });
 });

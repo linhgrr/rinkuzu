@@ -19,9 +19,12 @@ describe('guest quiz draft repository', () => {
 
   const olderHash = 'b'.repeat(64);
   const newerHash = 'c'.repeat(64);
+  const legacyHash = 'd'.repeat(64);
 
   afterAll(async () => {
-    await GuestQuizDraftModel.deleteMany({ tokenHash: { $in: [tokenHash, olderHash, newerHash] } });
+    await GuestQuizDraftModel.deleteMany({
+      tokenHash: { $in: [tokenHash, olderHash, newerHash, legacyHash] },
+    });
   }, 10_000);
 
   it('has a TTL index on expiresAt and a unique token hash', async () => {
@@ -40,6 +43,7 @@ describe('guest quiz draft repository', () => {
       apiDraftId: 'api-draft-test',
       locale: 'vi',
       entry: 'create',
+      source: 'pdf',
       expiresAt: new Date(Date.now() + 60_000),
     });
     expect(created).toMatchObject({ status: 'processing', questionCount: 0 });
@@ -66,15 +70,16 @@ describe('guest quiz draft repository', () => {
     const questions = [
       { question: 'Fake?', options: ['a', 'b'], type: 'single' as const, correctIndex: 0 },
     ];
-    for (const [hash, title] of [
-      [olderHash, 'Older fake quiz'],
-      [newerHash, 'Newer fake quiz'],
+    for (const [hash, title, source] of [
+      [olderHash, 'Older fake quiz', 'pdf'],
+      [newerHash, 'Newer fake quiz', 'text'],
     ] as const) {
       const draft = await repository.create({
         tokenHash: hash,
         apiDraftId: `api-draft-${title}`,
         locale: 'en',
         entry: 'landing',
+        source,
         expiresAt: new Date(Date.now() + 60_000),
       });
       await repository.markReady(draft.id, { title, questions });
@@ -82,5 +87,21 @@ describe('guest quiz draft repository', () => {
 
     const claimable = await repository.findClaimable([olderHash, newerHash], new Date());
     expect(claimable.map((draft) => draft.title)).toEqual(['Newer fake quiz', 'Older fake quiz']);
+    // A pasted-text draft keeps its source to the claimed event (RIN-1538).
+    expect(claimable.map((draft) => draft.source)).toEqual(['text', 'pdf']);
+  }, 20_000);
+
+  it('reads a draft stored before RIN-1538, with no source field, as a PDF draft', async () => {
+    await mongoose.connection.collection('guestquizdrafts').insertOne({
+      tokenHash: legacyHash,
+      apiDraftId: 'api-draft-legacy',
+      status: 'processing',
+      questions: [],
+      locale: 'en',
+      entry: 'landing',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    expect(await repository.findByTokenHash(legacyHash)).toMatchObject({ source: 'pdf' });
   }, 20_000);
 });

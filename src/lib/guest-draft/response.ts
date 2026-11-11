@@ -7,8 +7,11 @@ import type { GuestDraftResult } from '@/interfaces/services/IGuestDraftService'
 import { apiErr, apiOk } from '@/lib/api/response';
 import { GUEST_DRAFT_LIMIT_REASON } from '@/shared/constants/guest-draft';
 
-/** Upstream fields the browser may see on a refused upload (the API's page and size caps). */
-const FORWARDED_META_KEYS = ['reason', 'limit_pages', 'limit_mb'] as const;
+/**
+ * Upstream fields the browser may see on a refused upload: the API's page and size caps,
+ * and the pasted-text character limits (RIN-1538).
+ */
+const FORWARDED_META_KEYS = ['reason', 'limit_pages', 'limit_mb', 'limit_chars'] as const;
 
 function forwardedMeta(meta: Record<string, unknown> | null): Record<string, unknown> {
   const picked: Record<string, unknown> = {};

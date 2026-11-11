@@ -203,8 +203,9 @@
   "showPdfShort": "Show PDF",
   "guestHub": {
     "title": "Try it with your own PDF",
-    "body": "Upload a PDF (up to {pages} pages, {mb} MB) and play the quiz right away, no account needed.",
+    "body": "Upload a PDF (up to {pages} pages, {mb} MB) or paste your text and play the quiz right away, no account needed.",
     "cta": "Try it with your own PDF, no account needed",
+    "orPasteText": "Or paste text",
     "accountTitle": "Already have an account?",
     "accountBody": "Sign in for the full limits, to edit questions and to keep your quizzes.",
     "signIn": "Sign in",

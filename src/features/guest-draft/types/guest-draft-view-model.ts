@@ -10,8 +10,11 @@ export interface GuestDraftProgress {
   title: string | null;
 }
 
-/** What the upload page shows when the browser or the server refuses a PDF. */
-export type GuestDraftRefusal = 'too_large' | 'not_pdf' | 'cap' | 'upload_error';
+/**
+ * What the page shows when the browser or the server refuses a PDF or a pasted text.
+ * `too_large` is a PDF over the limits or a text over the trial length (RIN-1539).
+ */
+export type GuestDraftRefusal = 'too_large' | 'too_short' | 'not_pdf' | 'cap' | 'upload_error';
 
 /** One submit of a guest-draft attempt (RIN-1448); the draft token is passed beside it. */
 export interface GuestDraftAttemptInput {

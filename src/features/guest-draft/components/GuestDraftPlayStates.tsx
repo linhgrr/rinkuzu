@@ -5,7 +5,13 @@ import { useTranslations } from 'next-intl';
 import { HiOutlineClock } from 'react-icons/hi';
 import { Card } from '@/components/ui/Card';
 import { Link } from '@/i18n/navigation';
+import type { GuestDraftSource } from '@/shared/constants/guest-draft';
 import { ROUTES } from '@/shared/constants/routes';
+
+interface GuestDraftSourceProps {
+  /** What the draft was made from: the copy and the "Make it again" page (RIN-1539). */
+  source?: GuestDraftSource;
+}
 
 /**
  * The notice link: orange-800 is 8.9:1 on the orange-50 strip in both themes, where
@@ -15,11 +21,11 @@ const NOTICE_LINK_CLASS =
   'inline-flex min-h-11 items-center font-medium text-orange-800 underline hover:text-orange-900';
 
 /** Slim note above question 1 of a guest draft (RIN-1448): kept 24 h unless you sign up. */
-export function GuestDraftNotice() {
+export function GuestDraftNotice({ source = 'pdf' }: GuestDraftSourceProps) {
   const t = useTranslations('guestDraft.play');
   return (
     <p className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-2 text-sm text-neutral-700">
-      {t.rich('notice', {
+      {t.rich(source === 'text' ? 'noticeText' : 'notice', {
         link: (chunks) => (
           <Link href={ROUTES.REGISTER} className={NOTICE_LINK_CLASS}>
             {chunks}
@@ -34,7 +40,7 @@ export function GuestDraftNotice() {
  * The draft is gone (after 24 h, claimed, or another browser): offer to make it again.
  * A signed-in visitor also gets their library, where a claimed draft lives (RIN-1485).
  */
-export function GuestDraftExpiredCard() {
+export function GuestDraftExpiredCard({ source = 'pdf' }: GuestDraftSourceProps) {
   const t = useTranslations('guestDraft.play');
   const signedIn = useSession().status === 'authenticated';
   return (
@@ -42,9 +48,14 @@ export function GuestDraftExpiredCard() {
       <Card variant="bordered" className="w-full max-w-md p-6 text-center">
         <HiOutlineClock className="mx-auto mb-3 size-8 text-neutral-400" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-neutral-950">{t('expiredTitle')}</h2>
-        <p className="mt-1 text-sm text-neutral-600">{t('expiredBody')}</p>
+        <p className="mt-1 text-sm text-neutral-600">
+          {source === 'text' ? t('expiredBodyText') : t('expiredBody')}
+        </p>
         <div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row">
-          <Link href={ROUTES.TRY_PDF} className="btn btn-primary">
+          <Link
+            href={source === 'text' ? ROUTES.TRY_TEXT : ROUTES.TRY_PDF}
+            className="btn btn-primary"
+          >
             {t('makeAgain')}
           </Link>
           {signedIn ? (

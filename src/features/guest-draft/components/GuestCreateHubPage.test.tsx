@@ -76,10 +76,22 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
 
     expect(
       screen.getByText(
-        'Upload a PDF (up to 10 pages, 4 MB) and play the quiz right away, no account needed.',
+        'Upload a PDF (up to 10 pages, 4 MB) or paste your text and play the quiz right away, no account needed.',
       ),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    ['en', 'Or paste text'],
+    ['vi', 'Hoặc dán văn bản'],
+  ] as const)(
+    'offers the pasted-text trial inside the trial card (%s, RIN-1539)',
+    (locale, name) => {
+      renderHub(locale);
+
+      expect(screen.getByRole('link', { name })).toHaveAttribute('href', '/try/text?entry=create');
+    },
+  );
 
   it('shows no drafts section and calls no account API', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');

@@ -1830,6 +1830,61 @@ test.describe('production critical paths', () => {
     });
   }
 
+  for (const locale of ['en', 'vi'] as const) {
+    test(`pastes text signed out and plays the quiz (${locale}) @critical-quiz-guest-draft-upload`, async ({
+      page,
+    }, testInfo) => {
+      // RIN-1539: the text create call is answered in the browser with a ready draft seeded
+      // under the page's own token (no generation in e2e); play and attempt are real.
+      await withDatabaseFixture(testInfo, async (fixture) => {
+        const copy = GUEST_UPLOAD_COPY[locale];
+        const seeded: { draft?: SeededGuestDraft; body?: string } = {};
+        await page.addInitScript(() => {
+          window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+        });
+        await page.route('**/api/guest-drafts/text', async (route) => {
+          const token = route.request().headers()['x-guest-draft-token'] ?? '';
+          seeded.body = route.request().postData() ?? '';
+          seeded.draft = await seedReadyGuestDraft(fixture.db, token);
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: READY_GUEST_DRAFT_BODY,
+          });
+        });
+        try {
+          await page.goto(`/${locale}/try/text`);
+          await expect(page).toHaveURL(new RegExp(`/${locale}/try/text$`));
+          const textbox = page.getByRole('textbox');
+          await expect
+            .poll(() =>
+              textbox.evaluate((node) =>
+                Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+              ),
+            )
+            .toBe(true);
+          const create = page.getByRole('button', { name: copy.create, exact: true });
+          await textbox.fill('Fake e2e notes about cells. '.repeat(4));
+          await expect(create).toBeDisabled();
+          await textbox.fill('Fake e2e notes about cells. '.repeat(10));
+          await create.click();
+
+          await page.waitForURL(new RegExp(`/${locale}/try/text/play$`));
+          expect(JSON.parse(seeded.body ?? '{}')).toMatchObject({ entry: 'try_text', locale });
+          expect(page.url()).not.toContain('Fake');
+          await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+          await finishOneQuestionQuiz(page, copy);
+          await page.waitForURL(new RegExp(`/${locale}/quiz/guest-draft-play/result\\?attemptId=`));
+          await expect(page.getByRole('heading', { name: copy.saveTitle })).toBeVisible();
+          const stored = await page.evaluate(() => JSON.stringify({ ...window.localStorage }));
+          expect(stored).not.toContain('Fake e2e notes');
+        } finally {
+          if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
+        }
+      });
+    });
+  }
+
   test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
     page,
   }, testInfo) => {

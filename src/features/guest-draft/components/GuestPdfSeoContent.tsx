@@ -45,7 +45,7 @@ export async function GuestPdfSeoContent({ locale }: { locale: string }) {
                 >
                   {index + 1}
                 </span>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-2">
                   <h3 className="font-semibold text-ink">{t(`seo.steps.${key}.title`)}</h3>
                   <p className={BODY}>{t(`seo.steps.${key}.body`, GUEST_DRAFT_LIMIT_COPY)}</p>
                 </div>

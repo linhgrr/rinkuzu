@@ -68,13 +68,13 @@ export default async function TopicHubPage({ params }: Props) {
         <nav aria-label={t('breadcrumbLabel')}>
           <ol className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
             <li>
-              <Link href="/" className="hover:text-accent">
+              <Link href="/" className="inline-flex min-h-11 items-center hover:text-accent">
                 {t('breadcrumbHome')}
               </Link>
             </li>
             <li aria-hidden="true">›</li>
             <li>
-              <Link href="/explore" className="hover:text-accent">
+              <Link href="/explore" className="inline-flex min-h-11 items-center hover:text-accent">
                 {t('breadcrumbExplore')}
               </Link>
             </li>
@@ -121,7 +121,7 @@ export default async function TopicHubPage({ params }: Props) {
                 </li>
               ))}
             </ul>
-            <Link href="/explore" className="inline-block text-sm text-accent">
+            <Link href="/explore" className="inline-flex min-h-11 items-center text-sm text-accent">
               {t('more')}
             </Link>
           </section>

@@ -24,6 +24,13 @@ import { ROUTES } from '@/shared/constants/routes';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import { QUIZ_DRAFTS_HUB_KEY } from '@/features/quiz/components/create/quiz-drafts-hub-key';
 
+/**
+ * Hero-card action (RIN-1561): `mt-auto` keeps it at the bottom of the card, `pt-4` is the
+ * 16 px floor between the description and the button when the text fills the card.
+ * `min-h-56` stays on the cards: it reserves room for the illustration, not equal heights.
+ */
+const CARD_ACTION_CLASS = 'relative z-10 mt-auto pt-4';
+
 export function CreateQuizHubPage() {
   const t = useTranslations('create');
   const apiErrorMessage = useApiErrorMessage();
@@ -97,7 +104,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40 p-0 shadow-[var(--shadow-sm)] hover:border-brand-trust/35"
           >
-            <CardContent className="relative flex min-h-56 flex-col gap-4 p-5 sm:p-6">
+            <CardContent className="relative flex min-h-56 flex-col p-4 sm:p-5">
               <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full xl:w-full xl:pr-20">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('manualMethodTitle')}
@@ -106,14 +113,16 @@ export function CreateQuizHubPage() {
                   {t('manualMethodDescription')}
                 </p>
               </div>
-              <Button
-                className="relative z-10 mt-auto w-fit"
-                loading={isCreatingManual}
-                onClick={() => void handleCreateManual()}
-              >
-                {isCreatingManual ? t('creatingDraft') : t('startManual')}
-                <HiOutlineArrowRight className="size-4" aria-hidden="true" />
-              </Button>
+              <div className={CARD_ACTION_CLASS}>
+                <Button
+                  className="w-fit"
+                  loading={isCreatingManual}
+                  onClick={() => void handleCreateManual()}
+                >
+                  {isCreatingManual ? t('creatingDraft') : t('startManual')}
+                  <HiOutlineArrowRight className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
               <Image
                 src="/images/create-quiz/manual-quiz-illustration.png"
                 alt=""
@@ -129,7 +138,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-blue-200/80 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-blue-300"
           >
-            <CardContent className="relative flex min-h-56 flex-col gap-4 p-5 sm:p-6">
+            <CardContent className="relative flex min-h-56 flex-col p-4 sm:p-5">
               <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full xl:w-full xl:pr-20">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('pdfMethodTitle')}
@@ -138,14 +147,16 @@ export function CreateQuizHubPage() {
                   {t('pdfMethodDescription')}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                className="relative z-10 mt-auto w-fit bg-white/90"
-                onClick={() => push(ROUTES.CREATE_QUIZ_PDF)}
-              >
-                <HiOutlineCloudUpload className="size-4" aria-hidden="true" />
-                {t('choosePdf')}
-              </Button>
+              <div className={CARD_ACTION_CLASS}>
+                <Button
+                  variant="outline"
+                  className="w-fit bg-white/90"
+                  onClick={() => push(ROUTES.CREATE_QUIZ_PDF)}
+                >
+                  <HiOutlineCloudUpload className="size-4" aria-hidden="true" />
+                  {t('choosePdf')}
+                </Button>
+              </div>
               <Image
                 src="/images/create-quiz/pdf-quiz-illustration.png"
                 alt=""
@@ -161,7 +172,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-orange-200/80 bg-gradient-to-br from-orange-50 via-white to-orange-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-orange-300"
           >
-            <CardContent className="relative flex min-h-56 flex-col gap-4 p-5 sm:p-6">
+            <CardContent className="relative flex min-h-56 flex-col p-4 sm:p-5">
               <div className="relative z-10 w-full pt-1">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('textMethodTitle')}
@@ -170,14 +181,16 @@ export function CreateQuizHubPage() {
                   {t('textMethodDescription')}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                className="relative z-10 mt-auto w-fit bg-white/90"
-                onClick={() => push(ROUTES.CREATE_QUIZ_TEXT)}
-              >
-                <HiOutlineClipboardList className="size-4" aria-hidden="true" />
-                {t('pasteText')}
-              </Button>
+              <div className={CARD_ACTION_CLASS}>
+                <Button
+                  variant="outline"
+                  className="w-fit bg-white/90"
+                  onClick={() => push(ROUTES.CREATE_QUIZ_TEXT)}
+                >
+                  <HiOutlineClipboardList className="size-4" aria-hidden="true" />
+                  {t('pasteText')}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </section>

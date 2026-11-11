@@ -72,7 +72,7 @@ export const ShareButtons = ({ url, title, labels }: ShareButtonsProps) => {
             key={link.name}
             variant="outline"
             size="icon"
-            className={`h-9 w-9 rounded-full ${link.color} transition-colors duration-200 border-neutral-200`}
+            className={`size-11 rounded-full ${link.color} transition-colors duration-200 border-neutral-200`}
             onClick={() => window.open(link.href, '_blank', 'noopener,noreferrer')}
             title={labels.shareOn[link.name]}
           >
@@ -82,7 +82,7 @@ export const ShareButtons = ({ url, title, labels }: ShareButtonsProps) => {
         <Button
           variant="outline"
           size="icon"
-          className="size-9 rounded-full hover:bg-neutral-100 transition-colors duration-200 border-neutral-200"
+          className="size-11 rounded-full hover:bg-neutral-100 transition-colors duration-200 border-neutral-200"
           onClick={handleCopy}
           title={labels.copyLink}
         >

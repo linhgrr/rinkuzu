@@ -91,6 +91,19 @@ function parentOf(element: HTMLElement): HTMLElement {
 }
 
 describe('CreateQuizHubPage', () => {
+  it('keeps each hero-card button at least 16 px under its text (RIN-1561)', () => {
+    render(<CreateQuizHubPage />);
+
+    for (const name of ['startManual', 'choosePdf']) {
+      const wrapper = parentOf(screen.getByRole('button', { name }));
+      // mt-auto alone collapses to 0 when the description fills the card.
+      expect(wrapper.className.split(/\s+/)).toEqual(expect.arrayContaining(['mt-auto', 'pt-4']));
+      expect(parentOf(wrapper).className.split(/\s+/)).toEqual(
+        expect.arrayContaining(['p-4', 'sm:p-5']),
+      );
+    }
+  });
+
   it('renders concise creation choices with decorative illustrations', async () => {
     const { container } = render(<CreateQuizHubPage />);
 

@@ -22,21 +22,22 @@ interface HubCardProps {
 
 /**
  * One rhythm for both hub cards (RIN-1561, Designer values in RIN-1553 round 2): padding
- * 16/20 px, title to text 12 px, text to actions 16 px. The cards keep their own height
- * (`items-start`): stretching the account card to the trial card's height and pushing its
- * links down with `mt-auto` left a 99 px hole above them at 1440 px.
+ * 16/20 px, title to text 12 px, text to actions at least 16 px. Cards in one row share
+ * one height with their actions at the bottom (`h-full` + `mt-auto`); the trial card's
+ * actions sit on one row from `sm` so both action rows match and the space above the
+ * account links is only the difference in text length.
  */
 function HubCard({ title, body, className, children }: HubCardProps) {
   return (
     <Card className={cn('p-0', className)}>
-      <CardContent className="flex flex-col p-4 sm:p-5">
+      <CardContent className="flex h-full flex-col p-4 sm:p-5">
         <div className="space-y-3">
           <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
             {title}
           </h2>
           <p className="text-sm leading-6 text-neutral-600">{body}</p>
         </div>
-        <div className="flex flex-col items-start pt-4">{children}</div>
+        <div className="mt-auto flex flex-col items-start pt-4">{children}</div>
       </CardContent>
     </Card>
   );
@@ -60,7 +61,7 @@ export function GuestCreateHubPage() {
         </header>
 
         <section
-          className="mt-6 grid grid-cols-1 items-start gap-5 md:grid-cols-2"
+          className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2"
           aria-label={t('chooseMethod')}
         >
           <HubCard
@@ -68,20 +69,22 @@ export function GuestCreateHubPage() {
             body={t('guestHub.body', GUEST_DRAFT_LIMIT_COPY)}
             className="overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40"
           >
-            <Link
-              href={`${ROUTES.TRY_PDF}?entry=create`}
-              className="btn btn-primary h-auto min-h-11 w-full whitespace-normal py-3 text-center leading-snug sm:w-fit"
-            >
-              {t('guestHub.cta')}
-              <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
-            </Link>
-            <Link
-              href={`${ROUTES.TRY_TEXT}?entry=create`}
-              className={cn(TEXT_LINK_CLASS, 'mt-3 gap-1.5')}
-            >
-              {t('guestHub.orPasteText')}
-              <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
-            </Link>
+            <div className="flex w-full flex-col items-start sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-3">
+              <Link
+                href={`${ROUTES.TRY_PDF}?entry=create`}
+                className="btn btn-primary h-auto min-h-11 w-full whitespace-normal py-3 text-center leading-snug sm:w-fit"
+              >
+                {t('guestHub.cta')}
+                <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
+              </Link>
+              <Link
+                href={`${ROUTES.TRY_TEXT}?entry=create`}
+                className={cn(TEXT_LINK_CLASS, 'mt-3 gap-1.5 sm:mt-0')}
+              >
+                {t('guestHub.orPasteText')}
+                <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
+              </Link>
+            </div>
           </HubCard>
 
           <HubCard

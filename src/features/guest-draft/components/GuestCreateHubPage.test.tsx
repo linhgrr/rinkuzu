@@ -32,7 +32,7 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
       'vi',
       'Tạo quiz',
       'Thử với PDF của bạn',
-      'Thử với PDF của bạn – không cần tài khoản',
+      'Tải PDF lên',
       'Đã có tài khoản?',
       'Đăng nhập',
       'Tạo tài khoản',
@@ -41,7 +41,7 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
       'en',
       'Create a quiz',
       'Try it with your own PDF',
-      'Try it with your own PDF, no account needed',
+      'Upload a PDF',
       'Already have an account?',
       'Sign in',
       'Create an account',
@@ -56,7 +56,7 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
       expect(first).toHaveTextContent(cardA);
       expect(second).toHaveTextContent(cardB);
 
-      expect(screen.getByRole('link', { name: cta })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: cta, exact: true })).toHaveAttribute(
         'href',
         '/try/pdf?entry=create',
       );
@@ -106,7 +106,7 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     renderHub('en');
 
     const section = screen.getByRole('region', { name: 'Choose how to create your quiz' });
-    const cta = within(section).getByRole('link', { name: /no account needed/ });
+    const cta = within(section).getByRole('link', { name: 'Upload a PDF', exact: true });
     expect(cta.className.split(/\s+/)).toEqual(
       expect.arrayContaining(['btn', 'btn-primary', 'w-full', 'whitespace-normal']),
     );
@@ -135,22 +135,26 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     expect(trial.textGroup.className).toBe(account.textGroup.className);
     expect(trial.actions.className).toBe(account.actions.className);
     expect(classes(trial.body)).toEqual(expect.arrayContaining(['p-4', 'sm:p-5']));
-    // A min height plus mt-auto made the text sit on the button (gap 0) in one card and
-    // left a 52 px hole in the other; pt-4 keeps text to control at 16 px in both.
+    // A min height made the text sit on the button (gap 0); pt-4 keeps text to control at
+    // least 16 px in both cards.
     expect(trial.body.className).not.toMatch(/min-h-/);
     expect(classes(trial.actions)).toContain('pt-4');
-    // No auto margin: with stretched equal-height cards it left a 99 px hole at 1440.
-    expect(trial.actions.className).not.toMatch(/mt-auto/);
-    expect(classes(trial.body.closest('section'))).toContain('items-start');
+    // Cards in one row share one height, actions at the bottom (CTO review on PR #500).
+    expect(classes(trial.body)).toContain('h-full');
+    expect(classes(trial.actions)).toContain('mt-auto');
+    expect(classes(trial.body.closest('section'))).not.toContain('items-start');
     expect(classes(trial.textGroup)).toContain('space-y-3');
     expect(within(trial.textGroup).getByText(/Upload a PDF/)).toBeInTheDocument();
     expect(within(account.textGroup).getByText(/Sign in for the full limits/)).toBeInTheDocument();
 
     const trialActions = within(trial.actions).getAllByRole('link');
-    expect(trialActions.map((a) => a.textContent)).toEqual([
-      'Try it with your own PDF, no account needed',
-      'Or paste text',
-    ]);
+    expect(trialActions.map((a) => a.textContent)).toEqual(['Upload a PDF', 'Or paste text']);
+    // From sm up the button and "Or paste text" share one row, so both cards' action rows
+    // are about the same height and the gap above the account links stays small.
+    expect(classes(trialActions[0]?.parentElement ?? null)).toEqual(
+      expect.arrayContaining(['sm:flex-row', 'sm:items-center', 'sm:gap-x-6']),
+    );
+    expect(classes(trialActions[1] ?? null)).toContain('sm:mt-0');
     // Button to "Or paste text" 12 px: closer than text to button.
     expect(classes(trialActions[1] ?? null)).toEqual(expect.arrayContaining(['mt-3', 'min-h-11']));
     expect(

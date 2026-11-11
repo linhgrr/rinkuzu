@@ -56,7 +56,7 @@ export function GuestToolSeoContent({ tool, copy }: GuestToolSeoContentProps) {
                 >
                   {index + 1}
                 </span>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-2">
                   <h3 className="font-semibold text-ink">{step.title}</h3>
                   <p className={BODY}>{step.body}</p>
                 </div>

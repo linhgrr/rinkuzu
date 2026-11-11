@@ -83,7 +83,7 @@ export function GuestPdfDropZone({
     <div
       {...getRootProps({ 'aria-label': t('dropzoneLabel') })}
       className={cn(
-        'cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-[background-color,border-color] duration-300',
+        'cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center sm:p-8 transition-[background-color,border-color] duration-300',
         isDragActive
           ? 'border-brand-action/60 bg-orange-50/50'
           : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30',

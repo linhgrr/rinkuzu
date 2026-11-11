@@ -3,7 +3,6 @@ import { Link } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants/routes';
 import { imgGroup11 } from './constants';
 import { LandingCtaLink } from './LandingCtaLink';
-import { Magnetic } from './Magnetic';
 
 interface BottomCtaProps {
   isAuthenticated?: boolean;
@@ -12,25 +11,23 @@ interface BottomCtaProps {
 
 function UploadCta({ isVi }: { isVi: boolean }) {
   return (
-    <Magnetic>
-      <Link
-        href="/adaptive/upload"
-        className="bg-white flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-gray-50 transition-[colors,transform] active:scale-[0.97]"
-      >
-        <span className="relative shrink-0 size-[28px] overflow-hidden">
-          <Image
-            alt="Upload"
-            className="block w-full h-full object-contain"
-            height={28}
-            src={imgGroup11}
-            width={28}
-          />
-        </span>
-        <span className="whitespace-nowrap font-unbounded text-[18px] font-semibold leading-[1.5] text-[#542607]">
-          {isVi ? 'Tải PDF lên' : 'Upload PDF'}
-        </span>
-      </Link>
-    </Magnetic>
+    <Link
+      href="/adaptive/upload"
+      className="bg-white flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#ff541b]"
+    >
+      <span className="relative shrink-0 size-[28px] overflow-hidden">
+        <Image
+          alt="Upload"
+          className="block w-full h-full object-contain"
+          height={28}
+          src={imgGroup11}
+          width={28}
+        />
+      </span>
+      <span className="whitespace-nowrap font-unbounded text-[18px] font-semibold leading-[1.5] text-[#542607]">
+        {isVi ? 'Tải PDF lên' : 'Upload PDF'}
+      </span>
+    </Link>
   );
 }
 
@@ -39,32 +36,28 @@ function GuestBottomCtas({ locale }: { locale: string }) {
   const isVi = locale === 'vi';
   return (
     <div className="flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row">
-      <Magnetic className="w-full sm:w-auto">
-        <LandingCtaLink
-          href={ROUTES.TRY}
-          cta="play_first"
-          position="bottom"
-          locale={locale}
-          className="flex min-h-[56px] w-full items-center justify-center rounded-[100px] bg-white px-6 py-3 transition-[colors,transform] hover:bg-gray-50 active:scale-[0.97] sm:w-auto sm:px-[32px]"
-        >
-          <span className="text-balance text-center font-unbounded text-[16px] font-semibold leading-[1.35] text-[#542607] sm:text-[18px]">
-            {isVi ? 'Làm thử quiz 2 phút, không cần tài khoản' : 'Try a 2-minute quiz, no account'}
-          </span>
-        </LandingCtaLink>
-      </Magnetic>
-      <Magnetic className="w-full sm:w-auto">
-        <LandingCtaLink
-          href="/register?next=/adaptive/upload"
-          cta="upload"
-          position="bottom"
-          locale={locale}
-          className="flex min-h-[56px] w-full items-center justify-center rounded-[100px] border border-white bg-brand-action-strong px-6 py-3 transition-[colors,transform] hover:bg-brand-action-strong-hover active:scale-[0.97] sm:w-auto sm:px-[32px]"
-        >
-          <span className="font-unbounded text-[18px] font-semibold text-white">
-            {isVi ? 'Tải PDF lên' : 'Upload PDF'}
-          </span>
-        </LandingCtaLink>
-      </Magnetic>
+      <LandingCtaLink
+        href={ROUTES.TRY}
+        cta="play_first"
+        position="bottom"
+        locale={locale}
+        className="flex min-h-[56px] w-full items-center justify-center rounded-[100px] bg-white px-6 py-3 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#ff541b] sm:w-auto sm:px-[32px]"
+      >
+        <span className="text-balance text-center font-unbounded text-[16px] font-semibold leading-[1.35] text-[#542607] sm:text-[18px]">
+          {isVi ? 'Làm thử quiz 2 phút, không cần tài khoản' : 'Try a 2-minute quiz, no account'}
+        </span>
+      </LandingCtaLink>
+      <LandingCtaLink
+        href="/register?next=/adaptive/upload"
+        cta="upload"
+        position="bottom"
+        locale={locale}
+        className="flex min-h-[56px] w-full items-center justify-center rounded-[100px] border border-white bg-brand-action-strong px-6 py-3 transition-colors hover:bg-brand-action-strong-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#ff541b] sm:w-auto sm:px-[32px]"
+      >
+        <span className="font-unbounded text-[18px] font-semibold text-white">
+          {isVi ? 'Tải PDF lên' : 'Upload PDF'}
+        </span>
+      </LandingCtaLink>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function Footer() {
             <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-white/90">
               {t('links.title')}
             </h4>
-            <ul className="space-y-3.5">
+            <ul className="space-y-2">
               {[
                 { label: t('links.home'), href: '/' },
                 { label: t('links.about'), href: '/about' },
@@ -43,7 +43,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
+                    className="inline-flex min-h-11 items-center rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
                   >
                     {link.label}
                   </Link>
@@ -57,7 +57,7 @@ export function Footer() {
             <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-white/90">
               {t('legal.title')}
             </h4>
-            <ul className="space-y-3.5">
+            <ul className="space-y-2">
               {[
                 { label: t('legal.privacy'), href: '/privacy' },
                 { label: t('legal.terms'), href: '/terms' },
@@ -67,7 +67,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
+                    className="inline-flex min-h-11 items-center rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
                   >
                     {link.label}
                   </Link>

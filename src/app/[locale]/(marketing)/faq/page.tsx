@@ -111,7 +111,7 @@ export default async function FAQPage({ params }: Props) {
             <a
               key={cat.id}
               href={`#${cat.id}`}
-              className="px-4 py-2 rounded-full bg-neutral-100 text-sm font-medium text-[var(--text-muted)] hover:bg-green-50 hover:text-brand-trust-hover transition-colors"
+              className="inline-flex min-h-11 items-center rounded-full bg-neutral-100 px-4 text-sm font-medium text-[var(--text-muted)] hover:bg-green-50 hover:text-brand-trust-hover transition-colors"
             >
               {cat.label}
             </a>

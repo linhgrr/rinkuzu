@@ -11,10 +11,16 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import type { GuestDraftProgress } from '@/features/guest-draft/types/guest-draft-view-model';
 import { cn } from '@/lib/utils';
+import type { GuestDraftSource } from '@/shared/constants/guest-draft';
 
 interface GuestDraftProgressCardProps {
   phase: 'uploading' | 'processing' | 'ready';
-  file: File;
+  /** File name, or "Your text · 1,234 characters": never the pasted content (RIN-1539). */
+  label: string;
+  /** Second line under the label, e.g. the file size. */
+  meta?: string | undefined;
+  /** `text` says "Sending…" instead of "Uploading…". */
+  source?: GuestDraftSource;
   progress: GuestDraftProgress | null;
   pollErrors: number;
   onCancel: () => void;
@@ -27,14 +33,14 @@ function statusLine(
 ): string {
   const count = props.progress?.questionCount ?? 0;
   if (props.phase === 'ready') return t('ready', { count });
-  if (props.phase === 'uploading') return t('uploading');
+  if (props.phase === 'uploading') return props.source === 'text' ? t('sending') : t('uploading');
   if (props.pollErrors > 0) return t('pollError');
   return t('processing', { percent: props.progress?.percent ?? 0, count });
 }
 
 /** Upload and processing progress of a guest draft, then "Quiz ready" (RIN-1448 AC4). */
 export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
-  const { phase, file, progress, onCancel, onPlayNow } = props;
+  const { phase, label, meta, progress, onCancel, onPlayNow } = props;
   const t = useTranslations('guestDraft.progress');
   const playRef = useRef<HTMLButtonElement>(null);
   const ready = phase === 'ready';
@@ -58,10 +64,10 @@ export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-neutral-900" title={file.name}>
-            {file.name}
+          <p className="truncate text-sm font-semibold text-neutral-900" title={label}>
+            {label}
           </p>
-          <p className="text-xs text-neutral-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+          {meta ? <p className="text-xs text-neutral-500">{meta}</p> : null}
         </div>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
@@ -104,12 +110,18 @@ export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
 
 interface GuestDraftFailedCardProps {
   onRetry: () => void;
+  /** "Choose another file", or "Edit text" for a pasted text. */
   onChooseAnother: () => void;
+  source?: GuestDraftSource;
 }
 
-/** Failed extraction (RIN-1448 AC8): the try does not count; retry with the same file. */
-export function GuestDraftFailedCard({ onRetry, onChooseAnother }: GuestDraftFailedCardProps) {
-  const t = useTranslations('guestDraft.failed');
+/** Failed extraction (RIN-1448 AC8): the try does not count; retry with the same file or text. */
+export function GuestDraftFailedCard({
+  onRetry,
+  onChooseAnother,
+  source = 'pdf',
+}: GuestDraftFailedCardProps) {
+  const t = useTranslations(source === 'text' ? 'guestDraft.failedText' : 'guestDraft.failed');
   return (
     <Card variant="bordered" role="alert" className="space-y-4 border-red-200 bg-red-50 p-5 sm:p-6">
       <div className="flex items-start gap-3 text-red-700">

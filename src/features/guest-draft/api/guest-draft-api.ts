@@ -48,6 +48,20 @@ export function classifyGuestDraftError(error: unknown): GuestDraftRefusal {
   return 'upload_error';
 }
 
+/**
+ * Why the server refused a pasted text (RIN-1539): 413 `guest_text_too_long` is
+ * `too_large`, 422 `guest_text_too_short` is `too_short`, a guest cap is `cap`.
+ */
+export function classifyGuestTextDraftError(error: unknown): GuestDraftRefusal {
+  if (!(error instanceof ApiResponseError)) return 'upload_error';
+  if (error.status === 429 && metaReason(error.meta)['reason'] === GUEST_DRAFT_LIMIT_REASON) {
+    return 'cap';
+  }
+  if (error.status === 413) return 'too_large';
+  if (error.status === 422) return 'too_short';
+  return 'upload_error';
+}
+
 /** `POST /api/guest-drafts` (RIN-1446): the token rides in a header, never in the URL. */
 export async function createGuestDraft({
   file,

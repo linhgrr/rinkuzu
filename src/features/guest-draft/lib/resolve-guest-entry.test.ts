@@ -15,6 +15,11 @@ describe('guest draft entry (RIN-1497)', () => {
     expect(createGuestDraftFieldsSchema.shape.entry.safeParse('seo').success).toBe(true);
   });
 
+  it('knows try_text, the /try/text default (RIN-1539)', () => {
+    expect(knownGuestDraftEntry('try_text')).toBe('try_text');
+    expect(createGuestDraftFieldsSchema.shape.entry.safeParse('try_text').success).toBe(true);
+  });
+
   it('lets the param win over a search referrer', () => {
     expect(resolveGuestDraftEntry('blog', 'https://www.google.com/')).toBe('blog');
   });

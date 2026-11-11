@@ -28,12 +28,14 @@
   "cap": {
     "title": "Sign up to create more",
     "body": "Today's no-account trials are used up. Sign up free to make a quiz from your PDF.",
+    "bodyText": "Today's no-account trials are used up. Sign up free to make a quiz from your text.",
     "google": "Continue with Google",
     "signInEmail": "Sign in with email",
     "createAccount": "Create an account"
   },
   "progress": {
     "uploading": "Uploading…",
+    "sending": "Sending…",
     "processing": "{percent}% done • {count, plural, one {# question} other {# questions}}",
     "hint": "Usually about a minute. Keep this page open.",
     "cancel": "Cancel",
@@ -49,11 +51,42 @@
   },
   "play": {
     "notice": "Quiz from your PDF. Kept for 24 hours: <link>sign up</link> to keep it.",
+    "noticeText": "Quiz from your text. Kept for 24 hours: <link>sign up</link> to keep it.",
     "expiredTitle": "This quiz has expired",
     "expiredBody": "Trial quizzes are kept for 24 hours. Make it again from your PDF.",
+    "expiredBodyText": "Trial quizzes are kept for 24 hours. Make it again from your text.",
     "makeAgain": "Make it again",
     "goToLibrary": "Go to my library",
     "loading": "Loading your quiz…"
+  },
+  "textMeta": {
+    "title": "Free Text to Quiz Generator, No Account | RinKuzu",
+    "description": "Free text to quiz generator: paste your notes or a reading, Rin writes up to 10 personalized multiple-choice questions and you play them right away. No account needed."
+  },
+  "text": {
+    "badge": "No account needed",
+    "title": "Text to quiz generator: paste your text, play now",
+    "subtitle": "Paste notes or a reading ({min, number} to {max, number} characters). Rin writes up to 10 personalized multiple-choice questions from it and you play straight away, no editing.",
+    "label": "Your text",
+    "placeholder": "Paste your notes, lecture or excerpt here…",
+    "counter": "{count, number} / {max, number}",
+    "hintShort": "Rin needs at least {min, number} characters. {missing, number} more to go.",
+    "hintLong": "Text is over {max, number} characters. Remove {over, number}.",
+    "submit": "Create quiz",
+    "tryAgain": "Try again",
+    "privacy": "We keep your text for 24 hours, then delete it. Only you can open it.",
+    "higherLimits": "Need higher limits? Sign up free",
+    "tooShort": "The text is too short. It needs at least {min, number} characters.",
+    "tooLong": "The text is over the trial limit of {max, number} characters. Sign up free for the full limit.",
+    "tooLongLink": "Sign up free",
+    "sendError": "We couldn't send your text. Check your connection and try again.",
+    "progressLabel": "Your text · {count, plural, one {# character} other {# characters}}"
+  },
+  "failedText": {
+    "title": "We couldn't make a quiz from this text",
+    "body": "This try doesn't count. Try again, or edit your text (very generic or very short text is harder to turn into questions).",
+    "retry": "Try again",
+    "chooseAnother": "Edit text"
   },
   "seo": {
     "howTitle": "How it works",

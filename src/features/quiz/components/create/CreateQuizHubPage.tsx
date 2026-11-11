@@ -22,6 +22,7 @@ import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createManualQuizDraft, deleteQuizDraft, listQuizDrafts } from '@/lib/quiz/draftApi';
 import { ROUTES } from '@/shared/constants/routes';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
+import { QUIZ_DRAFTS_HUB_KEY } from '@/features/quiz/components/create/quiz-drafts-hub-key';
 
 export function CreateQuizHubPage() {
   const t = useTranslations('create');
@@ -37,7 +38,7 @@ export function CreateQuizHubPage() {
     error,
     isLoading,
     mutate,
-  } = useSWR('quiz-drafts-hub', () => listQuizDrafts());
+  } = useSWR(QUIZ_DRAFTS_HUB_KEY, () => listQuizDrafts());
   // Viewer time zone: the list renders client-side only (SWR), so no hydration pin is needed.
   const dateFormatter = useMemo(
     () =>

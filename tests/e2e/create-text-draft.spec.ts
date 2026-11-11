@@ -23,7 +23,15 @@ function transportTextDraft(id: string, title: string) {
     submit_to_premium: false,
     revision: 1,
     question_count: 0,
-    pdf: null,
+    // The API always sends the pdf block; a text draft has every file field null.
+    pdf: {
+      s3_key: null,
+      file_name: null,
+      file_size: null,
+      page_count: null,
+      file_hash: null,
+      retained_for_premium: false,
+    },
     status: 'processing',
     progress: { processed: 0, total: 1, percent: 0 },
     questions: [],
@@ -80,7 +88,8 @@ test.describe('signed-in paste text (RIN-1542)', () => {
         enCreate.textMethodTitle,
       ]);
       await methods.getByRole('button', { name: enCreate.pasteText, exact: true }).click();
-      await page.waitForURL(/\/en\/create\/text$/);
+      // Client-side navigations: no load event, so wait on the URL itself.
+      await expect(page).toHaveURL(/\/en\/create\/text$/);
 
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(enCreate.text.title);
       const textbox = page.getByRole('textbox', { name: enGuest.text.label });
@@ -98,7 +107,7 @@ test.describe('signed-in paste text (RIN-1542)', () => {
       await textbox.fill(notes);
       await create.click();
 
-      await page.waitForURL(/\/en\/create$/);
+      await expect(page).toHaveURL(/\/en\/create$/);
       expect(mock.posted).toEqual([
         expect.objectContaining({ title: enCreate.untitledQuiz, text: notes }),
       ]);

@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { HiOutlineArrowLeft, HiOutlineTag } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,6 +12,8 @@ import { quizTextLimitState } from '@/features/guest-draft/lib/quiz-text-limit';
 import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
 import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
+import { QUIZ_DRAFTS_HUB_KEY } from '@/features/quiz/components/create/quiz-drafts-hub-key';
+import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ApiResponseError } from '@/lib/api/client';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
@@ -54,6 +57,7 @@ export function CreateTextQuizPage() {
   const apiErrorMessage = useApiErrorMessage();
   const { push } = useRouter();
   const { addDraft } = useDraftStore();
+  const { mutate } = useSWRConfig();
   const hintId = useId();
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
@@ -79,6 +83,12 @@ export function CreateTextQuizPage() {
         createdAt: new Date().toISOString(),
         ...(draft.expiresAt ? { expiresAt: draft.expiresAt } : {}),
       });
+      // The hub may still hold its list from before this page; show the new draft at once.
+      await mutate<QuizDraft[]>(
+        QUIZ_DRAFTS_HUB_KEY,
+        (current) => [draft, ...(current ?? []).filter((item) => item.id !== draft.id)],
+        { revalidate: false },
+      );
       toast.success(t('processingStarted'));
       push(ROUTES.CREATE_QUIZ);
     } catch (error: unknown) {

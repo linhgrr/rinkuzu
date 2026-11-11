@@ -264,7 +264,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
         <div className="mt-6 space-y-6">
           {activeType === 'all' ? (
             <>
-              <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
+              <SurfaceCard className="flex flex-col gap-6 p-3 sm:p-5">
                 <SectionHeading
                   title={t('sections.mine.title')}
                   subtitle={t('sections.mine.subtitle')}
@@ -287,7 +287,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
                 )}
               </SurfaceCard>
 
-              <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
+              <SurfaceCard className="flex flex-col gap-6 p-3 sm:p-5">
                 <SectionHeading
                   title={t('sections.adaptive.title')}
                   subtitle={t('sections.adaptive.subtitle')}
@@ -315,7 +315,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
                 )}
               </SurfaceCard>
 
-              <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
+              <SurfaceCard className="flex flex-col gap-6 p-3 sm:p-5">
                 <SectionHeading
                   title={t('sections.quizzes.title')}
                   subtitle={t('sections.quizzes.subtitle')}
@@ -334,7 +334,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
               </SurfaceCard>
             </>
           ) : (
-            <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
+            <SurfaceCard className="flex flex-col gap-6 p-3 sm:p-5">
               <SectionHeading
                 title={t(`sections.${activeType}.title`)}
                 subtitle={t(`sections.${activeType}.subtitle`)}

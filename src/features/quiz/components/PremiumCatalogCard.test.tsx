@@ -49,7 +49,7 @@ describe('PremiumCatalogCard', () => {
       '/quiz/curated-algebra',
     );
     expect(container.querySelector('article')).toHaveClass(
-      'min-h-[146px]',
+      'min-h-36',
       'border-secondary-2',
       'bg-surface-blue',
       'shadow-quiz-card',

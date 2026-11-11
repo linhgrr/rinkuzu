@@ -25,7 +25,8 @@ import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import { QUIZ_DRAFTS_HUB_KEY } from '@/features/quiz/components/create/quiz-drafts-hub-key';
 
 /**
- * Hero-card action (RIN-1561): `mt-auto` keeps it at the bottom of the card, `pt-4` is the
+ * Hero-card action (RIN-1561): `mt-auto` keeps it at the bottom of the card (the content is
+ * `h-full` so it fills the stretched grid cell, RIN-1578), `pt-4` is the
  * 16 px floor between the description and the button when the text fills the card.
  * `min-h-56` stays on the cards: it reserves room for the illustration, not equal heights.
  */
@@ -104,7 +105,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40 p-0 shadow-[var(--shadow-sm)] hover:border-brand-trust/35"
           >
-            <CardContent className="relative flex min-h-56 flex-col p-4 sm:p-5">
+            <CardContent className="relative flex h-full min-h-56 flex-col p-4 sm:p-5">
               <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full xl:w-full xl:pr-20">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('manualMethodTitle')}
@@ -138,7 +139,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-blue-200/80 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-blue-300"
           >
-            <CardContent className="relative flex min-h-56 flex-col p-4 sm:p-5">
+            <CardContent className="relative flex h-full min-h-56 flex-col p-4 sm:p-5">
               <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full xl:w-full xl:pr-20">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('pdfMethodTitle')}
@@ -172,7 +173,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-orange-200/80 bg-gradient-to-br from-orange-50 via-white to-orange-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-orange-300"
           >
-            <CardContent className="relative flex min-h-56 flex-col p-4 sm:p-5">
+            <CardContent className="relative flex h-full min-h-56 flex-col p-4 sm:p-5">
               <div className="relative z-10 w-full pt-1">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('textMethodTitle')}

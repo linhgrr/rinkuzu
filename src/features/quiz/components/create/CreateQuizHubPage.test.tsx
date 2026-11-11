@@ -104,6 +104,19 @@ describe('CreateQuizHubPage', () => {
     }
   });
 
+  it('pins every hero-card button to the card bottom so the row lines up (RIN-1578)', () => {
+    render(<CreateQuizHubPage />);
+
+    for (const name of ['startManual', 'choosePdf', 'pasteText']) {
+      const content = parentOf(parentOf(screen.getByRole('button', { name })));
+      // Without h-full the content stops at its own height inside the stretched grid cell,
+      // so mt-auto leaves a different gap under each button (22/48/74 px at 1440).
+      expect(content.className.split(/\s+/)).toEqual(
+        expect.arrayContaining(['flex', 'h-full', 'flex-col', 'min-h-56']),
+      );
+    }
+  });
+
   it('renders concise creation choices with decorative illustrations', async () => {
     const { container } = render(<CreateQuizHubPage />);
 

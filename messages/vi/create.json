@@ -204,7 +204,7 @@
   "guestHub": {
     "title": "Thử với PDF của bạn",
     "body": "Tải một PDF (tối đa {pages} trang, {mb} MB) hoặc dán văn bản và làm quiz ngay, không cần tài khoản.",
-    "cta": "Thử với PDF của bạn – không cần tài khoản",
+    "cta": "Tải PDF lên",
     "orPasteText": "Hoặc dán văn bản",
     "accountTitle": "Đã có tài khoản?",
     "accountBody": "Đăng nhập để dùng giới hạn đầy đủ, chỉnh sửa câu hỏi và lưu quiz.",

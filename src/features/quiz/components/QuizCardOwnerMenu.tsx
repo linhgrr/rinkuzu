@@ -15,7 +15,7 @@ export function QuizCardOwnerMenu({ quizId, onDelete }: QuizCardOwnerMenuProps) 
   return (
     <details className="relative">
       <summary
-        className="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-ink/70 opacity-70 transition-[color,background-color,opacity] hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent group-hover:opacity-100 group-focus-within:opacity-100"
+        className="flex size-11 cursor-pointer list-none items-center justify-center rounded-md text-ink/70 transition-colors hover:bg-accent-soft hover:text-accent-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={t('quizActions')}
       >
         <HiOutlineDotsVertical className="size-5" aria-hidden="true" />

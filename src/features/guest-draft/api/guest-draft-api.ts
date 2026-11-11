@@ -7,6 +7,7 @@ import type {
   GuestDraftRefusal,
   SubmittedGuestDraftAttempt,
 } from '@/features/guest-draft/types/guest-draft-view-model';
+import { quizTextRefusal } from '@/features/guest-draft/lib/quiz-text-limit';
 import { ApiResponseError, fetchApiData } from '@/lib/api/client';
 import {
   GUEST_DRAFT_LIMIT_REASON,
@@ -49,17 +50,17 @@ export function classifyGuestDraftError(error: unknown): GuestDraftRefusal {
 }
 
 /**
- * Why the server refused a pasted text (RIN-1539): 413 `guest_text_too_long` is
- * `too_large`, 422 `guest_text_too_short` is `too_short`, a guest cap is `cap`.
+ * Why the server refused a pasted text (RIN-1539): too long is `too_large`, too short is
+ * `too_short` (told apart by `quizTextRefusal`, RIN-1542), a guest cap is `cap`.
  */
-export function classifyGuestTextDraftError(error: unknown): GuestDraftRefusal {
+export function classifyGuestTextDraftError(error: unknown, text: string): GuestDraftRefusal {
   if (!(error instanceof ApiResponseError)) return 'upload_error';
   if (error.status === 429 && metaReason(error.meta)['reason'] === GUEST_DRAFT_LIMIT_REASON) {
     return 'cap';
   }
-  if (error.status === 413) return 'too_large';
-  if (error.status === 422) return 'too_short';
-  return 'upload_error';
+  const refusal = quizTextRefusal(error, text);
+  if (refusal === 'too_long') return 'too_large';
+  return refusal ?? 'upload_error';
 }
 
 /** `POST /api/guest-drafts` (RIN-1446): the token rides in a header, never in the URL. */

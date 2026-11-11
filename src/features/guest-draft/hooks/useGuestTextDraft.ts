@@ -19,7 +19,7 @@ export function useGuestTextDraft(entry: GuestDraftEntry) {
   const submit = (text: string) =>
     start(
       (token, locale) => createGuestTextDraft({ text, token, locale, entry }),
-      classifyGuestTextDraftError,
+      (error) => classifyGuestTextDraftError(error, text),
     );
 
   return { state, submit, edit: () => dispatch({ type: 'removed' }), cancel, playNow };

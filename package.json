@@ -186,7 +186,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.2",
+    "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@lhci/cli": "^0.15.1",
     "@next/bundle-analyzer": "16.4.5",

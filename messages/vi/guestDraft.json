@@ -28,12 +28,14 @@
   "cap": {
     "title": "Đăng ký để tạo tiếp",
     "body": "Lượt dùng thử không cần tài khoản hôm nay đã hết. Đăng ký miễn phí để tạo quiz từ PDF của bạn.",
+    "bodyText": "Lượt dùng thử không cần tài khoản hôm nay đã hết. Đăng ký miễn phí để tạo quiz từ văn bản.",
     "google": "Tiếp tục với Google",
     "signInEmail": "Đăng nhập bằng email",
     "createAccount": "Tạo tài khoản"
   },
   "progress": {
     "uploading": "Đang tải lên…",
+    "sending": "Đang gửi…",
     "processing": "Đã xong {percent}% • {count} câu hỏi",
     "hint": "Thường mất khoảng 1 phút. Giữ trang này mở.",
     "cancel": "Hủy",
@@ -49,11 +51,42 @@
   },
   "play": {
     "notice": "Quiz từ PDF của bạn. Chỉ lưu 24 giờ: <link>đăng ký</link> để giữ lại.",
+    "noticeText": "Quiz từ văn bản của bạn. Lưu trong 24 giờ: <link>đăng ký</link> để giữ lại.",
     "expiredTitle": "Quiz này đã hết hạn",
     "expiredBody": "Quiz từ PDF dùng thử chỉ được giữ 24 giờ. Tạo lại từ PDF của bạn.",
+    "expiredBodyText": "Quiz dùng thử chỉ được giữ 24 giờ. Tạo lại từ văn bản của bạn.",
     "makeAgain": "Tạo lại",
     "goToLibrary": "Tới thư viện của tôi",
     "loading": "Đang tải quiz…"
+  },
+  "textMeta": {
+    "title": "Tạo quiz từ văn bản miễn phí, không cần tài khoản | RinKuzu",
+    "description": "Tạo quiz từ văn bản miễn phí: dán ghi chú hoặc bài đọc, Rin viết tối đa 10 câu hỏi trắc nghiệm cá nhân hóa và bạn làm ngay. Không cần tài khoản."
+  },
+  "text": {
+    "badge": "Không cần tài khoản",
+    "title": "Tạo quiz từ văn bản: dán nội dung, chơi ngay",
+    "subtitle": "Dán đoạn ghi chú hoặc bài đọc ({min, number} đến {max, number} ký tự). Rin viết tối đa 10 câu hỏi trắc nghiệm cá nhân hóa theo nội dung của bạn và bạn chơi ngay, không cần chỉnh sửa.",
+    "label": "Văn bản của bạn",
+    "placeholder": "Dán ghi chú, bài giảng hoặc đoạn trích vào đây…",
+    "counter": "{count, number} / {max, number}",
+    "hintShort": "Cần ít nhất {min, number} ký tự để Rin tạo câu hỏi. Còn thiếu {missing, number}.",
+    "hintLong": "Văn bản dài quá {max, number} ký tự. Hãy rút gọn {over, number} ký tự.",
+    "submit": "Tạo quiz",
+    "tryAgain": "Thử lại",
+    "privacy": "Chúng tôi giữ văn bản của bạn 24 giờ rồi xóa. Chỉ bạn mở được.",
+    "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí",
+    "tooShort": "Văn bản quá ngắn. Cần ít nhất {min, number} ký tự.",
+    "tooLong": "Văn bản vượt giới hạn dùng thử {max, number} ký tự. Đăng ký miễn phí để dùng giới hạn đầy đủ.",
+    "tooLongLink": "Đăng ký miễn phí",
+    "sendError": "Chúng tôi chưa gửi được văn bản của bạn. Kiểm tra kết nối và thử lại.",
+    "progressLabel": "Văn bản của bạn · {count, number} ký tự"
+  },
+  "failedText": {
+    "title": "Chúng tôi chưa tạo được quiz từ văn bản này",
+    "body": "Lượt này không bị tính. Thử lại, hoặc chỉnh văn bản (nội dung quá chung chung hoặc quá ngắn khó tạo câu hỏi).",
+    "retry": "Thử lại",
+    "chooseAnother": "Sửa văn bản"
   },
   "seo": {
     "howTitle": "Cách hoạt động",

@@ -3,6 +3,7 @@ import { HiOutlineArrowRight } from 'react-icons/hi';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Link } from '@/i18n/navigation';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
+import { cn } from '@/lib/utils';
 import { ROUTES } from '@/shared/constants/routes';
 import { GUEST_DRAFT_LIMIT_COPY } from '../lib/guest-limit-copy';
 
@@ -12,8 +13,8 @@ const ACCOUNT_LINK_CLASS =
 
 /**
  * `/create` for a signed-out visitor (RIN-1473, UI spec RIN-1445 1b): the guest PDF trial
- * first, sign-in second, instead of a redirect to login. No drafts and no account API call.
- * A server component: it ships no JS beyond the links.
+ * (or pasted text, RIN-1539) first, sign-in second, instead of a redirect to login. No
+ * drafts and no account API call. A server component: it ships no JS beyond the links.
  */
 export function GuestCreateHubPage() {
   const t = useTranslations('create');
@@ -44,6 +45,13 @@ export function GuestCreateHubPage() {
                 className="btn btn-primary mt-auto h-auto min-h-11 w-full whitespace-normal py-3 text-center leading-snug sm:w-fit"
               >
                 {t('guestHub.cta')}
+                <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
+              </Link>
+              <Link
+                href={`${ROUTES.TRY_TEXT}?entry=create`}
+                className={cn(ACCOUNT_LINK_CLASS, 'mt-3 gap-1.5 self-start')}
+              >
+                {t('guestHub.orPasteText')}
                 <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
               </Link>
             </CardContent>

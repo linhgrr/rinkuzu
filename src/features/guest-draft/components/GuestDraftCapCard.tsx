@@ -6,20 +6,32 @@ import { Card } from '@/components/ui/Card';
 import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { Link } from '@/i18n/navigation';
 import { resolveAuthCallback, withAuthCallback } from '@/lib/routing/auth-callback';
+import type { GuestDraftSource } from '@/shared/constants/guest-draft';
 import { ROUTES } from '@/shared/constants/routes';
 
 export const GUEST_SIGN_UP_LINK_CLASS =
   'inline-flex min-h-11 items-center text-sm font-medium text-brand-trust underline hover:text-brand-trust-hover';
 
+interface GuestDraftCapCardProps {
+  /** What the guest was making: the body copy and where sign-up returns to (RIN-1539). */
+  source?: GuestDraftSource;
+}
+
+/** Signed-in page a guest returns to after signing up from the cap card. */
+const CAP_NEXT: Record<GuestDraftSource, string> = {
+  pdf: ROUTES.CREATE_QUIZ_PDF,
+  text: ROUTES.CREATE_QUIZ,
+};
+
 /**
  * "Sign up to create more" when a guest cap is hit (RIN-1448 AC3). The same copy for the
  * per-IP and the global cap: the page never says which one fired.
  */
-export function GuestDraftCapCard() {
+export function GuestDraftCapCard({ source = 'pdf' }: GuestDraftCapCardProps) {
   const t = useTranslations('guestDraft.cap');
   const locale = useLocale();
   const titleId = useId();
-  const next = ROUTES.CREATE_QUIZ_PDF;
+  const next = CAP_NEXT[source];
 
   return (
     <Card
@@ -31,7 +43,9 @@ export function GuestDraftCapCard() {
       <h2 id={titleId} className="text-lg font-semibold text-neutral-950">
         {t('title')}
       </h2>
-      <p className="mt-1 text-sm text-neutral-700">{t('body')}</p>
+      <p className="mt-1 text-sm text-neutral-700">
+        {source === 'text' ? t('bodyText') : t('body')}
+      </p>
       <div className="mx-auto mt-4 w-full sm:max-w-xs">
         <GoogleAuthButton
           callbackUrl={resolveAuthCallback(next, locale).browserUrl}

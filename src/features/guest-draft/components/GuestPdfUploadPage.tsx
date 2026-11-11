@@ -88,7 +88,8 @@ function FlowBody({ flow }: { flow: Flow }) {
     return (
       <GuestDraftProgressCard
         phase={phase}
-        file={file}
+        label={file.name}
+        meta={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
         progress={state.progress}
         pollErrors={state.pollErrors}
         onCancel={flow.cancel}

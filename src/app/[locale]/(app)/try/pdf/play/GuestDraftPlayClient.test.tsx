@@ -59,10 +59,10 @@ const quiz = {
   questions: [],
 };
 
-function renderClient() {
+function renderClient(source?: 'text') {
   return render(
     <NextIntlClientProvider locale="en" messages={{ guestDraft: enGuest }}>
-      <GuestDraftPlayClient />
+      <GuestDraftPlayClient {...(source ? { source } : {})} />
     </NextIntlClientProvider>,
   );
 }
@@ -145,5 +145,22 @@ describe('GuestDraftPlayClient (RIN-1448)', () => {
     const input = { answers: [1], idempotencyKey: 'key', guestClaimToken: 'claim' };
     await guestDraft.submitAttempt(input);
     expect(submitGuestDraftAttempt).toHaveBeenCalledWith('fake-draft-token', input);
+  });
+
+  it('uses the text copy and sends "Make it again" to /try/text (RIN-1539)', async () => {
+    renderClient('text');
+    expect(await screen.findByText(/Make it again from your text/)).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Make it again' })).toHaveAttribute(
+      'href',
+      '/try/text',
+    );
+  });
+
+  it('shows the text notice above question 1 of a text draft (RIN-1539)', async () => {
+    addGuestDraftClaim({ token: 'fake-draft-token', createdAt: Date.now() });
+    fetchGuestDraftPlay.mockResolvedValue(quiz);
+    renderClient('text');
+    await screen.findByTestId('player');
+    expect(screen.getByText(/Quiz from your text/)).toBeVisible();
   });
 });

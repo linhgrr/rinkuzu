@@ -40,9 +40,11 @@ const ICON = {
   lock: 'solar:lock-keyhole-minimalistic-linear',
 } as const;
 
-// Single source of truth: sub-item row height. The sliding active indicator
-// strides by this value, so both must stay in sync.
-const SUB_ITEM_HEIGHT_PX = 40;
+// Single source of truth: sub-item row height (h-11, a 44 px touch target) and
+// the gap between rows (gap-2, 8 px; RIN-1554). The sliding active indicator
+// strides by their sum, so the classes and these values must stay in sync.
+const SUB_ITEM_HEIGHT_PX = 44;
+const SUB_ITEM_GAP_PX = 8;
 
 type NavTranslate = (key: string) => string;
 type AppLocale = 'en' | 'vi';
@@ -247,11 +249,15 @@ function SidebarSubItem({ href, label, active, lockedLabel }: SidebarSubItemProp
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
-      className={`relative flex h-10 items-center gap-2.5 pl-6 pr-2.5 font-home text-body transition-colors ${
+      className={`relative flex h-11 items-center gap-2.5 pl-6 pr-2.5 font-home text-body transition-colors ${
         active ? 'font-semibold text-accent-ink' : 'font-normal text-ink hover:text-accent-ink'
       } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
     >
-      <span className="h-10 w-px border-l border-dashed border-line-blue/70" aria-hidden="true" />
+      {/* Stretches over the 8 px row gap so the dashed rail stays continuous. */}
+      <span
+        className="-my-1 w-px self-stretch border-l border-dashed border-line-blue/70"
+        aria-hidden="true"
+      />
       <span className="whitespace-nowrap">{label}</span>
       <LockedMark label={lockedLabel} />
     </Link>
@@ -364,11 +370,13 @@ function NavSection({
           showItems ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >
-        <div className="relative overflow-hidden pt-3" aria-hidden={!showItems}>
+        <div className="relative flex flex-col gap-2 overflow-hidden pt-3" aria-hidden={!showItems}>
           {activeIndex >= 0 ? (
             <span
-              className="absolute left-6 top-3 h-10 w-0.5 rounded-full bg-accent transition-transform duration-300 ease-out"
-              style={{ transform: `translateY(${activeIndex * SUB_ITEM_HEIGHT_PX}px)` }}
+              className="absolute left-6 top-3 h-11 w-0.5 rounded-full bg-accent transition-transform duration-300 ease-out"
+              style={{
+                transform: `translateY(${activeIndex * (SUB_ITEM_HEIGHT_PX + SUB_ITEM_GAP_PX)}px)`,
+              }}
               aria-hidden="true"
             />
           ) : null}
@@ -654,7 +662,7 @@ function AppTopbar({
     >
       {focusMode ? (
         <div className="hidden h-full shrink-0 items-center px-8 lg:flex">
-          <Link href={homeHref} className="flex h-10 items-center" aria-label="RinKuzu">
+          <Link href={homeHref} className="flex h-11 items-center" aria-label="RinKuzu">
             <Image
               src="/images/auth_logo.webp"
               alt="RinKuzu"
@@ -674,10 +682,10 @@ function AppTopbar({
           }`}
         >
           {collapsed ? (
-            <div className="group relative size-[44px] shrink-0">
+            <div className="group relative size-11 shrink-0">
               <Link
                 href={homeHref}
-                className="relative flex size-[44px] items-center justify-center overflow-hidden rounded-lg transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
+                className="relative flex size-11 items-center justify-center overflow-hidden rounded-lg transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
                 aria-label="RinKuzu"
               >
                 <Image
@@ -693,7 +701,7 @@ function AppTopbar({
                   alt=""
                   width={48}
                   height={48}
-                  className="size-[44px] object-contain transition-[opacity,transform] duration-200 ease-out"
+                  className="size-11 object-contain transition-[opacity,transform] duration-200 ease-out"
                   aria-hidden="true"
                 />
               </Link>
@@ -712,7 +720,7 @@ function AppTopbar({
             <>
               <Link
                 href={homeHref}
-                className="relative flex h-10 items-center overflow-hidden"
+                className="relative flex h-11 items-center overflow-hidden"
                 aria-label="RinKuzu"
               >
                 <Image
@@ -735,7 +743,7 @@ function AppTopbar({
               <ButtonBase
                 type="button"
                 onClick={onToggleSidebar}
-                className="flex size-10 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
+                className="flex size-11 items-center justify-center rounded-control text-ink hover:bg-accent-soft/60"
                 aria-label="Collapse sidebar"
                 title="Collapse sidebar"
               >
@@ -749,7 +757,7 @@ function AppTopbar({
       <div className="flex h-full w-full items-center justify-between px-4 lg:hidden">
         <Link
           href={homeHref}
-          className="relative flex h-10 items-center overflow-hidden"
+          className="relative flex h-11 items-center overflow-hidden"
           aria-label="RinKuzu"
         >
           <Image

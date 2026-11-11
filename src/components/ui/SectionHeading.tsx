@@ -22,7 +22,7 @@ function SectionHeading({ title, subtitle, href, viewAllLabel = 'View all' }: Se
         {href ? (
           <Link
             href={href}
-            className="flex shrink-0 items-center gap-2 font-home text-base font-semibold leading-[1.4] text-ink-strong hover:text-accent"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 font-home text-base font-semibold leading-[1.4] text-ink-strong hover:text-accent"
           >
             <span>{viewAllLabel}</span>
             <HiOutlineChevronRight className="size-5" aria-hidden="true" />

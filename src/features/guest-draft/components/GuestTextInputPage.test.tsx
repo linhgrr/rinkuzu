@@ -182,6 +182,13 @@ describe('GuestTextInputPage', () => {
     });
     expect(await screen.findByText(/make a quiz from your text/)).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    // RIN-1542: sign-up returns to the signed-in text page, not the hub.
+    for (const name of [/sign in with email/i, /create an account/i]) {
+      expect(screen.getByRole('link', { name })).toHaveAttribute(
+        'href',
+        expect.stringContaining(`callbackUrl=${encodeURIComponent('/create/text')}`),
+      );
+    }
   });
 
   it('opens the text player once the draft is ready', async () => {

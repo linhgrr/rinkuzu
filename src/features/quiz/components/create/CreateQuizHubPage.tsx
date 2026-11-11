@@ -7,6 +7,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
   HiOutlineArrowRight,
+  HiOutlineClipboardList,
   HiOutlineClock,
   HiOutlineCloudUpload,
   HiOutlineDocumentText,
@@ -88,7 +89,7 @@ export function CreateQuizHubPage() {
         </header>
 
         <section
-          className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2"
+          className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
           aria-label={t('chooseMethod')}
         >
           <Card
@@ -152,6 +153,30 @@ export function CreateQuizHubPage() {
                 sizes="(min-width: 640px) 144px, 112px"
                 className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:-rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-5 sm:w-36"
               />
+            </CardContent>
+          </Card>
+
+          <Card
+            hover
+            className="group overflow-hidden border-orange-200/80 bg-gradient-to-br from-orange-50 via-white to-orange-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-orange-300"
+          >
+            <CardContent className="relative flex min-h-56 flex-col p-5 sm:p-6">
+              <div className="relative z-10 w-full pt-1">
+                <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
+                  {t('textMethodTitle')}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-neutral-600">
+                  {t('textMethodDescription')}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="relative z-10 mt-auto w-fit bg-white/90"
+                onClick={() => push(ROUTES.CREATE_QUIZ_TEXT)}
+              >
+                <HiOutlineClipboardList className="size-4" aria-hidden="true" />
+                {t('pasteText')}
+              </Button>
             </CardContent>
           </Card>
         </section>

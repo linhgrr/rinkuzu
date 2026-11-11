@@ -67,8 +67,9 @@ vi.mock('@/features/quiz/components/PublicQuizNotice', () => ({
   ),
 }));
 
+const routerPush = vi.hoisted(() => vi.fn());
 vi.mock('@/i18n/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: routerPush }),
 }));
 
 vi.mock('@/lib/quiz/draftApi', () => ({
@@ -106,8 +107,32 @@ describe('CreateQuizHubPage', () => {
     expect(
       container.querySelector('img[src="/images/create-quiz/pdf-quiz-illustration.png"]'),
     ).toBeInTheDocument();
-    expect(container.querySelectorAll('.card.p-0')).toHaveLength(3);
+    // Three method cards plus the one draft row.
+    expect(container.querySelectorAll('.card.p-0')).toHaveLength(4);
     expect((await axe(container)).violations).toEqual([]);
+  });
+
+  // RIN-1542 (UI spec on RIN-1539 section 2): Manual, PDF, Paste text; 3 across from xl,
+  // 2 + 1 at md, stacked on phones. The text card has no illustration, so its copy is full width.
+  it('adds the Paste text card last, in a 1 / 2 / 3 column grid, linking to /create/text', () => {
+    render(<CreateQuizHubPage />);
+
+    const region = screen.getByRole('region', { name: 'chooseMethod' });
+    expect(region).toHaveClass('grid-cols-1', 'md:grid-cols-2', 'xl:grid-cols-3');
+    const titles = within(region)
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(titles).toEqual(['manualMethodTitle', 'pdfMethodTitle', 'textMethodTitle']);
+
+    const heading = within(region).getByRole('heading', { level: 2, name: 'textMethodTitle' });
+    expect(parentOf(heading)).toHaveClass('w-full');
+    const card = heading.closest('.card');
+    expect(card).toHaveClass('border-orange-200/80', 'from-orange-50');
+    expect(card?.querySelector('img')).toBeNull();
+    expect(within(region).getByText('textMethodDescription')).toBeInTheDocument();
+
+    fireEvent.click(within(region).getByRole('button', { name: 'pasteText' }));
+    expect(routerPush).toHaveBeenCalledWith('/create/text');
   });
 
   // RIN-754: the toast used to carry the server's own message.

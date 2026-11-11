@@ -1,4 +1,3 @@
-import type { PropsWithChildren } from 'react';
 import { render } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -18,10 +17,6 @@ vi.mock('next/navigation', async (importOriginal) => ({
   usePathname: () => '/',
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
   useParams: () => ({}),
-}));
-
-vi.mock('./Magnetic', () => ({
-  Magnetic: ({ children }: PropsWithChildren) => <>{children}</>,
 }));
 
 const landingMessages = { en: enLanding, vi: viLanding } as const;

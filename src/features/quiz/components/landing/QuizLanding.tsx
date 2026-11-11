@@ -52,7 +52,7 @@ interface PreviewQuestionProps {
 
 function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionProps) {
   return (
-    <li className="space-y-2 py-4 first:pt-0 last:pb-0">
+    <li className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
       <p className="text-sm font-medium text-ink-muted">{numberLabel}</p>
       {question.image ? (
         <Image
@@ -60,7 +60,7 @@ function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionPro
           alt={imageAlt}
           width={480}
           height={240}
-          className="h-auto max-h-60 w-auto max-w-full object-contain"
+          className="h-auto max-h-60 w-auto max-w-full self-start object-contain"
         />
       ) : null}
       <div
@@ -71,7 +71,7 @@ function PreviewQuestion({ question, numberLabel, imageAlt }: PreviewQuestionPro
       >
         <QuestionContent content={question.text} />
       </div>
-      <ul className="space-y-1 text-sm text-ink">
+      <ul className="mt-1 space-y-2 text-sm text-ink">
         {question.options.map((option) => (
           <li key={option.letter} className="flex gap-2 break-words">
             <span className="font-medium">{option.letter}.</span>

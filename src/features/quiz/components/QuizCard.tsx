@@ -20,6 +20,8 @@ export interface QuizCardQuiz {
 /**
  * The one quiz card (RIN-1466): lists, Explore, topic hubs and related quizzes.
  * No 'use client': server pages render it as HTML; only the owner menu hydrates.
+ * Rhythm (RIN-1555): one 12 px gap between count, title and author; the author row
+ * sits at the bottom so cards in one grid row line up.
  */
 interface QuizCardProps {
   quiz: QuizCardQuiz;
@@ -45,7 +47,7 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
   const author = getAuthor(quiz);
 
   return (
-    <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
+    <article className="group relative flex min-h-36 flex-col gap-3 rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card transition-shadow duration-150 ease-out hover:shadow-quiz-card-active focus-within:shadow-quiz-card-active motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/70">
         <div className="flex flex-wrap items-center gap-2">
           <span>{t('questionCount', { count: quiz.questionCount })}</span>
@@ -71,12 +73,12 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
 
       <Link
         href={href ?? ROUTES.QUIZ.VIEW(encodeURIComponent(quiz.slug))}
-        className="mt-2 flex flex-1 flex-col rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="flex flex-1 flex-col gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <h3 className="line-clamp-2 break-words font-home text-body font-semibold text-ink">
           {quiz.title}
         </h3>
-        <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
+        <div className="mt-auto flex items-center gap-2 text-sm text-ink">
           <UserAvatar user={author} size={26} />
           <span className="min-w-0 truncate">
             {author.displayName || author.name || 'RinKuzu learner'}
@@ -95,14 +97,16 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
 
 export function QuizCardSkeleton() {
   return (
-    <Skeleton className="flex min-h-[146px] flex-col rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card">
+    <Skeleton className="flex min-h-36 flex-col gap-3 rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card">
       <div className="flex items-center justify-between">
         <div className="h-4 w-20 rounded bg-line-blue/30" />
         <div className="size-7 rounded-md bg-line-blue/25" />
       </div>
-      <div className="mt-3 h-5 w-4/5 rounded bg-line-blue/30" />
-      <div className="mt-2 h-5 w-3/5 rounded bg-line-blue/25" />
-      <div className="mt-auto flex items-center gap-2 pt-3">
+      <div className="flex flex-col gap-1">
+        <div className="h-5 w-4/5 rounded bg-line-blue/30" />
+        <div className="h-5 w-3/5 rounded bg-line-blue/25" />
+      </div>
+      <div className="mt-auto flex items-center gap-2">
         <div className="size-[26px] rounded-full bg-line-blue/30" />
         <div className="h-4 w-28 rounded bg-line-blue/25" />
       </div>

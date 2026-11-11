@@ -93,6 +93,15 @@ describe('QuizLanding (RIN-1247)', () => {
     expect(html).not.toMatch(/type="radio"|type="checkbox"/u);
   });
 
+  it('spaces preview options apart, with more room between question and options (RIN-1555)', async () => {
+    const html = await render(landingWith());
+
+    // Question block: 8 px between number, image and text; options 12 px below the text.
+    expect(html).toMatch(/<li class="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">/u);
+    expect(html).toMatch(/<ul class="mt-1 space-y-2 text-sm text-ink">/u);
+    expect(html).not.toMatch(/space-y-1 text-sm/u);
+  });
+
   it('links related quizzes without an entry, so they open on their landing', async () => {
     const html = await render(landingWith());
 

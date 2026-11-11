@@ -62,8 +62,8 @@ const titleBox = () => screen.getByRole('textbox', { name: /quiz title|tiêu đ�
 const submit = () => screen.getByRole('button', { name: /create quiz|tạo quiz|try again/i });
 const type = (value: string) => fireEvent.change(textbox(), { target: { value } });
 
-function apiError(status: number, code: string) {
-  return new ApiResponseError({ message: code, status, payload: {}, code, meta: {} });
+function apiError(status: number, code: string, meta: Record<string, unknown> = {}) {
+  return new ApiResponseError({ message: code, status, payload: {}, code, meta });
 }
 
 describe('CreateTextQuizPage', () => {
@@ -123,9 +123,31 @@ describe('CreateTextQuizPage', () => {
     );
   });
 
+  const TOO_LONG = 'The text is over the limit of 20,000 characters.';
+  const TOO_SHORT = 'The text is too short. It needs at least 200 characters.';
+
   it.each([
-    [413, 'validation_error', 'The text is over the limit of 20,000 characters.'],
-    [422, 'validation_error', 'The text is too short. It needs at least 200 characters.'],
+    ['a 413', apiError(413, 'validation_error', { reason: 'text_too_long' }), TOO_LONG],
+    [
+      'a 422 text_too_long',
+      apiError(422, 'validation_error', { reason: 'text_too_long' }),
+      TOO_LONG,
+    ],
+    [
+      'a 422 text_too_short',
+      apiError(422, 'validation_error', { reason: 'text_too_short' }),
+      TOO_SHORT,
+    ],
+    ['a 422 about something else', apiError(422, 'validation_error'), 'api:validation_error'],
+  ])('maps %s to its own alert', async (_label, error, copy) => {
+    createTextQuizDraft.mockRejectedValue(error);
+    renderPage();
+    type(VALID_TEXT);
+    fireEvent.click(submit());
+    expect(await screen.findByRole('alert')).toHaveTextContent(copy);
+  });
+
+  it.each([
     [503, 'service_unavailable', 'The service is temporarily unavailable.'],
     [429, 'quota_exceeded', 'api:quota_exceeded'],
   ])('maps a %i to a focused alert and keeps the typed text', async (status, code, copy) => {

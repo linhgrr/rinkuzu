@@ -3,12 +3,10 @@ import { z } from 'zod';
 import {
   QUIZ_TEXT_MAX_CHARS,
   QUIZ_TEXT_MIN_CHARS,
+  QUIZ_TEXT_TOO_LONG,
+  QUIZ_TEXT_TOO_SHORT,
   countQuizTextChars,
 } from '@/shared/constants/quiz-text-source';
-
-/** Issue messages the routes map to `text_too_short` (422) and `text_too_long` (413). */
-export const QUIZ_TEXT_TOO_SHORT = 'text_too_short';
-export const QUIZ_TEXT_TOO_LONG = 'text_too_long';
 
 /** Pasted quiz source text (RIN-1536): trimmed, 200 to 20,000 code points. */
 export const quizTextSchema = z

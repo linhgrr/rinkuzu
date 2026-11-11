@@ -37,16 +37,8 @@ function TextAlert({ alert }: { alert: GuestUploadState['alert'] }) {
       : alert === 'too_short'
         ? t('tooShort', LIMITS)
         : t('sendError');
-  return (
-    <div className="space-y-1">
-      <CreateQuizErrorAlert message={message} focusOnShow />
-      {alert === 'too_large' ? (
-        <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
-          {t('tooLongLink')}
-        </Link>
-      ) : null}
-    </div>
-  );
+  // Signing up does not raise the 20,000 character limit, so no sign-up link here.
+  return <CreateQuizErrorAlert message={message} focusOnShow />;
 }
 
 interface TextFormProps {

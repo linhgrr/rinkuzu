@@ -8,14 +8,13 @@ import { HiOutlineArrowLeft, HiOutlineTag } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { QuizTextField } from '@/features/guest-draft/components/QuizTextField';
-import { quizTextLimitState } from '@/features/guest-draft/lib/quiz-text-limit';
+import { quizTextLimitState, quizTextRefusal } from '@/features/guest-draft/lib/quiz-text-limit';
 import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
 import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 import { QUIZ_DRAFTS_HUB_KEY } from '@/features/quiz/components/create/quiz-drafts-hub-key';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { Link, useRouter } from '@/i18n/navigation';
-import { ApiResponseError } from '@/lib/api/client';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createTextQuizDraft } from '@/lib/quiz/draftApi';
 import { QUIZ_TEXT_MAX_CHARS, QUIZ_TEXT_MIN_CHARS } from '@/shared/constants/quiz-text-source';
@@ -29,17 +28,20 @@ const TITLE_MAX_LENGTH = 120;
 type Translator = ReturnType<typeof useTranslations<'create'>>;
 
 /**
- * The route's own length refusals (413 too long, 422 too short) get the text copy; every
+ * The route's own length refusals get the text copy, too long and too short apart
+ * (`quizTextRefusal`, RIN-1542); every
  * other failure reads like the PDF flow. A quota refusal also opens the upgrade modal,
  * through the API error events `UpgradePromptProvider` listens to.
  */
 function textDraftErrorMessage(
   error: unknown,
+  text: string,
   t: Translator,
   apiErrorMessage: ReturnType<typeof useApiErrorMessage>,
 ): string {
-  if (error instanceof ApiResponseError && error.status === 413) return t('text.tooLong', LIMITS);
-  if (error instanceof ApiResponseError && error.status === 422) return t('text.tooShort', LIMITS);
+  const refusal = quizTextRefusal(error, text);
+  if (refusal === 'too_long') return t('text.tooLong', LIMITS);
+  if (refusal === 'too_short') return t('text.tooShort', LIMITS);
   return getCreateQuizDraftErrorMessage(error, t, apiErrorMessage);
 }
 
@@ -94,7 +96,7 @@ export function CreateTextQuizPage() {
     } catch (error: unknown) {
       setSubmit({
         submitting: false,
-        error: textDraftErrorMessage(error, t, apiErrorMessage),
+        error: textDraftErrorMessage(error, text, t, apiErrorMessage),
       });
     }
   };

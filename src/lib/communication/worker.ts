@@ -358,11 +358,36 @@ async function recordReviewEmailOpen(
   );
 }
 
-async function processDeliveryEvent(
-  externalId: string,
-  event: Exclude<WebhookEventPayload, { type: 'email.received' }>,
-): Promise<void> {
-  if (!('email_id' in event.data)) return;
+/** Outbound delivery events: `email.*` except inbound `email.received`. */
+type DeliveryEvent = Exclude<
+  Extract<WebhookEventPayload, { type: `email.${string}` }>,
+  { type: 'email.received' }
+>;
+
+/**
+ * Narrows a webhook to an outbound delivery event. Every other type (contact,
+ * domain, topic and the `inbox.*` events added in resend 6.37, some without
+ * `to`) returns null and is only recorded, never retried (RIN-1558).
+ */
+function asDeliveryEvent(event: WebhookEventPayload): DeliveryEvent | null {
+  switch (event.type) {
+    case 'email.sent':
+    case 'email.scheduled':
+    case 'email.delivered':
+    case 'email.delivery_delayed':
+    case 'email.complained':
+    case 'email.bounced':
+    case 'email.opened':
+    case 'email.clicked':
+    case 'email.failed':
+    case 'email.suppressed':
+      return event;
+    default:
+      return null;
+  }
+}
+
+async function processDeliveryEvent(externalId: string, event: DeliveryEvent): Promise<void> {
   const emailData = event.data;
   const suppressionStatus: SuppressionStatus | null =
     event.type === 'email.complained'
@@ -564,7 +589,8 @@ export async function processResendWebhook(
   try {
     if (event.type === 'email.received') return processInboundFeedback(externalId, event);
     if (event.type === 'contact.updated') await syncUnsubscribeEvent(event);
-    if (event.type.startsWith('email.')) await processDeliveryEvent(externalId, event);
+    const deliveryEvent = asDeliveryEvent(event);
+    if (deliveryEvent) await processDeliveryEvent(externalId, deliveryEvent);
     const emailId = webhookEmailId(event);
     await WebhookEvent.updateOne(
       { externalId },

@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes, PropsWithChildren } from 'react';
+import type { AnchorHTMLAttributes } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import BottomCta from './BottomCta';
@@ -12,10 +12,6 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 vi.mock('@/lib/analytics/client', () => ({ captureAnalyticsEvent: vi.fn() }));
-
-vi.mock('./Magnetic', () => ({
-  Magnetic: ({ children }: PropsWithChildren) => <>{children}</>,
-}));
 
 describe('landing hero calls to action', () => {
   it('labels the guest registration route as starting learning, not as a demo', () => {
@@ -72,7 +68,7 @@ describe('landing hero calls to action', () => {
     render(<Hero locale="vi" />);
 
     const [play, guestPdf] = screen.getAllByRole('link');
-    // Magnetic is a pass-through in this test, so the pills sit directly in their row.
+    // The pills sit directly in their row (no wrapper since RIN-1552).
     const row = play?.parentElement;
     expect(row).toBe(guestPdf?.parentElement);
     const rowClasses = row?.className.split(/\s+/) ?? [];

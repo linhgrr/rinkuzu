@@ -39,6 +39,16 @@ describe('createGuestDraftUpstream', () => {
     expect(init?.body).toBeInstanceOf(FormData);
   });
 
+  it('never sends the uploaded file name to the API (RIN-1546)', async () => {
+    fetchMock.mockResolvedValue(respond(201, { success: true, data: { draft } }));
+    const named = new File(['%PDF-'], 'Nguyen Van A - CV.pdf', { type: 'application/pdf' });
+
+    await createGuestDraftUpstream().create(named);
+
+    const body = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+    expect((body.get('file') as File).name).toBe('source.pdf');
+  });
+
   it('returns the API status, code and meta when it refuses', async () => {
     fetchMock.mockResolvedValue(
       respond(413, {

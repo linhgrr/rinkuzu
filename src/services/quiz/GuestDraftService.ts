@@ -27,6 +27,37 @@ type UpstreamStart = () => Promise<UpstreamGuestDraftResult>;
 
 const FAILED_UPSTREAM_STATUSES = new Set(['failed', 'cancelled', 'expired']);
 
+const TITLE_MAX_LENGTH = 60;
+/** The generic word the API sends until it names the topic (RIN-1544): not a title. */
+const GENERIC_TITLE = 'quiz';
+/** The server has no learner time zone: vi dates follow Vietnam, en dates UTC. */
+const FALLBACK_TIME_ZONES = { vi: 'Asia/Ho_Chi_Minh', en: 'UTC' } as const;
+
+/**
+ * The quiz title a ready guest draft keeps (RIN-1546): the API's topic title, or
+ * "Quiz <date>" in the learner's locale when it sent none. Never the file name.
+ */
+function guestDraftTitle(
+  apiTitle: string | null | undefined,
+  locale: GuestDraftRecord['locale'],
+  createdAt: Date,
+): string {
+  const title = apiTitle?.trim().slice(0, TITLE_MAX_LENGTH).trimEnd() ?? '';
+  if (title && title.toLowerCase() !== GENERIC_TITLE) return title;
+  const date = new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: FALLBACK_TIME_ZONES[locale],
+  }).format(createdAt);
+  return `Quiz ${date}`;
+}
+
+function parsedDate(value: string, fallback: Date): Date {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? fallback : date;
+}
+
 function viewOf(record: GuestDraftRecord, progressPercent = 0): GuestDraftView {
   return {
     status: record.status,
@@ -155,7 +186,11 @@ export class GuestDraftService implements IGuestDraftService {
       .filter((question): question is GuestDraftQuestion => question !== null);
     if (questions.length === 0) return this.fail(tokenHash, record, 'no_questions', ip);
 
-    const title = draft.title?.trim() || 'Quiz';
+    const title = guestDraftTitle(
+      draft.title,
+      record.locale,
+      parsedDate(draft.created_at, this.now()),
+    );
     const won = await this.repository.markReady(record.id, { title, questions });
     await this.upstream.remove(record.apiDraftId);
     if (!won) return this.storedView(tokenHash);

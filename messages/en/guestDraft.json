@@ -133,6 +133,60 @@
         "q": "How do I keep my quiz?",
         "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
       }
+    },
+    "crossLink": {
+      "lead": "Only have notes, no PDF?",
+      "label": "Paste text to make a quiz"
+    }
+  },
+  "textSeo": {
+    "howTitle": "How it works",
+    "steps": {
+      "paste": {
+        "title": "Paste your text",
+        "body": "Paste notes, a reading or a textbook passage of {min, number} to {max, number} characters."
+      },
+      "generate": {
+        "title": "Rinkuzu writes the questions",
+        "body": "Rin reads your text and writes up to {questions} personalized multiple-choice questions, usually in about a minute."
+      },
+      "play": {
+        "title": "Play the quiz, sign up to save it",
+        "body": "Play the quiz straight away. Sign up free to keep it; otherwise it is deleted after {hours} hours."
+      }
+    },
+    "crossLink": {
+      "lead": "Is your material a PDF?",
+      "label": "Make a quiz from a PDF"
+    },
+    "limitsTitle": "Free trial limits",
+    "limits": {
+      "chars": "{min, number} to {max, number} characters per paste",
+      "questions": "Up to {questions} questions per quiz",
+      "kept": "Kept for {hours} hours unless you sign up"
+    },
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "free": {
+        "q": "Is the text to quiz generator free?",
+        "a": "Yes. Making and playing a quiz from your text costs nothing. The number of no-account tries per day is limited, and signing up is free too."
+      },
+      "account": {
+        "q": "Do I need an account?",
+        "a": "No. Paste your text and play the quiz without signing up or giving an email address."
+      },
+      "content": {
+        "q": "What can I paste?",
+        "a": "Any text of {min, number} to {max, number} characters: notes, a reading, a textbook chapter or a lecture transcript. The clearer the text, the closer the questions."
+      },
+      "expiry": {
+        "q": "What happens to my quiz after {hours} hours?",
+        "a": "If you have not signed up, the quiz and your text are deleted {hours} hours after you make them. Only you can open them until then."
+      },
+      "keep": {
+        "q": "How do I keep my quiz?",
+        "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
+      }
     }
   }
 }

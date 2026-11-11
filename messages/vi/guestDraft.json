@@ -60,12 +60,12 @@
     "loading": "Đang tải quiz…"
   },
   "textMeta": {
-    "title": "Tạo quiz từ văn bản miễn phí, không cần tài khoản | RinKuzu",
-    "description": "Tạo quiz từ văn bản miễn phí: dán ghi chú hoặc bài đọc, Rin viết tối đa 10 câu hỏi trắc nghiệm cá nhân hóa và bạn làm ngay. Không cần tài khoản."
+    "title": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí | RinKuzu",
+    "description": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí: dán ghi chú hoặc bài đọc, Rin viết tối đa 10 câu hỏi cá nhân hóa và bạn làm ngay. Không cần tài khoản."
   },
   "text": {
     "badge": "Không cần tài khoản",
-    "title": "Tạo quiz từ văn bản: dán nội dung, chơi ngay",
+    "title": "Tạo câu hỏi trắc nghiệm từ văn bản: dán nội dung, làm ngay",
     "subtitle": "Dán đoạn ghi chú hoặc bài đọc ({min, number} đến {max, number} ký tự). Rin viết tối đa 10 câu hỏi trắc nghiệm cá nhân hóa theo nội dung của bạn và bạn chơi ngay, không cần chỉnh sửa.",
     "label": "Văn bản của bạn",
     "placeholder": "Dán ghi chú, bài giảng hoặc đoạn trích vào đây…",
@@ -128,6 +128,60 @@
       "expiry": {
         "q": "Quiz của tôi sẽ ra sao sau {hours} giờ?",
         "a": "Nếu bạn chưa đăng ký, quiz và tệp của bạn sẽ bị xóa {hours} giờ sau khi tạo. Trước đó chỉ bạn mở được chúng."
+      },
+      "keep": {
+        "q": "Làm sao để giữ quiz của tôi?",
+        "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
+      }
+    },
+    "crossLink": {
+      "lead": "Chỉ có ghi chú dạng chữ, không có PDF?",
+      "label": "Dán văn bản để tạo câu hỏi trắc nghiệm"
+    }
+  },
+  "textSeo": {
+    "howTitle": "Cách hoạt động",
+    "steps": {
+      "paste": {
+        "title": "Dán văn bản",
+        "body": "Dán ghi chú, bài đọc hoặc một đoạn giáo trình, từ {min, number} đến {max, number} ký tự."
+      },
+      "generate": {
+        "title": "Rinkuzu soạn câu hỏi",
+        "body": "Rin đọc nội dung và viết tối đa {questions} câu hỏi trắc nghiệm cá nhân hóa, thường mất khoảng một phút."
+      },
+      "play": {
+        "title": "Làm quiz, đăng ký để lưu lại",
+        "body": "Làm quiz ngay. Đăng ký miễn phí để giữ quiz; nếu không, quiz sẽ bị xóa sau {hours} giờ."
+      }
+    },
+    "crossLink": {
+      "lead": "Tài liệu của bạn là tệp PDF?",
+      "label": "Tạo quiz từ PDF"
+    },
+    "limitsTitle": "Giới hạn khi dùng thử miễn phí",
+    "limits": {
+      "chars": "Từ {min, number} đến {max, number} ký tự mỗi lần dán",
+      "questions": "Tối đa {questions} câu hỏi mỗi quiz",
+      "kept": "Lưu {hours} giờ nếu bạn chưa đăng ký"
+    },
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": {
+      "free": {
+        "q": "Tạo câu hỏi trắc nghiệm từ văn bản có miễn phí không?",
+        "a": "Có. Tạo và làm quiz từ văn bản của bạn hoàn toàn miễn phí. Số lượt dùng không cần tài khoản mỗi ngày có giới hạn, và đăng ký cũng miễn phí."
+      },
+      "account": {
+        "q": "Tôi có cần tài khoản không?",
+        "a": "Không. Bạn dán văn bản và làm quiz mà không cần đăng ký hay nhập email."
+      },
+      "content": {
+        "q": "Tôi có thể dán nội dung gì?",
+        "a": "Bất kỳ đoạn văn bản nào từ {min, number} đến {max, number} ký tự: ghi chú, bài đọc, một chương giáo trình hoặc bản chép lời bài giảng. Nội dung càng rõ ràng, câu hỏi càng sát."
+      },
+      "expiry": {
+        "q": "Quiz của tôi sẽ ra sao sau {hours} giờ?",
+        "a": "Nếu bạn chưa đăng ký, quiz và văn bản của bạn sẽ bị xóa {hours} giờ sau khi tạo. Trước đó chỉ bạn mở được chúng."
       },
       "keep": {
         "q": "Làm sao để giữ quiz của tôi?",

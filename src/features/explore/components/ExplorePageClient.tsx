@@ -79,7 +79,7 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
   const t = useTranslations('explore');
 
   return (
-    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="font-home text-sm text-ink-muted">{message}</p>
       <Link
         href={`${ROUTES.LOGIN}?callbackUrl=${encodeURIComponent(callbackPath)}`}

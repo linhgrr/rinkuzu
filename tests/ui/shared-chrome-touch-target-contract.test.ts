@@ -16,6 +16,7 @@ const footer = read('src/features/landing/components/new-landing/Footer.tsx');
 const faq = read('src/app/[locale]/(marketing)/faq/page.tsx');
 const shareButtons = read('src/components/blog/ShareButtons.tsx');
 const toc = read('src/components/blog/TableOfContents.tsx');
+const consent = read('src/components/analytics/AnalyticsRoot.tsx');
 const blogPost = read('src/app/[locale]/(marketing)/blog/[slug]/page.tsx');
 
 function functionBody(source: string, name: string): string {
@@ -61,9 +62,9 @@ describe('shared chrome touch targets', () => {
   });
 
   it('footer links are 44 px rows with 8 px between them', () => {
-    expect(footer.match(/className="inline-flex min-h-11 items-center rounded-sm/g)).toHaveLength(
-      2,
-    );
+    expect(
+      footer.match(/className="inline-flex min-h-11 min-w-11 items-center rounded-sm/g),
+    ).toHaveLength(2);
     expect(footer).not.toContain('space-y-3.5');
     expect(footer.match(/<ul className="space-y-2">/g)).toHaveLength(2);
   });
@@ -82,5 +83,15 @@ describe('shared chrome touch targets', () => {
     ).toHaveLength(2);
     expect(toc).toMatch(/flex min-h-11 w-full items-center border-l-2 pl-4 py-2 text-left text-sm/);
     expect(toc).toContain('<ul className="space-y-2">');
+  });
+
+  it('the explore sign-in prompt, FAQ cross-links, footer form and consent banner keep targets and a 16 px text-to-control gap', () => {
+    expect(explore).toContain('flex flex-col items-start gap-4 sm:flex-row');
+    expect(
+      faq.match(/inline-flex min-h-11 items-center font-medium text-brand-trust/g),
+    ).toHaveLength(2);
+    expect(footer).not.toMatch(/className="h-10 (flex-1|whitespace-nowrap)/);
+    expect(consent).toContain('mt-4 flex shrink-0 items-center justify-between gap-2 sm:mt-0');
+    expect(consent).not.toContain('min-h-6');
   });
 });

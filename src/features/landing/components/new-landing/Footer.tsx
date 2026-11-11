@@ -13,7 +13,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-12 lg:grid-cols-4 lg:gap-14 mb-14 md:mb-16">
           {/* Brand */}
           <div className="space-y-5">
-            <Link href="/" className="inline-flex items-center">
+            <Link href="/" className="inline-flex min-h-11 items-center">
               <Image
                 src="/images/navbar_logo.webp"
                 alt="RinKuzu Logo"
@@ -43,7 +43,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="inline-flex min-h-11 items-center rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
+                    className="inline-flex min-h-11 min-w-11 items-center rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
                   >
                     {link.label}
                   </Link>
@@ -67,7 +67,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="inline-flex min-h-11 items-center rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
+                    className="inline-flex min-h-11 min-w-11 items-center rounded-sm text-sm font-medium leading-6 text-white/60 transition-colors hover:text-green-400 focus-visible:text-green-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400"
                   >
                     {link.label}
                   </Link>
@@ -95,11 +95,11 @@ export function Footer() {
                 placeholder={t('newsletter.placeholder')}
                 aria-label={t('newsletter.placeholder')}
                 autoComplete="email"
-                className="h-10 flex-1 rounded-lg border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-white/40 focus-visible:border-green-500/50"
+                className="h-11 flex-1 rounded-lg border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-white/40 focus-visible:border-green-500/50"
               />
               <Button
                 type="submit"
-                className="h-10 whitespace-nowrap rounded-lg bg-green-500 px-4 text-sm font-semibold text-[#07121a] transition-colors hover:bg-green-400"
+                className="h-11 whitespace-nowrap rounded-lg bg-green-500 px-4 text-sm font-semibold text-[#07121a] transition-colors hover:bg-green-400"
               >
                 {t('newsletter.button')}
               </Button>

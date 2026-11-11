@@ -171,7 +171,7 @@ export async function QuizLanding({
             />
           ))}
         </ol>
-        <div className="mt-6 space-y-3 text-center">
+        <div className="mt-6 space-y-4 text-center">
           {remaining > 0 ? (
             <p className="text-sm text-ink-muted">{t('previewMore', { count: remaining })}</p>
           ) : null}

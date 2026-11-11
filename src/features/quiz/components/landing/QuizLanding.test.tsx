@@ -100,6 +100,8 @@ describe('QuizLanding (RIN-1247)', () => {
     expect(html).toMatch(/<li class="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">/u);
     expect(html).toMatch(/<ul class="mt-1 space-y-2 text-sm text-ink">/u);
     expect(html).not.toMatch(/space-y-1 text-sm/u);
+    // "N more questions" stays at least 16 px above the CTA under it.
+    expect(html).toMatch(/<div class="mt-6 space-y-4 text-center">/u);
   });
 
   it('links related quizzes without an entry, so they open on their landing', async () => {

@@ -98,9 +98,8 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
 export function QuizCardSkeleton() {
   return (
     <Skeleton className="flex min-h-36 flex-col gap-3 rounded-xl border border-secondary-2 bg-surface-blue p-4 shadow-quiz-card">
-      <div className="flex items-center justify-between">
+      <div className="flex h-5 items-center justify-between">
         <div className="h-4 w-20 rounded bg-line-blue/30" />
-        <div className="size-7 rounded-md bg-line-blue/25" />
       </div>
       <div className="flex flex-col gap-1">
         <div className="h-5 w-4/5 rounded bg-line-blue/30" />

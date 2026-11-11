@@ -167,50 +167,10 @@ const nextConfig = {
     optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react', 'framer-motion'],
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.rinkuzu.app',
-        port: '',
-        pathname: '/images/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.amazonaws.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.blob.core.windows.net',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 's3.nyeki.dev',
-        port: '',
-        pathname: '/**',
-      },
-    ],
+    // Shared with UserAvatar so it only asks the optimizer for hosts it accepts (RIN-1531).
+    remotePatterns: /** @type {import('next/dist/shared/lib/image-config').RemotePattern[]} */ (
+      require('./src/lib/images/remote-patterns.json')
+    ),
     // Keep optimization enabled by default for better LCP/SEO.
     // Set NEXT_IMAGE_UNOPTIMIZED=true only when debugging image delivery issues.
     unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',

@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { canOptimizeImageSrc } from '@/lib/images/remote-image-patterns';
 import { cn } from '@/lib/utils';
 import { getUserDisplayName, type UserIdentity } from './user-identity';
 
@@ -25,7 +26,9 @@ export function UserAvatar({ user, size = 40, className }: UserAvatarProps) {
         height={size}
         className={cn('rounded-full border border-neutral-200 object-cover', className)}
         style={style}
-        unoptimized
+        // Allowed hosts go through the optimizer at the rendered size (a 26 px avatar
+        // was a 212 KB PNG, RIN-1531); other hosts would be refused, so load them as-is.
+        unoptimized={!canOptimizeImageSrc(user.avatar)}
       />
     );
   }

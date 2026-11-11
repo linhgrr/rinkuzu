@@ -1,0 +1,44 @@
+[
+  {
+    "protocol": "http",
+    "hostname": "localhost",
+    "port": "",
+    "pathname": "/**"
+  },
+  {
+    "protocol": "https",
+    "hostname": "cdn.rinkuzu.app",
+    "port": "",
+    "pathname": "/images/**"
+  },
+  {
+    "protocol": "https",
+    "hostname": "res.cloudinary.com",
+    "port": "",
+    "pathname": "/**"
+  },
+  {
+    "protocol": "https",
+    "hostname": "*.amazonaws.com",
+    "port": "",
+    "pathname": "/**"
+  },
+  {
+    "protocol": "https",
+    "hostname": "*.blob.core.windows.net",
+    "port": "",
+    "pathname": "/**"
+  },
+  {
+    "protocol": "https",
+    "hostname": "images.unsplash.com",
+    "port": "",
+    "pathname": "/**"
+  },
+  {
+    "protocol": "https",
+    "hostname": "s3.nyeki.dev",
+    "port": "",
+    "pathname": "/**"
+  }
+]

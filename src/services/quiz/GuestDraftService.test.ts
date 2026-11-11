@@ -66,7 +66,7 @@ function setup(existing: GuestDraftRecord | null = null) {
       record({ apiDraftId: draft.apiDraftId, entry: draft.entry, source: draft.source }),
     ),
     findByTokenHash: vi.fn(async () => existing),
-    markReady: vi.fn(async () => true),
+    markReady: vi.fn<IGuestQuizDraftRepository['markReady']>(async () => true),
     markFailed: vi.fn(async () => true),
   } satisfies IGuestQuizDraftRepository;
   const limiter = {
@@ -431,5 +431,73 @@ describe('GuestDraftService.status', () => {
     upstream.get.mockResolvedValue({ ok: false, status: 503, code: null, meta: null });
     expect(await service.status(TOKEN, IP)).toMatchObject({ ok: false, error: 'upstream' });
     expect(repository.markFailed).not.toHaveBeenCalled();
+  });
+});
+
+describe('GuestDraftService ready title (RIN-1546)', () => {
+  async function readyTitle(
+    title: string | null,
+    locale: 'vi' | 'en' = 'en',
+    createdAt = '2026-11-11T03:00:00.000Z',
+  ) {
+    const { service, repository, upstream } = setup(record({ locale }));
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({
+        status: 'completed',
+        title,
+        questions: readyQuestions,
+        created_at: createdAt,
+      }),
+    });
+    const result = await service.status(TOKEN, IP);
+    const stored = repository.markReady.mock.calls[0]?.[1]?.title;
+    expect(result).toMatchObject({ ok: true, draft: { status: 'ready', title: stored } });
+    return stored;
+  }
+
+  it('keeps the topic title the API sent', async () => {
+    expect(await readyTitle('Cell biology: mitosis')).toBe('Cell biology: mitosis');
+  });
+
+  it.each([null, '', '   ', 'Quiz', ' quiz ', 'QUIZ'])(
+    'replaces the unusable title %j with a dated fallback in en',
+    async (title) => {
+      expect(await readyTitle(title, 'en')).toBe('Quiz 11/11/2026');
+    },
+  );
+
+  it('dates the vi fallback day first, in Vietnam time', async () => {
+    // 18:30 UTC on 10 Nov is already 11 Nov in Hanoi.
+    expect(await readyTitle(null, 'vi', '2026-11-10T18:30:00.000Z')).toBe('Quiz 11/11/2026');
+    expect(await readyTitle('Quiz', 'vi', '2026-03-04T03:00:00.000Z')).toBe('Quiz 04/03/2026');
+  });
+
+  it('dates the fallback with the poll time when the API creation date is unreadable', async () => {
+    expect(await readyTitle(null, 'en', 'not a date')).toBe('Quiz 11/10/2026');
+  });
+
+  it('caps a long title at 60 characters', async () => {
+    expect(await readyTitle(`  ${'A'.repeat(80)}  `)).toBe('A'.repeat(60));
+    // A cut that lands on a space leaves no trailing blank.
+    expect(await readyTitle('Mitosis and meiosis '.repeat(5))).toBe(
+      'Mitosis and meiosis Mitosis and meiosis Mitosis and meiosis',
+    );
+  });
+
+  it('never builds the title from the uploaded file name', async () => {
+    const { service, repository, upstream } = setup();
+    const named = new File(['%PDF-1.4'], 'Nguyen Van A - CV.pdf', { type: 'application/pdf' });
+    await service.create({ ...createInput, pdf: named });
+    repository.findByTokenHash.mockResolvedValue(record());
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ status: 'completed', title: null, questions: readyQuestions }),
+    });
+
+    await service.status(TOKEN, IP);
+
+    expect(repository.markReady.mock.calls[0]?.[1]?.title).toBe('Quiz 11/10/2026');
+    expect(JSON.stringify(repository.create.mock.calls)).not.toContain('Nguyen');
   });
 });

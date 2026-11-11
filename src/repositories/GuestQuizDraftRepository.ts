@@ -99,6 +99,7 @@ export class GuestQuizDraftRepository
     if (!doc || doc.questions.length === 0) return null;
     return {
       id: doc._id.toString(),
+      // markReady always stores a title (RIN-1546); this only covers a record without one.
       title: doc.title ?? 'Quiz',
       questions: doc.questions.map((question, index) =>
         QuizPersistenceMapper.toQuestionEntity(question, index),

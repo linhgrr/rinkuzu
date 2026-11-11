@@ -71,6 +71,39 @@ async function mockTextDrafts(page: Page): Promise<DraftsMock> {
   return mock;
 }
 
+/**
+ * Per method card: the button sits at least 16 px below the description (spacing
+ * checklist) and, in the 3-column layout, the description never runs under the
+ * illustration. Empty when all is well.
+ */
+async function cardSpacingProblems(page: Page, checkArt: boolean): Promise<string[]> {
+  return page.getByRole('region', { name: enCreate.chooseMethod }).evaluate(
+    (region, withArt) =>
+      Array.from(region.querySelectorAll('h2')).flatMap((heading) => {
+        const card = heading.parentElement?.parentElement;
+        const copy = heading.parentElement?.querySelector('p')?.getBoundingClientRect();
+        const button = card?.querySelector('button')?.getBoundingClientRect();
+        const art = card?.querySelector('img')?.getBoundingClientRect();
+        if (!copy || !button) return [`${heading.textContent}: missing copy or button`];
+        const problems: string[] = [];
+        if (button.top - copy.bottom < 16) {
+          problems.push(`${heading.textContent}: button ${button.top - copy.bottom}px below copy`);
+        }
+        const overlaps = (r: DOMRect) =>
+          r.width > 0 &&
+          r.left < copy.right &&
+          copy.left < r.right &&
+          r.top < copy.bottom &&
+          copy.top < r.bottom;
+        if (withArt && art && overlaps(art)) {
+          problems.push(`${heading.textContent}: copy under the art`);
+        }
+        return problems;
+      }),
+    checkArt,
+  );
+}
+
 test.describe('signed-in paste text (RIN-1542)', () => {
   test('goes from the Paste text card to a processing draft in the draft review', async ({
     page,
@@ -122,12 +155,15 @@ test.describe('signed-in paste text (RIN-1542)', () => {
     });
   });
 
-  test('shows the hub as 3 cards at 1280 and stacked at 375', async ({ page }, testInfo) => {
+  test('shows the hub as 3 cards at 1280 and stacked at 375, copy clear of art and buttons', async ({
+    page,
+  }, testInfo) => {
     await withAccounts(testInfo, async ({ regular }) => {
       await mockTextDrafts(page);
       await login(page, regular);
       for (const [width, columns] of [
         [1280, 3],
+        [1440, 3],
         [375, 1],
       ] as const) {
         await page.setViewportSize({ width, height: 900 });
@@ -144,6 +180,9 @@ test.describe('signed-in paste text (RIN-1542)', () => {
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
         expect(overflow).toBeLessThanOrEqual(0);
+        expect(await cardSpacingProblems(page, columns === 3), `card spacing at ${width}`).toEqual(
+          [],
+        );
       }
     });
   });

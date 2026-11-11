@@ -97,8 +97,8 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-brand-trust/20 bg-gradient-to-br from-green-50 via-white to-green-50/40 p-0 shadow-[var(--shadow-sm)] hover:border-brand-trust/35"
           >
-            <CardContent className="relative flex min-h-56 flex-col p-5 sm:p-6">
-              <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full">
+            <CardContent className="relative flex min-h-56 flex-col gap-4 p-5 sm:p-6">
+              <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full xl:w-full xl:pr-20">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('manualMethodTitle')}
                 </h2>
@@ -119,8 +119,8 @@ export function CreateQuizHubPage() {
                 alt=""
                 width={444}
                 height={512}
-                sizes="(min-width: 640px) 160px, 112px"
-                className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-4 sm:w-40"
+                sizes="(min-width: 1280px) 64px, (min-width: 640px) 160px, 112px"
+                className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-4 sm:w-40 xl:top-6 xl:bottom-auto xl:w-16"
               />
             </CardContent>
           </Card>
@@ -129,8 +129,8 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-blue-200/80 bg-gradient-to-br from-blue-50 via-white to-blue-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-blue-300"
           >
-            <CardContent className="relative flex min-h-56 flex-col p-5 sm:p-6">
-              <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full">
+            <CardContent className="relative flex min-h-56 flex-col gap-4 p-5 sm:p-6">
+              <div className="relative z-10 w-2/3 pt-1 max-[359px]:w-full xl:w-full xl:pr-20">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('pdfMethodTitle')}
                 </h2>
@@ -151,8 +151,8 @@ export function CreateQuizHubPage() {
                 alt=""
                 width={413}
                 height={512}
-                sizes="(min-width: 640px) 144px, 112px"
-                className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:-rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-5 sm:w-36"
+                sizes="(min-width: 1280px) 64px, (min-width: 640px) 144px, 112px"
+                className="pointer-events-none absolute right-3 bottom-5 h-auto w-28 select-none transition-transform duration-200 group-hover:-translate-y-1 group-hover:-rotate-1 motion-reduce:transition-none max-[359px]:hidden sm:right-5 sm:w-36 xl:top-6 xl:bottom-auto xl:right-4 xl:w-16"
               />
             </CardContent>
           </Card>
@@ -161,7 +161,7 @@ export function CreateQuizHubPage() {
             hover
             className="group overflow-hidden border-orange-200/80 bg-gradient-to-br from-orange-50 via-white to-orange-50/60 p-0 shadow-[var(--shadow-sm)] hover:border-orange-300"
           >
-            <CardContent className="relative flex min-h-56 flex-col p-5 sm:p-6">
+            <CardContent className="relative flex min-h-56 flex-col gap-4 p-5 sm:p-6">
               <div className="relative z-10 w-full pt-1">
                 <h2 className="text-xl leading-7 font-semibold tracking-tight text-neutral-950">
                   {t('textMethodTitle')}

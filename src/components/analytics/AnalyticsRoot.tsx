@@ -69,10 +69,10 @@ export function AnalyticsRoot() {
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
       <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>
-      <div className="mt-2 flex shrink-0 items-center justify-between gap-2 sm:mt-0 sm:gap-3">
+      <div className="mt-4 flex shrink-0 items-center justify-between gap-2 sm:mt-0 sm:gap-3">
         <a
           href={`/${localePrefix}/privacy`}
-          className="inline-flex min-h-6 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
+          className="inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
         >
           {copy.privacy}
         </a>

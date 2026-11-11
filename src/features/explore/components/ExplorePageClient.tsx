@@ -79,7 +79,7 @@ function SignedOutPrompt({ message, callbackPath }: { message: string; callbackP
   const t = useTranslations('explore');
 
   return (
-    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="font-home text-sm text-ink-muted">{message}</p>
       <Link
         href={`${ROUTES.LOGIN}?callbackUrl=${encodeURIComponent(callbackPath)}`}
@@ -234,7 +234,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
         <h1 className="font-home text-2xl font-semibold text-ink sm:text-3xl">{t('pageTitle')}</h1>
         {hubLinks}
 
-        <div className="lg:hidden">
+        <div className="mt-4 lg:hidden">
           <ExploreSearchInput
             key={query}
             initialQuery={query}
@@ -249,7 +249,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
               key={tab.type}
               type="button"
               onClick={() => updateUrl({ type: tab.type, page: 1 })}
-              className={`min-h-10 shrink-0 rounded-full px-4 font-home text-sm font-semibold transition-colors ${
+              className={`min-h-11 shrink-0 rounded-full px-4 font-home text-sm font-semibold transition-colors ${
                 activeType === tab.type
                   ? 'bg-brand-action-strong text-white'
                   : 'border border-line bg-surface text-ink hover:bg-accent-soft'

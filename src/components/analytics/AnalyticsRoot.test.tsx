@@ -82,12 +82,12 @@ describe('AnalyticsRoot consent banner', () => {
     expect(body.querySelector('a')).toBeNull();
   });
 
-  it('keeps a privacy link with a 24 px target and lifts the card above the mobile bottom nav', () => {
+  it('keeps a privacy link with a 44 px target and lifts the card above the mobile bottom nav', () => {
     render(<AnalyticsRoot />);
 
     const privacy = screen.getByRole('link', { name: 'Privacy policy' });
     expect(privacy).toHaveAttribute('href', '/en/privacy');
-    expect(privacy).toHaveClass('inline-flex', 'min-h-6');
+    expect(privacy).toHaveClass('inline-flex', 'min-h-11');
 
     const banner = screen.getByRole('complementary', { name: 'Analytics preference' });
     expect(banner.className).toContain('max-md:[html:has([data-bottom-nav])_&]:bottom-');

@@ -53,7 +53,7 @@ export function AnalyticsRoot() {
   // reach. White on `action-strong` is 5.18:1, so normal 16 px text passes AA
   // (4.5:1); the decline button matches its size.
   const choiceClass =
-    'min-h-11 rounded-full px-3 py-2 text-base font-semibold leading-6 sm:min-w-28 sm:px-4';
+    'min-h-11 whitespace-nowrap rounded-full px-3 py-2 text-base font-semibold leading-6 sm:min-w-28 sm:px-4';
 
   return (
     <aside
@@ -65,18 +65,21 @@ export function AnalyticsRoot() {
       // While a quiz player (`data-quiz-player`) is on screen the card hides,
       // so it never covers a question, the navigator or the finish button,
       // and it comes back on the result page (RIN-987/RIN-979).
-      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-3 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 sm:p-4 [html:has([data-quiz-player])_&]:hidden max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
+      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-4 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 [html:has([data-quiz-player])_&]:hidden max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
       aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
     >
       <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>
-      <div className="mt-4 flex shrink-0 items-center justify-between gap-2 sm:mt-0 sm:gap-3">
+      {/* The row wraps rather than squeezing the buttons: at 320 px in vi the
+          privacy link takes its own row and the buttons stay on one line
+          each, right-aligned (RIN-1570). */}
+      <div className="mt-4 flex shrink-0 flex-wrap items-center justify-between gap-2 sm:mt-0 sm:flex-nowrap sm:gap-3">
         <a
           href={`/${localePrefix}/privacy`}
           className="inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
         >
           {copy.privacy}
         </a>
-        <div className="grid grid-cols-2 gap-2 sm:flex">
+        <div className="ml-auto grid grid-cols-2 gap-2 sm:flex">
           <button
             type="button"
             className={`${choiceClass} border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50`}

@@ -288,14 +288,14 @@ export default async function BlogPostPage({ params }: Props) {
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
             <Link
               href="/"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center hover:text-[var(--text-primary)] transition-colors"
+              className="inline-flex min-h-11 items-center hover:text-[var(--text-primary)] transition-colors"
             >
               {t('breadcrumbHome')}
             </Link>
             <span>/</span>
             <Link
               href="/blog"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center hover:text-[var(--text-primary)] transition-colors"
+              className="inline-flex min-h-11 items-center hover:text-[var(--text-primary)] transition-colors"
             >
               Blog
             </Link>

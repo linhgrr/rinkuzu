@@ -6,7 +6,7 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
-import { QuizCard } from './QuizCard';
+import { QuizCard, QuizCardSkeleton } from './QuizCard';
 
 vi.mock('@/i18n/navigation', () => ({
   Link: ({
@@ -104,5 +104,24 @@ describe('QuizCard link and author', () => {
       'href',
       `/quiz/${encodeURIComponent('đề sinh')}`,
     );
+  });
+
+  it('keeps one 12 px rhythm on the spacing scale, loaded and skeleton (RIN-1555)', () => {
+    const { container } = render(<QuizCard quiz={quiz} />);
+    const card = container.querySelector('article');
+    const link = screen.getByRole('link', { name: /Đề sinh 1/ });
+    const authorRow = screen.getByText('Lan Anh').parentElement;
+
+    expect(card).toHaveClass('min-h-36', 'gap-3', 'p-4');
+    expect(card?.className).not.toMatch(/min-h-\[/);
+    expect(link).toHaveClass('gap-3');
+    expect(link.className).not.toMatch(/mt-2/);
+    expect(authorRow).toHaveClass('mt-auto');
+    expect(authorRow?.className).not.toMatch(/pt-3/);
+
+    const { container: skeleton } = render(<QuizCardSkeleton />);
+    const skeletonCard = skeleton.firstElementChild;
+    expect(skeletonCard).toHaveClass('min-h-36', 'gap-3', 'p-4');
+    expect(skeletonCard?.className).not.toMatch(/min-h-\[/);
   });
 });

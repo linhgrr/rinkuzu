@@ -5,7 +5,8 @@
     "deploymentEnabled": {
       "eng/*": false,
       "dependabot/*": false,
-      "gate/*": false
+      "gate/*": false,
+      "master": false
     }
   },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs"

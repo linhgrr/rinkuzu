@@ -63,21 +63,20 @@ describe('landing Reveal (RIN-1370)', () => {
     expect(screen.getByText('Image')).toHaveStyle({ transform: 'translateY(0px) scale(0.96)' });
   });
 
-  it('lifts on mouse hover after the reveal, never on touch', () => {
-    render(<Reveal hoverLift={16}>Card</Reveal>);
+  it('stays put on mouse hover: the landing cards are not clickable (RIN-1555)', () => {
+    render(<Reveal>Card</Reveal>);
     const card = screen.getByText('Card');
     enterViewport();
-    fireEvent.transitionEnd(card);
-
-    fireEvent.pointerEnter(card, { pointerType: 'touch' });
-    expect(card).toHaveStyle({ transform: 'none' });
+    const settled = card.getAttribute('style');
 
     fireEvent.pointerEnter(card, { pointerType: 'mouse' });
-    expect(card).toHaveStyle({ transform: 'translateY(-16px)' });
-    expect(card.style.transition).toBe('transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)');
-
-    fireEvent.pointerLeave(card, { pointerType: 'mouse' });
+    expect(card.getAttribute('style')).toBe(settled);
     expect(card).toHaveStyle({ transform: 'none' });
+  });
+
+  it('gives StruggleSection no hover prop', () => {
+    const source = readFileSync(path.join(__dirname, 'StruggleSection.tsx'), 'utf8');
+    expect(source).not.toMatch(/hoverLift/);
   });
 
   it('shows content without motion for reduced-motion users', () => {

@@ -210,5 +210,17 @@
     "accountBody": "Đăng nhập để dùng giới hạn đầy đủ, chỉnh sửa câu hỏi và lưu quiz.",
     "signIn": "Đăng nhập",
     "createAccount": "Tạo tài khoản"
+  },
+  "textMethodTitle": "Dán văn bản",
+  "textMethodDescription": "Dán ghi chú hoặc bài đọc và Rin tạo câu hỏi cá nhân hóa cho bạn.",
+  "pasteText": "Dán văn bản",
+  "text": {
+    "title": "Tạo quiz từ văn bản",
+    "subtitle": "Dán đoạn ghi chú hoặc bài đọc ({min, number} đến {max, number} ký tự). Rin viết câu hỏi trắc nghiệm cá nhân hóa theo nội dung đó, và bạn xem lại trước khi đăng.",
+    "quizTitle": "Tiêu đề quiz",
+    "submit": "Tạo quiz",
+    "tryAgain": "Thử lại",
+    "tooShort": "Văn bản quá ngắn. Cần ít nhất {min, number} ký tự.",
+    "tooLong": "Văn bản dài quá {max, number} ký tự. Hãy rút gọn rồi thử lại."
   }
 }

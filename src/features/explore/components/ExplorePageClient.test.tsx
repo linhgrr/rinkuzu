@@ -211,9 +211,27 @@ describe('ExplorePageClient All tab: one row per signed-in section (RIN-1406)', 
     render(<ExplorePageClient />);
 
     expect(screen.queryByTestId('adaptive-skeleton')).not.toBeInTheDocument();
-    // QuizCardSkeleton is 146px tall; LibraryCardSkeleton 196px, 212px from sm (scale: 144/192/208).
+    // QuizCardSkeleton is min-h-36 (144px); LibraryCardSkeleton 196px, 212px from sm (scale: 144/192/208).
     expect(screen.getByText('sections.mine.empty')).toHaveClass('min-h-36');
     expect(screen.getByText('sections.adaptive.empty')).toHaveClass('min-h-48', 'sm:min-h-52');
+  });
+
+  it('section cards hold quiz cards with less padding on mobile: no card-in-card squeeze (RIN-1555)', () => {
+    swrData.settled = [
+      { match: 'mine=true', data: { quizzes: [], pagination: null } },
+      { match: '/api/adaptive/subjects', data: [] },
+    ];
+    render(<ExplorePageClient />);
+
+    for (const titleKey of [
+      'sections.mine.title',
+      'sections.adaptive.title',
+      'sections.quizzes.title',
+    ]) {
+      const section = screen.getByText(titleKey).closest('section');
+      expect(section, titleKey).toHaveClass('p-3', 'sm:p-5');
+      expect(section, titleKey).not.toHaveClass('p-4');
+    }
   });
 
   it('populated: shows one row of owned quizzes and subjects, the rest stays behind View all', () => {

@@ -21,7 +21,7 @@ const ROW_SLOT_CLASSES = ['grid', 'hidden md:grid', 'hidden xl:grid'] as const;
 const ROW_LIMIT = ROW_SLOT_CLASSES.length;
 /**
  * Heights of one card row on the spacing scale, within 4px of the cards they stand in for:
- * QuizCard(Skeleton) is 146px, the Library card 196px (212px from sm).
+ * QuizCard(Skeleton) is at least 144px, the Library card 196px (212px from sm).
  */
 export const QUIZ_ROW_MIN_HEIGHT = 'min-h-36';
 export const ADAPTIVE_ROW_MIN_HEIGHT = 'min-h-48 sm:min-h-52';

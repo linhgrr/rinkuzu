@@ -77,8 +77,7 @@
     "privacy": "We keep your text for 24 hours, then delete it. Only you can open it.",
     "higherLimits": "Need higher limits? Sign up free",
     "tooShort": "The text is too short. It needs at least {min, number} characters.",
-    "tooLong": "The text is over the trial limit of {max, number} characters. Sign up free for the full limit.",
-    "tooLongLink": "Sign up free",
+    "tooLong": "The text is over the limit of {max, number} characters. Shorten it and try again.",
     "sendError": "We couldn't send your text. Check your connection and try again.",
     "progressLabel": "Your text · {count, plural, one {# character} other {# characters}}"
   },

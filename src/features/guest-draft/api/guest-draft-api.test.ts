@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiResponseError } from '@/lib/api/client';
-import { classifyGuestDraftError, createGuestTextDraft } from './guest-draft-api';
+import {
+  classifyGuestDraftError,
+  classifyGuestTextDraftError,
+  createGuestTextDraft,
+} from './guest-draft-api';
 
 const refused = (status: number, meta: Record<string, unknown> = {}) =>
   new ApiResponseError({ message: 'refused', status, payload: null, meta });
@@ -14,6 +18,30 @@ describe('classifyGuestDraftError (RIN-1448)', () => {
     expect(classifyGuestDraftError(refused(415))).toBe('not_pdf');
     expect(classifyGuestDraftError(refused(503))).toBe('upload_error');
     expect(classifyGuestDraftError(new TypeError('Failed to fetch'))).toBe('upload_error');
+  });
+});
+
+describe('classifyGuestTextDraftError (RIN-1542)', () => {
+  const ok = 'a'.repeat(500);
+
+  it('tells a too-long text from a too-short one', () => {
+    expect(classifyGuestTextDraftError(refused(413, { reason: 'guest_text_too_long' }), ok)).toBe(
+      'too_large',
+    );
+    expect(classifyGuestTextDraftError(refused(422, { reason: 'guest_text_too_long' }), ok)).toBe(
+      'too_large',
+    );
+    expect(classifyGuestTextDraftError(refused(422, { reason: 'guest_text_too_short' }), ok)).toBe(
+      'too_short',
+    );
+    expect(classifyGuestTextDraftError(refused(422), 'a'.repeat(20_001))).toBe('too_large');
+  });
+
+  it('shows the generic error for a 422 that is not about length, and the cap for the cap', () => {
+    expect(classifyGuestTextDraftError(refused(422), ok)).toBe('upload_error');
+    expect(classifyGuestTextDraftError(refused(429, { reason: 'guest_draft_limit' }), ok)).toBe(
+      'cap',
+    );
   });
 });
 

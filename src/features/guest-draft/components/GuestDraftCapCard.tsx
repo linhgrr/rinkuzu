@@ -20,7 +20,7 @@ interface GuestDraftCapCardProps {
 /** Signed-in page a guest returns to after signing up from the cap card. */
 const CAP_NEXT: Record<GuestDraftSource, string> = {
   pdf: ROUTES.CREATE_QUIZ_PDF,
-  text: ROUTES.CREATE_QUIZ,
+  text: ROUTES.CREATE_QUIZ_TEXT,
 };
 
 /**

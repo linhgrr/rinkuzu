@@ -3,9 +3,13 @@ import 'server-only';
 import type { NextRequest, NextResponse } from 'next/server';
 import type { z } from 'zod';
 
-import { QUIZ_TEXT_TOO_LONG, QUIZ_TEXT_TOO_SHORT } from '@/dtos/quiz-text-source';
 import { apiErr } from '@/lib/api/response';
-import { QUIZ_TEXT_MAX_CHARS, QUIZ_TEXT_MIN_CHARS } from '@/shared/constants/quiz-text-source';
+import {
+  QUIZ_TEXT_MAX_CHARS,
+  QUIZ_TEXT_MIN_CHARS,
+  QUIZ_TEXT_TOO_LONG,
+  QUIZ_TEXT_TOO_SHORT,
+} from '@/shared/constants/quiz-text-source';
 
 /**
  * Bytes a text-draft body may have before it is read: 20,000 characters of 4-byte UTF-8

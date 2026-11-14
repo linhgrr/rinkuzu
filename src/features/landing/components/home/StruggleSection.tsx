@@ -40,7 +40,6 @@ export default function StruggleSection({ locale }: { locale: string }) {
         {/* Card 1 */}
         <Reveal
           y={32}
-          hoverLift={8}
           className="flex flex-col gap-4 md:gap-[22px] p-6 md:px-[32px] md:py-[56px] rounded-2xl md:rounded-l-[24px] md:rounded-tr-none w-full md:w-[461px] bg-[rgba(43,43,43,0.2)] backdrop-blur-sm border border-white/5 relative group"
         >
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_2px_-4px_13px_0px_rgba(253,118,26,0.6)]" />
@@ -74,7 +73,6 @@ export default function StruggleSection({ locale }: { locale: string }) {
         <Reveal
           y={32}
           delay={0.12}
-          hoverLift={16}
           className="bg-[#ff541b] flex flex-col gap-4 md:gap-[22px] p-6 md:px-[28px] md:py-[56px] rounded-2xl md:rounded-t-[24px] md:rounded-b-none w-full md:w-[381px] z-20 md:-mx-4 shadow-2xl relative md:h-[449px]"
         >
           <div className="bg-white rounded-full w-12 h-12 md:w-[56px] md:h-[56px] flex items-center justify-center shadow-lg relative z-10">
@@ -108,7 +106,6 @@ export default function StruggleSection({ locale }: { locale: string }) {
         <Reveal
           y={32}
           delay={0.24}
-          hoverLift={8}
           className="flex flex-col gap-4 md:gap-[22px] p-6 md:px-[32px] md:py-[56px] rounded-2xl md:rounded-r-[24px] md:rounded-tl-none w-full md:w-[461px] bg-[rgba(43,43,43,0.2)] backdrop-blur-sm border border-white/5 relative group"
         >
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_-4px_-4px_13px_0px_rgba(253,118,26,0.6)]" />

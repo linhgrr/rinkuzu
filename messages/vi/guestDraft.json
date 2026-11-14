@@ -77,8 +77,7 @@
     "privacy": "Chúng tôi giữ văn bản của bạn 24 giờ rồi xóa. Chỉ bạn mở được.",
     "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí",
     "tooShort": "Văn bản quá ngắn. Cần ít nhất {min, number} ký tự.",
-    "tooLong": "Văn bản vượt giới hạn dùng thử {max, number} ký tự. Đăng ký miễn phí để dùng giới hạn đầy đủ.",
-    "tooLongLink": "Đăng ký miễn phí",
+    "tooLong": "Văn bản dài quá {max, number} ký tự. Hãy rút gọn rồi thử lại.",
     "sendError": "Chúng tôi chưa gửi được văn bản của bạn. Kiểm tra kết nối và thử lại.",
     "progressLabel": "Văn bản của bạn · {count, number} ký tự"
   },

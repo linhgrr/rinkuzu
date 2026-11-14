@@ -9,13 +9,13 @@ import { expect, test, type Page } from '@playwright/test';
 const COPY = {
   vi: {
     heroPill: 'Thử với PDF của bạn – không cần tài khoản',
-    hubCta: 'Thử với PDF của bạn – không cần tài khoản',
+    hubCta: 'Tải PDF lên',
     hubTitle: 'Tạo quiz',
     tryPdfTitle: 'Tạo câu hỏi trắc nghiệm từ PDF, làm ngay',
   },
   en: {
     heroPill: 'Try it with your own PDF, no account needed',
-    hubCta: 'Try it with your own PDF, no account needed',
+    hubCta: 'Upload a PDF',
     hubTitle: 'Create a quiz',
     tryPdfTitle: 'PDF to quiz generator: turn your PDF into a quiz now',
   },
@@ -57,7 +57,7 @@ test.describe('guest PDF entry points (RIN-1473) @critical-quiz', () => {
 
       await expect(page).toHaveURL(new RegExp(`/${locale}/create$`));
       await expect(page.getByRole('heading', { level: 1, name: copy.hubTitle })).toBeVisible();
-      const cta = page.getByRole('link', { name: copy.hubCta });
+      const cta = page.getByRole('link', { name: copy.hubCta, exact: true });
       await expect(cta).toHaveAttribute('href', `/${locale}/try/pdf?entry=create`);
 
       await cta.click();

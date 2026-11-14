@@ -314,27 +314,31 @@ describe('sitemap', () => {
     });
   });
 
-  // RIN-1497: the guest PDF tool is indexable with a constant lastmod; its player is not.
-  it('lists /try/pdf in both locales with a stable lastmod and never /try/pdf/play', async () => {
-    serveQuizzes([]);
+  // RIN-1497, RIN-1540: the guest tools are indexable with a constant lastmod; their players are not.
+  it.each(['pdf', 'text'])(
+    'lists /try/%s in both locales with a stable lastmod and never its player',
+    async (tool) => {
+      serveQuizzes([]);
 
-    const entries = await sitemap();
-    const tryPdf = entries.filter((entry) => new URL(entry.url).pathname.endsWith('/try/pdf'));
+      const entries = await sitemap();
+      const path = `/try/${tool}`;
+      const tryEntries = entries.filter((entry) => new URL(entry.url).pathname.endsWith(path));
 
-    expect(tryPdf.map((entry) => new URL(entry.url).pathname)).toEqual([
-      '/en/try/pdf',
-      '/vi/try/pdf',
-    ]);
-    for (const entry of tryPdf) {
-      expect(entry.lastModified).toEqual(new Date('2026-11-10T00:00:00.000Z'));
-      expect(entry.alternates?.languages).toMatchObject({
-        vi: expect.stringMatching(/\/vi\/try\/pdf$/),
-        en: expect.stringMatching(/\/en\/try\/pdf$/),
-        'x-default': expect.stringMatching(/\/vi\/try\/pdf$/),
-      });
-    }
-    expect(entries.some((entry) => entry.url.includes('/try/pdf/play'))).toBe(false);
-  });
+      expect(tryEntries.map((entry) => new URL(entry.url).pathname)).toEqual([
+        `/en${path}`,
+        `/vi${path}`,
+      ]);
+      for (const entry of tryEntries) {
+        expect(entry.lastModified).toEqual(new Date('2026-11-11T00:00:00.000Z'));
+        expect(entry.alternates?.languages).toMatchObject({
+          vi: expect.stringMatching(new RegExp(`/vi${path}$`)),
+          en: expect.stringMatching(new RegExp(`/en${path}$`)),
+          'x-default': expect.stringMatching(new RegExp(`/vi${path}$`)),
+        });
+      }
+      expect(entries.some((entry) => entry.url.includes(`${path}/play`))).toBe(false);
+    },
+  );
 
   it('returns static routes when dynamic quiz generation is unavailable', async () => {
     findPublicSitemapEntries.mockRejectedValue(new Error('database unavailable'));

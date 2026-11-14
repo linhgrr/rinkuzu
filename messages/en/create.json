@@ -204,11 +204,23 @@
   "guestHub": {
     "title": "Try it with your own PDF",
     "body": "Upload a PDF (up to {pages} pages, {mb} MB) or paste your text and play the quiz right away, no account needed.",
-    "cta": "Try it with your own PDF, no account needed",
+    "cta": "Upload a PDF",
     "orPasteText": "Or paste text",
     "accountTitle": "Already have an account?",
     "accountBody": "Sign in for the full limits, to edit questions and to keep your quizzes.",
     "signIn": "Sign in",
     "createAccount": "Create an account"
+  },
+  "textMethodTitle": "Paste text",
+  "textMethodDescription": "Paste notes or a reading and Rin writes personalized questions for you.",
+  "pasteText": "Paste text",
+  "text": {
+    "title": "Create a quiz from text",
+    "subtitle": "Paste notes or a reading ({min, number} to {max, number} characters). Rin writes personalized multiple-choice questions from it, and you review them before publishing.",
+    "quizTitle": "Quiz title",
+    "submit": "Create quiz",
+    "tryAgain": "Try again",
+    "tooShort": "The text is too short. It needs at least {min, number} characters.",
+    "tooLong": "The text is over the limit of {max, number} characters. Shorten it and try again."
   }
 }

@@ -137,8 +137,10 @@ describe('GuestTextInputPage', () => {
     expect(JSON.stringify(window.sessionStorage)).not.toContain('Private');
   });
 
-  it('maps a 422 to the too-short alert and keeps the text', async () => {
-    createGuestTextDraft.mockRejectedValue(apiError(422, 'guest_text_too_short'));
+  it('maps a too-short 422 to the too-short alert and keeps the text', async () => {
+    createGuestTextDraft.mockRejectedValue(
+      apiError(422, 'validation_error', { reason: 'guest_text_too_short' }),
+    );
     renderPage();
     type('z'.repeat(250));
     await act(async () => {
@@ -148,15 +150,31 @@ describe('GuestTextInputPage', () => {
     expect(textbox()).toHaveValue('z'.repeat(250));
   });
 
-  it('maps a 413 to the trial-limit alert with a sign-up link', async () => {
-    createGuestTextDraft.mockRejectedValue(apiError(413, 'guest_text_too_long'));
+  it.each([
+    ['a 413', apiError(413, 'validation_error', { reason: 'guest_text_too_long' })],
+    ['a too-long 422', apiError(422, 'validation_error', { reason: 'guest_text_too_long' })],
+  ])('maps %s to the too-long alert, which promises no bigger limit', async (_label, error) => {
+    createGuestTextDraft.mockRejectedValue(error);
     renderPage();
     type('z'.repeat(250));
     await act(async () => {
       fireEvent.click(submit());
     });
-    expect(await screen.findByText(/over the trial limit of 20,000/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Sign up free' })).toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'The text is over the limit of 20,000 characters. Shorten it and try again.',
+    );
+    expect(alert).not.toHaveTextContent(/sign up/i);
+  });
+
+  it('maps a 422 that is not about length to the send error', async () => {
+    createGuestTextDraft.mockRejectedValue(apiError(422, 'validation_error'));
+    renderPage();
+    type('z'.repeat(250));
+    await act(async () => {
+      fireEvent.click(submit());
+    });
+    expect(await screen.findByText(/couldn't send your text/)).toBeInTheDocument();
   });
 
   it('maps a network failure to the send error and offers Try again with the text kept', async () => {
@@ -182,6 +200,13 @@ describe('GuestTextInputPage', () => {
     });
     expect(await screen.findByText(/make a quiz from your text/)).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    // RIN-1542: sign-up returns to the signed-in text page, not the hub.
+    for (const name of [/sign in with email/i, /create an account/i]) {
+      expect(screen.getByRole('link', { name })).toHaveAttribute(
+        'href',
+        expect.stringContaining(`callbackUrl=${encodeURIComponent('/create/text')}`),
+      );
+    }
   });
 
   it('opens the text player once the draft is ready', async () => {

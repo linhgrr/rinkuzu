@@ -109,7 +109,8 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:#fffcf9;color:#441f05;font:16px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 main{width:100%;max-width:480px;background:#fff;border:1px solid #f6e2d5;border-radius:20px;padding:24px 16px;box-shadow:0 8px 24px rgba(68,31,5,.06)}
 .logo{display:block;width:85px;height:40px}
-h1{margin:24px 0 8px;font-size:24px;line-height:1.3;font-weight:700;letter-spacing:-.01em}
+h1{margin:24px 0 8px;font-size:24px;line-height:1.3;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+p{text-wrap:pretty}
 .lead{margin:0;color:rgba(68,31,5,.8)}
 form{margin:24px 0 0}
 label{display:block;margin:0 0 8px;font-size:14px;font-weight:600}

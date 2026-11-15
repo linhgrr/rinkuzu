@@ -76,3 +76,33 @@ describe('/[locale]/privacy §1.2 (RIN-1340)', () => {
     );
   });
 });
+
+describe('/[locale]/privacy outage notifications (RIN-1654)', () => {
+  it('en: describes the outage notify list at #outage-notifications', async () => {
+    const { container } = await renderPrivacy('en');
+
+    const section = container.querySelector('#outage-notifications');
+    expect(section).not.toBeNull();
+    expect(section).toHaveTextContent('15. Outage Notifications');
+    expect(section).toHaveTextContent(
+      'your email, your language, the page you came from and any campaign tags in the link (UTM)',
+    );
+    expect(section).toHaveTextContent('delete these details 30 days after that email');
+    expect(section).toHaveTextContent('Admins see only the number of sign-ups');
+    expect(container).toHaveTextContent('16. Contact Us');
+  });
+
+  it('vi: describes the outage notify list at #outage-notifications', async () => {
+    const { container } = await renderPrivacy('vi');
+
+    const section = container.querySelector('#outage-notifications');
+    expect(section).not.toBeNull();
+    expect(section).toHaveTextContent('12. Thông báo khi RinKuzu tạm gián đoạn');
+    expect(section).toHaveTextContent(
+      'email, ngôn ngữ, trang bạn đang mở và thẻ chiến dịch trong đường dẫn (UTM, nếu có)',
+    );
+    expect(section).toHaveTextContent('xoá các thông tin này 30 ngày sau email đó');
+    expect(section).toHaveTextContent('Quản trị viên chỉ thấy số lượt đăng ký');
+    expect(container).toHaveTextContent('13. Liên hệ');
+  });
+});

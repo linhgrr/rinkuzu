@@ -1,7 +1,9 @@
+import type { IBillingIdleProbe } from '@/interfaces/repositories/IBillingIdleProbe';
 import type { IBillingOrderRepository } from '@/interfaces/repositories/IBillingOrderRepository';
 import type { IBillingPromotionRepository } from '@/interfaces/repositories/IBillingPromotionRepository';
 import type { IInternalNonceRepository } from '@/interfaces/repositories/IInternalNonceRepository';
 import type { IWebhookInboxRepository } from '@/interfaces/repositories/IWebhookInboxRepository';
+import { BillingIdleProbeRepository } from '@/repositories/billing/BillingIdleProbeRepository';
 import { BillingAdjustmentRepository } from '@/repositories/billing/BillingAdjustmentRepository';
 import { BillingOrderRepository } from '@/repositories/billing/BillingOrderRepository';
 import { BillingPromotionRepository } from '@/repositories/billing/BillingPromotionRepository';
@@ -84,6 +86,11 @@ export function createAlertingDeps(): AlertingDeps {
     clock: () => Date.now(),
     health: () => health.health(),
   };
+}
+
+/** The read-only check an idle inbox tick exits on (RIN-1625). */
+export function createBillingIdleProbe(): IBillingIdleProbe {
+  return new BillingIdleProbeRepository();
 }
 
 export function createBillingService(): BillingService {

@@ -15,6 +15,11 @@
     "required": ["CRON_SECRET"],
   },
   "triggers": {
-    "crons": ["*/2 * * * *"],
+    // Every 15 minutes: 96 Function invocations a day (RIN-1625). Verification,
+    // reset and password-changed mail is sent inline by the auth request, not
+    // through this queue, so signup mail does not wait on this tick. What does:
+    // activation nudges, feedback invitations, campaigns and retention, none of
+    // which is minute-sensitive.
+    "crons": ["*/15 * * * *"],
   },
 }

@@ -147,8 +147,9 @@ export async function assertInternalBillingRequest(
     .map((value) => value.trim())
     .filter(Boolean);
   // An allow-list needs an address a caller cannot forge: the edge secret's
-  // header, `cf-connecting-ip` (set by Cloudflare), or `x-real-ip` only when
-  // CLIENT_IP_HEADER=x-real-ip says the platform sets it. Never `x-forwarded-for`.
+  // header, then `x-real-ip` when CLIENT_IP_HEADER=x-real-ip says the platform
+  // sets it (it replaces `cf-connecting-ip`, forgeable there), else
+  // `cf-connecting-ip` (set by Cloudflare). Never `x-forwarded-for`.
   const platformIp = trustedPlatformIp(request.headers);
   if (allowedIps.length > 0 && (!platformIp || !allowedIps.includes(platformIp))) {
     throw new BillingDomainError('forbidden', 'Internal request source is not allowed', 403);

@@ -50,17 +50,21 @@ function validAddress(value: string | null | undefined): string | null {
  * through unchanged), so it is read only when the platform is declared to set
  * it: `CLIENT_IP_HEADER=x-real-ip` (Vercel, until the move off it is done).
  */
+function platformDeclaredHeader(): boolean {
+  return process.env['CLIENT_IP_HEADER']?.trim().toLowerCase() === 'x-real-ip';
+}
+
 function platformDeclaredIp(headers: Headers): string | null {
-  if (process.env['CLIENT_IP_HEADER']?.trim().toLowerCase() !== 'x-real-ip') return null;
+  if (!platformDeclaredHeader()) return null;
   return validAddress(headers.get('x-real-ip'));
 }
 
 /**
  * The one place that decides the caller's address, in trust order: the edge
- * Worker's secret-authenticated header, Cloudflare's `cf-connecting-ip`
- * (cloudflared overwrites it, so a caller cannot forge it), the platform
- * `x-real-ip` only when `CLIENT_IP_HEADER=x-real-ip`, then the first
- * `x-forwarded-for` hop. Null when none holds a valid address.
+ * Worker's secret-authenticated header, then either the platform `x-real-ip`
+ * when `CLIENT_IP_HEADER=x-real-ip` (it replaces `cf-connecting-ip`, which is
+ * forgeable on Vercel) or, when unset, Cloudflare's `cf-connecting-ip`
+ * (cloudflared overwrites it), then the first `x-forwarded-for` hop. Null when none holds a valid address.
  */
 export function resolveClientIp(headers: Headers): string | null {
   return (
@@ -70,11 +74,12 @@ export function resolveClientIp(headers: Headers): string | null {
 
 /** Like `resolveClientIp` but never `x-forwarded-for`: for allow-lists, which need an unforgeable address. */
 export function trustedPlatformIp(headers: Headers): string | null {
-  return (
-    trustedEdgeClientIp(headers) ??
-    validAddress(headers.get(CLOUDFLARE_IP_HEADER)) ??
-    platformDeclaredIp(headers)
-  );
+  const edge = trustedEdgeClientIp(headers);
+  if (edge) return edge;
+  // `CLIENT_IP_HEADER` names the one trusted platform header. It replaces
+  // `cf-connecting-ip`, which a caller can forge on Vercel (passed through).
+  if (platformDeclaredHeader()) return platformDeclaredIp(headers);
+  return validAddress(headers.get(CLOUDFLARE_IP_HEADER));
 }
 
 /**

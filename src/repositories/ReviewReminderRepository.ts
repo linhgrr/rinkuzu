@@ -78,7 +78,7 @@ interface ReminderUpsertConflict {
 export interface ReminderConsentEvent {
   userId: Types.ObjectId;
   action: 'opt_in' | 'opt_out';
-  source: 'result_page_review' | 'adaptive_end_review' | 'unsubscribe';
+  source: 'result_page_review' | 'adaptive_end_review' | 'guest_result_review' | 'unsubscribe';
   ipHash: string | null;
   /** Email an unsubscribe link came from; absent for the review email (RIN-1044). */
   campaign?: 'activation_nudge';

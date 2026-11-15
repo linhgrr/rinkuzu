@@ -138,7 +138,6 @@ describe('AuthAccountService mutation coverage', () => {
     audit = new AuthAuditStub();
     scheduler = new DeferredTaskSchedulerStub();
     service = new AuthAccountService(repository, notifier, audit, scheduler, {
-      claim: vi.fn(async () => []),
       claimHashed: vi.fn(async () => []),
     });
     notifier.sendVerificationEmail.mockResolvedValue();

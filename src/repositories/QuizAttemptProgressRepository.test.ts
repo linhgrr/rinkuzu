@@ -298,7 +298,7 @@ describe('QuizAttemptProgressRepository', () => {
         claimableSince,
       );
 
-      expect(claimed).toEqual(['attempt-guest']);
+      expect(claimed).toEqual([{ attemptId: 'attempt-guest', tokenHash: 'hash-1' }]);
       expect(userProgress.save).toHaveBeenCalledWith({ session });
       expect(modelMocks.questionBulkWrite).toHaveBeenCalledOnce();
       const [writes, options] = modelMocks.questionBulkWrite.mock.calls[0] ?? [];
@@ -336,7 +336,7 @@ describe('QuizAttemptProgressRepository', () => {
         claimableSince,
       );
 
-      expect(claimed).toEqual(['attempt-guest']);
+      expect(claimed).toEqual([{ attemptId: 'attempt-guest', tokenHash: 'hash-1' }]);
       expect(userProgress.save).toHaveBeenCalledWith({ session });
       expect(modelMocks.loggerWarn).toHaveBeenCalledOnce();
       expect(modelMocks.loggerWarn).toHaveBeenCalledWith(

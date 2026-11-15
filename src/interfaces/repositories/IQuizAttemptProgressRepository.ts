@@ -1,6 +1,6 @@
 import type { AttemptAnswer } from '@/entities/Attempt';
 import type { QuizQuestion } from '@/entities/Quiz';
-import type { WrongQuizAttemptQuestion } from '@/entities/QuizAttempt';
+import type { ClaimedGuestAttemptRef, WrongQuizAttemptQuestion } from '@/entities/QuizAttempt';
 
 interface AttemptQuizSnapshotData {
   integrity: 'complete';
@@ -73,14 +73,14 @@ export interface IGuestAttemptClaimRepository {
    * Attaches each unclaimed, token-identified guest attempt taken since
    * `claimableSince` to `userId` (single use: the hash is removed) and applies
    * the user progress a signed-in submit would have written. Returns the ids
-   * claimed; hashes that match nothing are dropped.
+   * claimed with their token hashes; hashes that match nothing are dropped.
    */
   claimGuestAttempts(
     userId: string,
     tokenHashes: readonly string[],
     now: Date,
     claimableSince: Date,
-  ): Promise<string[]>;
+  ): Promise<ClaimedGuestAttemptRef[]>;
 }
 
 /** The quiz a guest draft became. */

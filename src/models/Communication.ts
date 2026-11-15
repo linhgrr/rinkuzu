@@ -42,6 +42,8 @@ const CONSENT_SOURCES = [
   'result_page_review',
   /** Opt-in on the adaptive (Path B) end screen (RIN-1364). */
   'adaptive_end_review',
+  /** Opt-in on the guest result card, recorded when the guest claims the attempt (RIN-1711). */
+  'guest_result_review',
 ] as const;
 type ConsentSource = (typeof CONSENT_SOURCES)[number];
 

@@ -8,7 +8,9 @@ const TOKEN = 'A'.repeat(43);
 const OTHER = 'b'.repeat(43);
 
 function service() {
-  const repository = { claimGuestAttempts: vi.fn().mockResolvedValue(['attempt-1']) };
+  const repository = {
+    claimGuestAttempts: vi.fn().mockResolvedValue([{ attemptId: 'attempt-1', tokenHash: 'h' }]),
+  };
   return { repository, claims: new GuestAttemptClaimService(repository, () => NOW) };
 }
 

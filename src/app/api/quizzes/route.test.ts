@@ -168,6 +168,48 @@ describe('GET /api/quizzes', () => {
     expect(guestishCall).not.toHaveProperty('visibility');
   });
 
+  // RIN-1644 AC 5: the CDN may share only a response built without the session.
+  it.each([
+    ['signed out', null],
+    ['signed in', session()],
+  ])(
+    'lets the CDN cache the community list (%s) without reading the session',
+    async (_label, s) => {
+      authMock.mockResolvedValue(s);
+
+      const response = await GET(listRequest('?page=1&limit=12&search=alg'), {
+        params: Promise.resolve({}),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('cache-control')).toMatch(
+        /^public, s-maxage=\d+, stale-while-revalidate=\d+$/,
+      );
+      expect(authMock).not.toHaveBeenCalled();
+      expect(getQuizzesMock).toHaveBeenCalledWith({
+        search: 'alg',
+        page: 1,
+        limit: 12,
+        onlyMine: false,
+      });
+    },
+  );
+
+  it.each([
+    ['signed in', session()],
+    ['signed out', null],
+  ])('never lets the CDN cache a mine=true list (%s)', async (_label, s) => {
+    authMock.mockResolvedValue(s);
+
+    const response = await GET(listRequest('?mine=true&page=1&limit=12'), {
+      params: Promise.resolve({}),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(authMock).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects invalid query params and maps unexpected list failures', async () => {
     authMock.mockResolvedValue(null);
     const invalid = await GET(listRequest('?page=0'), { params: Promise.resolve({}) });

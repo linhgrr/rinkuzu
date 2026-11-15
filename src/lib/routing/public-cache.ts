@@ -10,6 +10,14 @@
  */
 export const SIGNED_OUT_TWIN_SEGMENT = 'signed-out';
 
+/**
+ * Set on the rewritten request. Where the rewrite is proxied rather than served
+ * in-process (a self-hosted server whose own origin differs from the request
+ * URL), the proxy sees the twin path again and lets a marked request through.
+ * Sending it by hand only reaches the same public HTML.
+ */
+export const SIGNED_OUT_TWIN_HEADER = 'x-rinkuzu-signed-out-twin';
+
 // Auth.js session cookie, plain or `__Secure-`, whole or chunked (`.0`, `.1`).
 const SESSION_COOKIE = /^(?:__Secure-)?authjs\.session-token(?:\.\d+)?$/;
 

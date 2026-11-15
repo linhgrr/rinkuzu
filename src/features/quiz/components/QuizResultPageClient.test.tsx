@@ -15,7 +15,7 @@ const { claimMock, fetchPageDataMock, routeSlug, searchParams, router, session, 
     signInMock: vi.fn(),
     session: { value: { data: { user: { id: 'u1' } }, status: 'authenticated' } as object },
     searchParams: { value: new URLSearchParams('attemptId=attempt-1') },
-    router: { push: () => undefined, back: () => undefined },
+    router: { push: () => undefined, back: () => undefined, prefetch: () => undefined },
   }));
 
 vi.mock('next-auth/react', () => ({

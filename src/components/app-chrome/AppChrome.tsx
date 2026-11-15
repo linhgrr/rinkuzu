@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import useSWR from 'swr';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import { CREDIT_WALLET_KEY, fetchCreditWallet } from '@/features/profile/api/credit-wallet-api';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { matchesPrefix, toBrowserPath } from '@/lib/routing/pathname';
@@ -246,7 +247,7 @@ function LockedMark({ label, iconHidden }: LockedMarkProps) {
 
 function SidebarSubItem({ href, label, active, lockedLabel }: SidebarSubItemProps) {
   return (
-    <Link
+    <IntentPrefetchLink
       href={href}
       aria-current={active ? 'page' : undefined}
       className={`relative flex h-11 items-center gap-2.5 pl-6 pr-2.5 font-home text-body transition-colors ${
@@ -260,7 +261,7 @@ function SidebarSubItem({ href, label, active, lockedLabel }: SidebarSubItemProp
       />
       <span className="whitespace-nowrap">{label}</span>
       <LockedMark label={lockedLabel} />
-    </Link>
+    </IntentPrefetchLink>
   );
 }
 
@@ -298,14 +299,14 @@ function SidebarItem({
 
   if (href) {
     return (
-      <Link
+      <IntentPrefetchLink
         href={href}
         aria-current={active ? 'page' : undefined}
         className={`${base} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
         title={collapsed ? label : undefined}
       >
         {inner}
-      </Link>
+      </IntentPrefetchLink>
     );
   }
 
@@ -615,7 +616,7 @@ function CreditBalanceBadge({ balance, loading, t }: CreditBalanceBadgeProps) {
       : `${formattedBalance} ${t('credits')}`;
 
   return (
-    <Link
+    <IntentPrefetchLink
       href={ROUTES.PREMIUM_QUIZZES}
       aria-label={label}
       title={label}
@@ -631,7 +632,7 @@ function CreditBalanceBadge({ balance, loading, t }: CreditBalanceBadgeProps) {
         aria-hidden="true"
       />
       <span>{loading ? '…' : (formattedBalance ?? '—')}</span>
-    </Link>
+    </IntentPrefetchLink>
   );
 }
 
@@ -662,7 +663,11 @@ function AppTopbar({
     >
       {focusMode ? (
         <div className="hidden h-full shrink-0 items-center px-8 lg:flex">
-          <Link href={homeHref} className="flex h-11 items-center" aria-label="RinKuzu">
+          <IntentPrefetchLink
+            href={homeHref}
+            className="flex h-11 items-center"
+            aria-label="RinKuzu"
+          >
             <Image
               src="/images/auth_logo.webp"
               alt="RinKuzu"
@@ -671,7 +676,7 @@ function AppTopbar({
               className="object-contain"
               priority
             />
-          </Link>
+          </IntentPrefetchLink>
         </div>
       ) : (
         <div
@@ -683,7 +688,7 @@ function AppTopbar({
         >
           {collapsed ? (
             <div className="group relative size-11 shrink-0">
-              <Link
+              <IntentPrefetchLink
                 href={homeHref}
                 className="relative flex size-11 items-center justify-center overflow-hidden rounded-lg transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
                 aria-label="RinKuzu"
@@ -704,7 +709,7 @@ function AppTopbar({
                   className="size-11 object-contain transition-[opacity,transform] duration-200 ease-out"
                   aria-hidden="true"
                 />
-              </Link>
+              </IntentPrefetchLink>
               <ButtonBase
                 type="button"
                 onClick={onToggleSidebar}
@@ -718,7 +723,7 @@ function AppTopbar({
             </div>
           ) : (
             <>
-              <Link
+              <IntentPrefetchLink
                 href={homeHref}
                 className="relative flex h-11 items-center overflow-hidden"
                 aria-label="RinKuzu"
@@ -739,7 +744,7 @@ function AppTopbar({
                   className="pointer-events-none absolute size-12 translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
                   aria-hidden="true"
                 />
-              </Link>
+              </IntentPrefetchLink>
               <ButtonBase
                 type="button"
                 onClick={onToggleSidebar}
@@ -755,7 +760,7 @@ function AppTopbar({
       )}
 
       <div className="flex h-full w-full items-center justify-between px-4 lg:hidden">
-        <Link
+        <IntentPrefetchLink
           href={homeHref}
           className="relative flex h-11 items-center overflow-hidden"
           aria-label="RinKuzu"
@@ -768,7 +773,7 @@ function AppTopbar({
             className="object-contain"
             priority
           />
-        </Link>
+        </IntentPrefetchLink>
 
         <div className="flex items-center gap-2">
           {account === 'signed-in' ? (

@@ -3,6 +3,11 @@
 //
 //   node scripts/perf/count-server-renders.mjs --base http://localhost:3000 \
 //     --topic <seeded-topic-slug> --slug <seeded-quiz-slug> [--storage-state file.json] [--json]
+//   node scripts/perf/count-server-renders.mjs --base http://localhost:3000 \
+//     --storage-state learner.json --pages /vi/dashboard,/vi/create,/vi/quizzes
+//
+// `--pages` replaces the built-in list with the given comma-separated paths (a signed-in run
+// has no default beyond /explore). Paths are used as written, so include the locale prefix.
 //
 // Run it against a local `next build` + `next start` (CI fixture env, throwaway Mongo with the
 // e2e seed). It refuses any host that is not localhost: never point it at production or a
@@ -38,15 +43,22 @@ if (!['localhost', '127.0.0.1', '[::1]'].includes(host)) {
   process.exit(2);
 }
 
-const pages = storageState
-  ? [`/${locale}/explore`]
-  : [
-      `/${locale}`,
-      `/${locale}/explore`,
-      ...(topic ? [`/${locale}/explore/${topic}`] : []),
-      ...(slug ? [`/${locale}/quiz/${slug}`] : []),
-      `/${locale}/blog`,
-    ];
+const pagesArg = opt('pages');
+const pages = pagesArg
+  ? pagesArg
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => (p.startsWith('/') ? p : `/${p}`))
+  : storageState
+    ? [`/${locale}/explore`]
+    : [
+        `/${locale}`,
+        `/${locale}/explore`,
+        ...(topic ? [`/${locale}/explore/${topic}`] : []),
+        ...(slug ? [`/${locale}/quiz/${slug}`] : []),
+        `/${locale}/blog`,
+      ];
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -82,7 +94,7 @@ async function measure(context, path) {
       }),
     );
   });
-  await page.goto(`${base}${path}`, { waitUntil: 'load' });
+  await page.goto(`${base}${path}`, { waitUntil: 'load', timeout: 120000 });
   await wait(2000);
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
   for (let y = 0; y < height; y += 600) {

@@ -70,7 +70,7 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
-  useRouter: () => ({ push: mocks.push }),
+  useRouter: () => ({ push: mocks.push, prefetch: vi.fn() }),
 }));
 vi.mock('../api/communications-api', () => ({
   addSupportMessage: (...args: unknown[]) => mocks.addSupportMessage(...args),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
   ShareResultButton,
@@ -85,35 +85,35 @@ export function ResultActions({
     primaryNode = <Skeleton aria-hidden="true" className="h-12 w-full" />;
   } else if (primary === 'retry') {
     primaryNode = (
-      <Link
+      <IntentPrefetchLink
         href={`/quiz/${encodedSlug}?retryOf=${encodeURIComponent(attemptId)}`}
         className={PRIMARY_LINK}
         onClick={() => captureAnalyticsEvent('retry_missed_clicked', analytics)}
       >
         {t('retryMissed', { count: missedCount })}
-      </Link>
+      </IntentPrefetchLink>
     );
   } else if (primary === 'another' && nextQuiz) {
     primaryNode = (
-      <Link
+      <IntentPrefetchLink
         href={`/quiz/${routePathSegment(nextQuiz.slug)}${nextQuiz.quick ? '?mode=quick' : ''}`}
         className={PRIMARY_LINK}
         onClick={() => captureAnalyticsEvent('try_another_quiz_clicked', analytics)}
       >
         {t('tryAnother')}
-      </Link>
+      </IntentPrefetchLink>
     );
   } else if (primary === 'quickAnother') {
     primaryNode = (
-      <Link href={quickAnother.href} className={PRIMARY_LINK}>
+      <IntentPrefetchLink href={quickAnother.href} className={PRIMARY_LINK}>
         {quickAnother.label}
-      </Link>
+      </IntentPrefetchLink>
     );
   } else {
     primaryNode = (
-      <Link href="/" className={PRIMARY_LINK}>
+      <IntentPrefetchLink href="/" className={PRIMARY_LINK}>
         {tQuiz('backHome')}
-      </Link>
+      </IntentPrefetchLink>
     );
   }
 
@@ -137,14 +137,14 @@ export function ResultActions({
             fullLabel={tQuiz('quickRound.fullQuiz')}
           />
         ) : (
-          <Link href={`/quiz/${encodedSlug}`} className={SECONDARY_LINK}>
+          <IntentPrefetchLink href={`/quiz/${encodedSlug}`} className={SECONDARY_LINK}>
             {tQuiz('redo')}
-          </Link>
+          </IntentPrefetchLink>
         )}
         {showHomeAsSecondary ? (
-          <Link href="/" className={SECONDARY_LINK}>
+          <IntentPrefetchLink href="/" className={SECONDARY_LINK}>
             {tQuiz('backHome')}
-          </Link>
+          </IntentPrefetchLink>
         ) : null}
       </div>
       {share && !contentLocked ? (
@@ -169,13 +169,13 @@ function QuickRoundSecondaries({
   return (
     <>
       {another ? (
-        <Link href={another.href} className={SECONDARY_LINK}>
+        <IntentPrefetchLink href={another.href} className={SECONDARY_LINK}>
           {another.label}
-        </Link>
+        </IntentPrefetchLink>
       ) : null}
-      <Link href={fullHref} className={SECONDARY_LINK}>
+      <IntentPrefetchLink href={fullHref} className={SECONDARY_LINK}>
         {fullLabel}
-      </Link>
+      </IntentPrefetchLink>
     </>
   );
 }

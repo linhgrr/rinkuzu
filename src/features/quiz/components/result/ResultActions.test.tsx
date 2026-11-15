@@ -14,6 +14,7 @@ const { statusMock, optInMock, snoozeMock, captureMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ prefetch: vi.fn() }),
   Link: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
     <a href={href} {...rest}>
       {children}

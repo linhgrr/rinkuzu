@@ -248,6 +248,31 @@ describe('INTERNAL_SERVICE_TOKEN validation', () => {
   });
 });
 
+describe('EDGE_SHARED_SECRET validation', () => {
+  it('allows absent EDGE_SHARED_SECRET', async () => {
+    replaceProcessEnv(baseEnv);
+
+    const { env } = await import('@/lib/env');
+    expect(env.EDGE_SHARED_SECRET).toBeUndefined();
+  });
+
+  it('rejects short EDGE_SHARED_SECRET', async () => {
+    replaceProcessEnv({ ...baseEnv, EDGE_SHARED_SECRET: 'short-edge-secret' });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /EDGE_SHARED_SECRET must be at least 32 chars/,
+    );
+  });
+
+  it('rejects an obvious placeholder EDGE_SHARED_SECRET', async () => {
+    replaceProcessEnv({ ...baseEnv, EDGE_SHARED_SECRET: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' });
+
+    await expect(import('@/lib/env')).rejects.toThrow(
+      /EDGE_SHARED_SECRET must not use a placeholder or default value/,
+    );
+  });
+});
+
 describe('SUBSCRIPTION_CRON_SECRET validation', () => {
   it('allows absent SUBSCRIPTION_CRON_SECRET', async () => {
     replaceProcessEnv(baseEnv);

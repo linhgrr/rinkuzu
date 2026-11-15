@@ -19,6 +19,8 @@ const READY = {
   progressPercent: 100,
   title: 'Cells',
   questionCount: 4,
+  complete: true,
+  completion: 'full',
   failureReason: null,
 };
 
@@ -154,6 +156,21 @@ describe('POST /api/guest-drafts/status', () => {
     expect(response.status).toBe(200);
     expect((await response.json()).data).toEqual(READY);
     expect(statusMock).toHaveBeenCalledWith(TOKEN, '203.0.113.7');
+  });
+
+  it('passes complete: false through for a playable first batch (RIN-1619)', async () => {
+    const partial = {
+      ...READY,
+      progressPercent: 60,
+      questionCount: 5,
+      complete: false,
+      completion: null,
+    };
+    statusMock.mockResolvedValue({ ok: true, draft: partial });
+
+    const response = await STATUS(statusRequest({ token: TOKEN }));
+
+    expect((await response.json()).data).toEqual(partial);
   });
 
   it('404s an unknown token and 400s a malformed one', async () => {

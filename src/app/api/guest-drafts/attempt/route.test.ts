@@ -45,6 +45,48 @@ describe('POST /api/guest-drafts/attempt', () => {
     expect(submitMock).toHaveBeenCalledWith(body);
   });
 
+  it('passes a question range for a "Keep going" round to the service (RIN-1619)', async () => {
+    submitMock.mockResolvedValue({ success: true, data: { attemptId: 'attempt-2' } });
+    const body = {
+      token: TOKEN,
+      guestClaimToken: CLAIM,
+      answers: [1, 0, 1, 0, 1],
+      idempotencyKey: KEY,
+      questionRange: { from: 5, count: 5 },
+    };
+
+    expect((await ATTEMPT(post('attempt', body))).status).toBe(200);
+    expect(submitMock).toHaveBeenCalledWith(body);
+  });
+
+  it.each([
+    { from: -1, count: 5 },
+    { from: 0, count: 0 },
+    { from: 1.5, count: 2 },
+    { from: 0, count: 2, extra: 1 },
+    { from: 0 },
+  ])('400s the question range %j without calling the service', async (questionRange) => {
+    const body = { token: TOKEN, guestClaimToken: CLAIM, answers: [1], idempotencyKey: KEY };
+    expect((await ATTEMPT(post('attempt', { ...body, questionRange }))).status).toBe(400);
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it('maps a range beyond the stored questions to 400', async () => {
+    submitMock.mockResolvedValue({
+      success: false,
+      error: 'Invalid question range',
+      statusCode: 400,
+    });
+    const body = {
+      token: TOKEN,
+      guestClaimToken: CLAIM,
+      answers: [1],
+      idempotencyKey: KEY,
+      questionRange: { from: 9, count: 1 },
+    };
+    expect((await ATTEMPT(post('attempt', body))).status).toBe(400);
+  });
+
   it.each([
     ['no claim token', { token: TOKEN, answers: [1], idempotencyKey: KEY }],
     [
@@ -78,7 +120,7 @@ describe('POST /api/guest-drafts/play', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns the playable questions for the token in the body', async () => {
-    const data = { title: 'Cells', questions: [] };
+    const data = { title: 'Cells', questions: [], complete: true, completion: 'full' };
     playMock.mockResolvedValue({ success: true, data });
 
     const response = await PLAY(post('play', { token: TOKEN }));
@@ -86,6 +128,17 @@ describe('POST /api/guest-drafts/play', () => {
     expect(response.status).toBe(200);
     expect((await response.json()).data).toEqual(data);
     expect(playMock).toHaveBeenCalledWith(TOKEN);
+  });
+
+  it('returns a first batch with complete: false while the rest is extracted (RIN-1619)', async () => {
+    const question = { id: 'q1', question: 'Q1?', options: ['a', 'b'], type: 'single' };
+    const data = { title: 'Quiz', questions: [question], complete: false, completion: null };
+    playMock.mockResolvedValue({ success: true, data });
+
+    const response = await PLAY(post('play', { token: TOKEN }));
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).data).toEqual(data);
   });
 
   it('400s a missing token', async () => {

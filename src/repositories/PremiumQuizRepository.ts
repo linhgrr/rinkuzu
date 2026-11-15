@@ -838,9 +838,11 @@ export class PremiumQuizRepository
     const user = objectId(data.userId, 'User');
     const quiz = objectId(data.quizId, 'Quiz');
     const submission = objectId(data.submissionId, 'Submission');
+    const previewFilter = data.preview === true ? { preview: true } : { preview: { $ne: true } };
     const activeSessions = await PremiumPlaySessionModel.countDocuments({
       user,
       quiz,
+      ...previewFilter,
       completedAt: { $exists: false },
       idleExpiresAt: { $gt: data.now },
       absoluteExpiresAt: { $gt: data.now },
@@ -849,6 +851,7 @@ export class PremiumQuizRepository
       const existing = await PremiumPlaySessionModel.findOne({
         user,
         quiz,
+        ...previewFilter,
         completedAt: { $exists: false },
         idleExpiresAt: { $gt: data.now },
         absoluteExpiresAt: { $gt: data.now },
@@ -864,6 +867,7 @@ export class PremiumQuizRepository
             quiz,
             submission,
             snapshotHash: data.snapshotHash,
+            ...previewFilter,
             completedAt: { $exists: false },
             $or: [{ idleExpiresAt: { $lte: data.now } }, { absoluteExpiresAt: { $lte: data.now } }],
           })
@@ -885,6 +889,7 @@ export class PremiumQuizRepository
       currentQuestionIndex: resumable?.currentQuestionIndex ?? 0,
       highestBatch: resumable?.highestBatch ?? 0,
       sessionCode: randomBytes(6).toString('hex').toUpperCase(),
+      ...(data.preview === true ? { preview: true } : {}),
       idleExpiresAt: new Date(data.now.getTime() + IDLE_SESSION_MS),
       absoluteExpiresAt: new Date(data.now.getTime() + ABSOLUTE_SESSION_MS),
       purgeAt: new Date(data.now.getTime() + SESSION_RETENTION_MS),

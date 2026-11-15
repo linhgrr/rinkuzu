@@ -30,6 +30,7 @@ export interface AttemptPersistenceRecord {
   quiz: MongoIdLike | AttemptQuizPersistenceRecord;
   premiumSubmission?: MongoIdLike;
   premiumSnapshotHash?: string;
+  preview?: boolean;
   /** Present on stored attempts; read pipelines project it into `quiz`. */
   quizSnapshot?: EmbeddedAttemptQuizSnapshotPersistenceRecord;
   answers: SelectedAnswerPersistenceRecord[];

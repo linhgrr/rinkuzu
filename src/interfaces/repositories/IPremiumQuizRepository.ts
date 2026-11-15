@@ -139,6 +139,8 @@ export interface CreatePremiumSessionData {
   quizId: string;
   submissionId: string;
   snapshotHash: string;
+  /** RIN-1722: start or resume a preview session; never mixed with a full one. */
+  preview?: boolean;
   now: Date;
 }
 

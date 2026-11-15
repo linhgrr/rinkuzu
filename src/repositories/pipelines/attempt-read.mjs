@@ -101,6 +101,7 @@ export function buildAttemptDetailPipeline(attemptId, identityFilter) {
         takenAt: 1,
         premiumSubmission: 1,
         premiumSnapshotHash: 1,
+        preview: 1,
         retryOfAttemptId: 1,
         questionIndices: 1,
         mode: 1,

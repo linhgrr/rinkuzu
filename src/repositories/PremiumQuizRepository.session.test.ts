@@ -111,4 +111,41 @@ describe('PremiumQuizRepository session resume', () => {
     expect(result.id).toBe('507f191e810c19729de860ed');
     expect(createMock).not.toHaveBeenCalled();
   });
+
+  it('never matches a preview session to a full start, nor a full one to a preview start (RIN-1722)', async () => {
+    countDocumentsMock.mockResolvedValue(2);
+    findOneMock.mockReturnValue({
+      sort: vi.fn().mockReturnValue({ lean: vi.fn().mockResolvedValue(null) }),
+    });
+    createMock.mockImplementation(async (input) => ({
+      toObject: () => ({
+        _id: new Types.ObjectId('507f191e810c19729de860ed'),
+        ...input,
+        createdAt: NOW,
+        updatedAt: NOW,
+      }),
+    }));
+    const base = {
+      userId: USER_ID,
+      quizId: QUIZ_ID,
+      submissionId: SUBMISSION_ID,
+      snapshotHash: SNAPSHOT_HASH,
+      now: NOW,
+    };
+
+    await new PremiumQuizRepository().createSession(base);
+    expect(countDocumentsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ preview: { $ne: true } }),
+    );
+    expect(findOneMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ preview: { $ne: true } }),
+    );
+    expect(createMock).toHaveBeenLastCalledWith(expect.not.objectContaining({ preview: true }));
+
+    const preview = await new PremiumQuizRepository().createSession({ ...base, preview: true });
+    expect(countDocumentsMock).toHaveBeenLastCalledWith(expect.objectContaining({ preview: true }));
+    expect(findOneMock).toHaveBeenLastCalledWith(expect.objectContaining({ preview: true }));
+    expect(createMock).toHaveBeenLastCalledWith(expect.objectContaining({ preview: true }));
+    expect(preview.preview).toBe(true);
+  });
 });

@@ -21,18 +21,37 @@ describe('proxy matcher', () => {
     },
   );
 
-  it.each(['/robots.txt', '/sitemap.xml', '/llms.txt', '/serwist/sw.js', '/_next/static/x.js'])(
-    'skips static and metadata file %s',
-    (path) => {
-      expect(matches(path)).toBe(false);
-    },
-  );
+  // RIN-1644 AC 4: crawler-facing files, images and assets never run the proxy.
+  it.each([
+    '/robots.txt',
+    '/sitemap.xml',
+    '/vi/sitemap.xml',
+    '/en/sitemap.xml',
+    '/vi/blog/rss.xml',
+    '/en/blog/intro-to-ai/og.png',
+    '/llms.txt',
+    '/icon.png',
+    '/favicon.ico',
+    '/apple-icon.png',
+    '/manifest.webmanifest',
+    '/serwist/sw.js',
+    '/_next/static/x.js',
+    '/_next/image?url=%2Fimages%2Fhero.png&w=640&q=75',
+    '/_vercel/insights/script.js',
+  ])('skips static and metadata file %s', (path) => {
+    expect(matches(path)).toBe(false);
+  });
 
   it.each([
     '/',
     '/dashboard',
     '/vi/dashboard',
     '/en',
+    '/vi/',
+    '/en/blog/intro-to-ai',
+    '/vi/quiz/on-tap-sinh-hoc-000001',
+    '/vi/quiz/v1.2-release-notes',
+    '/vi/explore?q=sinh',
     '/api/quizzes',
     '/ogre',
     '/og-guide',

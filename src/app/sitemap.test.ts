@@ -62,6 +62,8 @@ import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 import { STATIC_ROUTE_LASTMOD } from '@/lib/seo/static-lastmod';
 import { canonicalFor } from '@/lib/seo';
 import { PUBLIC_CATALOG_OWNER_EMAILS } from '@/shared/constants/analytics-exclusions';
+import { isAllowedByRule, robotsRuleFor } from '../../tests/helpers/robots-match';
+import robots from './robots';
 import sitemap from './sitemap';
 import { GET as localeSitemapGET } from './[locale]/sitemap.xml/route';
 
@@ -100,6 +102,26 @@ describe('sitemap', () => {
     hubData.topics = [];
     hubData.assignments = [];
     hubData.quizzes = [];
+  });
+
+  // RIN-1644 AC 6: robots.txt never blocks a URL the sitemap asks crawlers to index.
+  it('lists no URL that robots.txt disallows', async () => {
+    serveQuizzes([
+      {
+        slug: 'on-tap-sinh-hoc-000020',
+        authorId: 'learner-1',
+        createdAt: new Date('2026-11-01T00:00:00.000Z'),
+      },
+    ]);
+    const rule = robotsRuleFor(robots(), '*');
+
+    const entries = await sitemap();
+
+    expect(entries.some((entry) => entry.url.includes('/quiz/'))).toBe(true);
+    for (const entry of entries) {
+      const url = new URL(entry.url);
+      expect(isAllowedByRule(rule, `${url.pathname}${url.search}`), entry.url).toBe(true);
+    }
   });
 
   it('lists only the canonical quiz slug, never a former slug alias', async () => {

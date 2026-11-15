@@ -201,7 +201,14 @@ export const config = {
   // - Static files (images, etc.)
   // - Next.js internals
   // - The non-localized `/og` share-card route (otherwise redirected to `/vi/og`)
+  // - Localized file routes (`/<locale>/sitemap.xml`, blog `rss.xml`, per-post
+  //   `og.png`): crawler hits there need no locale or auth work (RIN-1644)
   // API routes are now matched so the CSRF / same-origin guard applies; the
   // guard early-returns for read-only and exempt API paths.
-  matcher: ['/', '/(vi|en)/:path*', '/((?!_next|_vercel|og(?:/|$)|.*\\..*).*)'],
+  matcher: [
+    '/',
+    '/(vi|en)',
+    '/(vi|en)/((?!.*\\.(?:xml|png)$).*)',
+    '/((?!_next|_vercel|og(?:/|$)|.*\\..*).*)',
+  ],
 };

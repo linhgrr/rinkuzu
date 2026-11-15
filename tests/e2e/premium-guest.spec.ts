@@ -31,8 +31,18 @@ const VIEWPORTS = [
 ] as const;
 
 const COPY = {
-  vi: { signIn: 'Đăng nhập', signUp: 'Tạo tài khoản miễn phí', count: '2 câu hỏi' },
-  en: { signIn: 'Sign in', signUp: 'Create a free account', count: '2 questions' },
+  vi: {
+    signIn: 'Đăng nhập',
+    signUp: 'Tạo tài khoản miễn phí',
+    count: '2 câu hỏi',
+    prompt: 'Đăng nhập để làm thử miễn phí 2 câu đầu',
+  },
+  en: {
+    signIn: 'Sign in',
+    signUp: 'Create a free account',
+    count: '2 questions',
+    prompt: 'Sign in to try the first 2 questions free',
+  },
 } as const;
 
 test.describe('premium quiz guest state (RIN-747)', () => {
@@ -108,7 +118,9 @@ test.describe('premium quiz guest state (RIN-747)', () => {
         await page.goto(`/${locale}/quiz/${slug}`);
 
         await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
-        await expect(page.getByText(copy.count)).toBeVisible();
+        await expect(page.getByText(copy.count, { exact: true })).toBeVisible();
+        // RIN-1725: the prompt offers the free preview questions.
+        await expect(page.getByText(copy.prompt, { exact: true })).toBeVisible();
         await expect(page.getByText(description)).toBeVisible();
         await expect(page.getByText('Unauthorized')).toHaveCount(0);
         // The app header has its own Sign in (RIN-958); this is the quiz card one.

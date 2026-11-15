@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { publicPathForInternalTwin, publicPathname, signedOutTwinPath } from './public-cache';
+import {
+  publicPathForInternalTwin,
+  publicPathname,
+  signedOutTwinPath,
+  signedOutTwinQuizPath,
+} from './public-cache';
 
 describe('signedOutTwinPath', () => {
   const noCookies: string[] = [];
@@ -81,5 +86,14 @@ describe('publicPathname', () => {
     ['/', '/'],
   ])('reports %s as %s', (pathname, expected) => {
     expect(publicPathname(pathname)).toBe(expected);
+  });
+});
+
+describe('signedOutTwinQuizPath', () => {
+  it('builds the internal twin path of a quiz page', () => {
+    expect(signedOutTwinQuizPath('vi', 'toan-12')).toBe('/vi/signed-out/quiz/toan-12');
+    expect(publicPathForInternalTwin(signedOutTwinQuizPath('en', 'toan-12'))).toBe(
+      '/en/quiz/toan-12',
+    );
   });
 });

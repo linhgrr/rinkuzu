@@ -32,7 +32,7 @@ export interface QuizCreatorStatRecord {
   totalQuestions: number;
 }
 
-export type QuizAccessRecord = Pick<Quiz, 'id' | 'author' | 'visibility'>;
+export type QuizAccessRecord = Pick<Quiz, 'id' | 'author' | 'visibility' | 'slug'>;
 
 /**
  * Owner fields that decide whether a public quiz may be indexed (RIN-840).

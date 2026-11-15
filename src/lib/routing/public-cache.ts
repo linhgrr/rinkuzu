@@ -63,3 +63,8 @@ export function publicPathname(pathname: string): string {
   if (pathname === prefix) return '/';
   return pathname.startsWith(`${prefix}/`) ? pathname.slice(prefix.length) : pathname;
 }
+
+/** The internal twin path of a quiz page; `slug` is already URL-encoded. */
+export function signedOutTwinQuizPath(locale: string, slug: string): string {
+  return `/${locale}/${SIGNED_OUT_TWIN_SEGMENT}/quiz/${slug}`;
+}

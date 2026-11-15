@@ -9,6 +9,7 @@ import type {
 } from '@/interfaces/repositories/IReportRepository';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { notifyQuizIndexNow } from '@/lib/seo/quiz-search-change';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
 import { holdsQuizIndex } from '@/shared/constants/report-reason';
@@ -66,6 +67,7 @@ export class AdminReportModerationService {
         slug: report.quizSlug,
         cause: 'index-hold',
       });
+      revalidateQuizPages([report.quizSlug]);
     }
   }
 

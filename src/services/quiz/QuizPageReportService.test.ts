@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Quiz } from '@/entities/Quiz';
 import type { Report } from '@/entities/Report';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { QuizPageReportService } from '@/services/quiz/QuizPageReportService';
+
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 
 vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -128,6 +131,18 @@ describe('QuizPageReportService', () => {
     const result = await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
 
     expect(result).toMatchObject({ success: false, statusCode: 500 });
+  });
+
+  describe('cached signed-out page (RIN-1647)', () => {
+    it('revalidates the page when a report sets the hold, not when nothing changed', async () => {
+      await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
+      expect(revalidateQuizPages).toHaveBeenCalledWith(['algebra']);
+
+      vi.mocked(revalidateQuizPages).mockClear();
+      holdForReport.mockResolvedValue(false);
+      await service.report('algebra', { reason: 'copyright', ipHash: 'h1' });
+      expect(revalidateQuizPages).not.toHaveBeenCalled();
+    });
   });
 
   describe('IndexNow (RIN-1500)', () => {

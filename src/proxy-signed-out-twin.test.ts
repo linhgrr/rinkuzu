@@ -90,3 +90,20 @@ describe('proxy: Cloudflare-CDN-Cache-Control (RIN-1679)', () => {
     expect(await header('/api/ready')).toBeNull();
   });
 });
+
+describe('proxy: proxied twin pass keeps the public header (RIN-1679)', () => {
+  it('judges a marked twin request by its public URL, an unmarked one as no-store', async () => {
+    const marked = await proxy(
+      new NextRequest(`${ORIGIN}/vi/signed-out/explore`, {
+        headers: { 'x-rinkuzu-signed-out-twin': '1' },
+      }),
+      {} as NextFetchEvent,
+    );
+    expect(marked?.headers.get('cloudflare-cdn-cache-control')).toBe(
+      'public, max-age=300, stale-while-revalidate=600',
+    );
+
+    const direct = await run('/vi/signed-out/explore');
+    expect(direct.headers.get('cloudflare-cdn-cache-control')).toBe('no-store');
+  });
+});

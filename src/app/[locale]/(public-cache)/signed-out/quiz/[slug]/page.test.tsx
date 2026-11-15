@@ -23,9 +23,6 @@ vi.mock('next/navigation', () => ({
   permanentRedirect: (target: string): never => {
     throw new Error(`permanentRedirect:${target}`);
   },
-  redirect: (target: string): never => {
-    throw new Error(`redirectTo:${target}`);
-  },
 }));
 vi.mock('@/i18n/navigation', () => ({
   redirect: (target: { href: string; locale: string }): never => {
@@ -193,7 +190,7 @@ describe('signed-out quiz twin page (RIN-1647)', () => {
   ])('hands %s to the player on the dynamic route', async (_, metadata) => {
     getQuizMetadataBySlug.mockResolvedValue(metadata);
 
-    await expect(render()).rejects.toThrow(`redirectTo:/vi/quiz/${SLUG}?view=play`);
+    await expect(render()).rejects.toThrow(`redirect:vi:/quiz/${SLUG}?view=play`);
   });
 
   it('hands a non-public quiz to the dynamic route too', async () => {
@@ -202,7 +199,7 @@ describe('signed-out quiz twin page (RIN-1647)', () => {
       data: { ...publicQuiz, visibility: 'personal' },
     });
 
-    await expect(render()).rejects.toThrow(`redirectTo:/vi/quiz/${SLUG}?view=play`);
+    await expect(render()).rejects.toThrow(`redirect:vi:/quiz/${SLUG}?view=play`);
   });
 
   it('uses the same metadata as the dynamic page without a query', async () => {

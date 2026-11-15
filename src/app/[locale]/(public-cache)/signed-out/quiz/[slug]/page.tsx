@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { permanentRedirect, redirect as redirectTo } from 'next/navigation';
+import { permanentRedirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
@@ -99,7 +99,9 @@ export default async function SignedOutQuizPage({ params }: Props) {
     viewerId: undefined,
     authorName,
   });
-  if (!landing) return redirectTo(`/${locale}/quiz/${encodeURIComponent(slug)}?view=play`);
+  if (!landing) {
+    return redirect({ href: `/quiz/${encodeURIComponent(slug)}?view=play`, locale });
+  }
 
   return (
     <>

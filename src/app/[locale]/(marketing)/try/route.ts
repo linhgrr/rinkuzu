@@ -15,6 +15,12 @@ type Context = { params: Promise<{ locale: string }> };
 const TRY_CACHE_CONTROL = 'public, s-maxage=600, stale-while-revalidate=86400';
 
 /**
+ * The quiz-list fallback is also what a failed starter lookup returns, so it is cached
+ * for one minute only: a database blip must not send every visitor to the list for a day.
+ */
+const FALLBACK_CACHE_CONTROL = 'public, s-maxage=60';
+
+/**
  * A single well-formed slug param (`^[a-z0-9-]{1,80}$`), else undefined: never an error.
  * A repeated param is dropped, as the page did with an array.
  */
@@ -46,9 +52,12 @@ export async function GET(request: Request, { params }: Context): Promise<Respon
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return new Response(null, { status: 404 });
   const query = new URL(request.url).searchParams;
-  const href = (await resolveHref(locale, query)) ?? ROUTES.QUIZZES;
+  const href = await resolveHref(locale, query);
   return new Response(null, {
     status: 307,
-    headers: { Location: toBrowserPath(href, locale), 'Cache-Control': TRY_CACHE_CONTROL },
+    headers: {
+      Location: toBrowserPath(href ?? ROUTES.QUIZZES, locale),
+      'Cache-Control': href ? TRY_CACHE_CONTROL : FALLBACK_CACHE_CONTROL,
+    },
   });
 }

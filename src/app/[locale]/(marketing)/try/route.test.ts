@@ -10,17 +10,22 @@ vi.mock('@/lib/dashboard-factory', () => ({ getBlogTryHref, getLandingStarterHre
 import { GET } from './route';
 
 const CACHE_CONTROL = 'public, s-maxage=600, stale-while-revalidate=86400';
+const FALLBACK_CACHE_CONTROL = 'public, s-maxage=60';
 
 function requestTry(locale: string, query = '') {
   const request = new Request(`https://rinkuzu.test/${locale}/try${query}`);
   return GET(request, { params: Promise.resolve({ locale }) });
 }
 
-async function expectRedirect(response: Promise<Response>, location: string) {
+async function expectRedirect(
+  response: Promise<Response>,
+  location: string,
+  cacheControl = location.endsWith('/quizzes') ? FALLBACK_CACHE_CONTROL : CACHE_CONTROL,
+) {
   const res = await response;
   expect(res.status).toBe(307);
   expect(res.headers.get('location')).toBe(location);
-  expect(res.headers.get('cache-control')).toBe(CACHE_CONTROL);
+  expect(res.headers.get('cache-control')).toBe(cacheControl);
   expect(res.headers.get('set-cookie')).toBeNull();
 }
 
@@ -36,10 +41,10 @@ describe('/try play-first landing redirect (RIN-1178)', () => {
     expect(getLandingStarterHref).toHaveBeenCalledWith('vi');
   });
 
-  it('falls back to the public quiz list when no starter is eligible', async () => {
+  it('falls back to the public quiz list, cached for a minute only, when no starter is eligible', async () => {
     getLandingStarterHref.mockResolvedValue(null);
 
-    await expectRedirect(requestTry('en'), '/en/quizzes');
+    await expectRedirect(requestTry('en'), '/en/quizzes', FALLBACK_CACHE_CONTROL);
   });
 
   it('answers 404 for an unknown locale without a lookup', async () => {

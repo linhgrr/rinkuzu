@@ -6,11 +6,11 @@
  * send the public header for a URL whose response never depends on the
  * session: the handler did not read the session to build it.
  */
-export const PUBLIC_CATALOG_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=86400';
+const PUBLIC_CATALOG_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=86400';
 
-export const PRIVATE_NO_STORE_CACHE_CONTROL = 'private, no-store';
+const PRIVATE_NO_STORE_CACHE_CONTROL = 'private, no-store';
 
-export interface CatalogCacheInput {
+interface CatalogCacheInput {
   /** True when the handler read the session (or may serve per-user data) for this URL. */
   readsSession: boolean;
 }

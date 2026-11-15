@@ -1,6 +1,10 @@
 import type { MetadataRoute } from 'next';
 
-type RobotsRule = Extract<MetadataRoute.Robots['rules'], unknown[]>[number];
+interface RobotsRule {
+  userAgent?: string | string[] | undefined;
+  allow?: string | string[] | undefined;
+  disallow?: string | string[] | undefined;
+}
 
 function asList(value: string | string[] | undefined): string[] {
   if (value === undefined) return [];

@@ -11,6 +11,7 @@ import { isRscOrPrefetchRequest, usesSecureAuthCookie } from './lib/auth/session
 import { getLocaleFromPath, toBrowserPath } from './lib/routing/pathname';
 import { getAuthRoutePolicy } from './lib/routing/auth-route-policy';
 import {
+  cdnCacheControlFor,
   publicPathForInternalTwin,
   SIGNED_OUT_TWIN_HEADER,
   signedOutTwinPath,
@@ -154,7 +155,7 @@ const guardedProxy = withEdgeAuth((request: NextAuthRequest, _event: NextFetchEv
   });
 });
 
-export default async function middleware(request: NextRequest, event: NextFetchEvent) {
+async function handleRequest(request: NextRequest, event: NextFetchEvent) {
   const requestId = request.headers.get('x-request-id') || randomUUID();
 
   // Same-origin / CSRF guard for state-changing API requests.
@@ -223,6 +224,27 @@ export default async function middleware(request: NextRequest, event: NextFetchE
   }
 
   return applySecurityHeaders(intlMiddleware(request), requestId);
+}
+
+/**
+ * RIN-1679: every page response says whether Cloudflare may keep it. `/api/**`
+ * is left alone. The decision is made on the response the proxy built, so a
+ * redirect or anything that sets a cookie is never marked public.
+ */
+export default async function middleware(request: NextRequest, event: NextFetchEvent) {
+  const response = await handleRequest(request, event);
+  if (!response || request.nextUrl.pathname.startsWith('/api/')) return response;
+  response.headers.set(
+    'Cloudflare-CDN-Cache-Control',
+    cdnCacheControlFor({
+      method: request.method,
+      pathname: request.nextUrl.pathname,
+      cookieNames: request.cookies.getAll().map((cookie) => cookie.name),
+      status: response.status,
+      setsCookie: response.headers.has('set-cookie'),
+    }),
+  );
+  return response;
 }
 
 export const config = {

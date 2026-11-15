@@ -1689,12 +1689,16 @@ test.describe('production critical paths', () => {
 
         const card = page.getByTestId('guest-draft-more');
         await expect(card).toContainText('More questions are on the way');
-        await expect(page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle })).toBeVisible();
+        await expect(
+          page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle }),
+        ).toBeVisible();
 
         await fixture.db
-          .collection<{ questions: object[]; complete: boolean; completion: string }>(
-            'guestquizdrafts',
-          )
+          .collection<{
+            questions: object[];
+            complete: boolean;
+            completion: string;
+          }>('guestquizdrafts')
           .updateOne(
             { _id: draft.id },
             {
@@ -1728,7 +1732,9 @@ test.describe('production critical paths', () => {
           await page.getByRole('button', { name: /finish \(1\/1\+? answered\)/i }).click();
         }
         await page.waitForURL(/\/en\/quiz\/guest-draft-play\/result\?attemptId=/);
-        await expect(page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle })).toBeVisible();
+        await expect(
+          page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle }),
+        ).toBeVisible();
         // Every stored question is played: no card.
         await expect(page.getByTestId('guest-draft-more')).toHaveCount(0);
       } finally {

@@ -39,4 +39,27 @@ describe('QuizQuestionCard', () => {
     expect(onSelectAnswer).toHaveBeenCalledWith(2);
     expect(onNext).toHaveBeenCalledOnce();
   });
+
+  it('only reserves a minimum button and counter width from sm up, so the 375 px nav row cannot overflow', () => {
+    render(
+      <QuizQuestionCard
+        question={question}
+        questionIndex={0}
+        questionCount={2}
+        answer={null}
+        onSelectAnswer={vi.fn()}
+        onPrevious={vi.fn()}
+        onNext={vi.fn()}
+        onSubmit={vi.fn()}
+        t={(key) => key}
+      />,
+    );
+
+    const next = screen.getByRole('button', { name: 'next' });
+    expect(next).toHaveClass('sm:min-w-32');
+    expect(next.className).not.toMatch(/(^|\s)min-w-/);
+    const counter = screen.getByText(/^1\s*\//);
+    expect(counter).toHaveClass('sm:min-w-16');
+    expect(counter.className).not.toMatch(/(^|\s)min-w-/);
+  });
 });

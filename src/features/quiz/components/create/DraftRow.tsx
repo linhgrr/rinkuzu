@@ -39,7 +39,7 @@ const BADGE_BY_STATUS: Record<DraftStatus, BadgeStyle> = {
   drafting: { icon: null, className: NEUTRAL_BADGE },
   submitted: { icon: null, className: NEUTRAL_BADGE },
   queued: { icon: HiOutlineDotsHorizontal, className: NEUTRAL_BADGE },
-  processing: { icon: HiOutlineRefresh, className: 'bg-brand-trust/10 text-brand-trust' },
+  processing: { icon: HiOutlineRefresh, className: 'bg-brand-trust/5 text-brand-trust' },
   completed: { icon: HiOutlineCheckCircle, className: 'bg-green-50 text-green-700' },
   failed: { icon: HiOutlineExclamationCircle, className: 'bg-red-50 text-red-700' },
   cancelled: { icon: HiOutlineBan, className: NEUTRAL_BADGE },

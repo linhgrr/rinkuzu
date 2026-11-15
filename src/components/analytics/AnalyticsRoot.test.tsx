@@ -119,6 +119,11 @@ describe('AnalyticsRoot consent banner', () => {
     );
   });
 
+  // A DOMRectList stand-in: an array of rects with item().
+  function rectList(list: DOMRect[]): DOMRectList {
+    return Object.assign([...list], { item: (index: number) => list[index] ?? null });
+  }
+
   it('reserves scroll room under the page for the space the fixed card covers (RIN-1570)', () => {
     // On a 390 x 664 phone the card sat over the register page's "Create
     // Account" button and the page could not scroll it clear. An in-flow
@@ -141,7 +146,7 @@ describe('AnalyticsRoot consent banner', () => {
       .mockReturnValue({ top: 520 } as DOMRect);
     const rects = vi
       .spyOn(HTMLElement.prototype, 'getClientRects')
-      .mockReturnValue([{}] as unknown as DOMRectList);
+      .mockReturnValue(rectList([{} as DOMRect]));
     try {
       const { container } = render(<AnalyticsRoot />);
       const spacer = container.querySelector('[data-consent-spacer]') as HTMLElement;
@@ -149,7 +154,7 @@ describe('AnalyticsRoot consent banner', () => {
       expect(spacer.style.height).toBe('144px');
 
       // Hidden (a quiz player is on screen): nothing to reserve.
-      rects.mockReturnValue([] as unknown as DOMRectList);
+      rects.mockReturnValue(rectList([]));
       for (const observer of observers) observer();
       expect(spacer.style.height).toBe('0px');
     } finally {

@@ -17,6 +17,16 @@ updates:
           - major
           - minor
           - patch
+      # vitest and its @vitest/* plugins pin each other as exact peers, so a
+      # lone plugin bump fails `npm ci` with ERESOLVE (Dependabot #497, RIN-1588).
+      vitest:
+        patterns:
+          - vitest
+          - '@vitest/*'
+        update-types:
+          - major
+          - minor
+          - patch
       gate-pinned-tools:
         patterns:
           - jscpd

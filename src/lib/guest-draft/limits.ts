@@ -9,6 +9,7 @@ import type {
   GuestDraftLimiter,
   GuestDraftReservation,
 } from '@/interfaces/services/IGuestDraftService';
+import { ipBucketKey } from '@/lib/client-ip';
 
 type GuestDraftLimitAction = 'guest_draft_ip' | 'guest_draft_daily';
 
@@ -61,7 +62,7 @@ export function createGuestDraftLimiter(
   registry: RateLimiterRegistry<GuestDraftLimitAction> = createRegistry(resolveGuestDraftLimits()),
   now: () => Date = () => new Date(),
 ): GuestDraftLimiter {
-  const ipKey = (ip: string | null) => ip ?? 'unknown';
+  const ipKey = (ip: string | null) => ipBucketKey(ip);
   return {
     async reserve(ip): Promise<GuestDraftReservation> {
       const perIp = await registry.consume('guest_draft_ip', ipKey(ip));

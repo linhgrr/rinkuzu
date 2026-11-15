@@ -4,7 +4,8 @@ import { cookies, headers } from 'next/headers';
 
 import type { ISignupOriginRepository } from '@/interfaces/repositories/IAuthAccountRepository';
 import { resolveAccountLocale } from '@/lib/auth/account-locale';
-import { SIGNUP_COUNTRY_HEADER, toSignupOrigin } from '@/lib/auth/signup-origin';
+import { toSignupOrigin } from '@/lib/auth/signup-origin';
+import { resolveClientCountry } from '@/lib/client-ip';
 import { logger } from '@/lib/logger';
 
 /**
@@ -24,7 +25,7 @@ export async function rememberGoogleSignupOrigin(
       referer: headerStore.get('referer'),
       cookies: cookieStore,
     });
-    const origin = toSignupOrigin(locale, headerStore.get(SIGNUP_COUNTRY_HEADER));
+    const origin = toSignupOrigin(locale, resolveClientCountry(headerStore));
     await repository.recordSignupOriginIfMissing(accountId, origin);
   } catch (error) {
     logger.warn({ error }, 'signup origin not recorded');

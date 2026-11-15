@@ -187,6 +187,9 @@ describe('POST /api/auth/register', () => {
 
     await POST(request(validBody));
 
-    expect(checkAuthRateLimitMock).toHaveBeenCalledWith('register_ip', 'unknown');
+    expect(checkAuthRateLimitMock).toHaveBeenCalledWith(
+      'register_ip',
+      expect.stringMatching(/^unattributed:/),
+    );
   });
 });

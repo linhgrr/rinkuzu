@@ -16,6 +16,7 @@ import type { IAuthRateLimiter } from '@/interfaces/services/IAuthRateLimiter';
 import type { IDeferredTaskScheduler } from '@/interfaces/services/IDeferredTaskScheduler';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { canonicalizeEmail } from '@/shared/email/canonical-email';
+import { ipBucketKey } from '@/lib/client-ip';
 
 export type AuthSignInPolicy = FailedLoginPolicy;
 
@@ -194,7 +195,7 @@ export class AuthSignInService {
     ip: string | null,
   ): Promise<CredentialsRateLimitFailure | null> {
     const decisions = await Promise.all([
-      this.rateLimiter.consume('credentials_ip', ip?.trim() || 'unknown'),
+      this.rateLimiter.consume('credentials_ip', ipBucketKey(ip)),
       this.rateLimiter.consume('credentials_identity', identityRateLimitKey(email)),
     ]);
     const blocked = decisions.filter(

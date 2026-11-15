@@ -41,10 +41,12 @@ const swrDrafts = vi.hoisted(() => ({
   ],
 }));
 
+const swrError = vi.hoisted(() => ({ current: null as Error | null }));
+
 vi.mock('swr', () => ({
   default: () => ({
     data: swrDrafts.current,
-    error: null,
+    error: swrError.current,
     isLoading: false,
     mutate: vi.fn(),
   }),
@@ -101,6 +103,23 @@ describe('CreateQuizHubPage', () => {
       expect(parentOf(wrapper).className.split(/\s+/)).toEqual(
         expect.arrayContaining(['p-4', 'sm:p-5']),
       );
+    }
+  });
+
+  it('puts the drafts-error Retry 16 px under the message at 44 px high (RIN-1579)', () => {
+    swrError.current = new Error('boom');
+    try {
+      render(<CreateQuizHubPage />);
+
+      const retry = screen.getByRole('button', { name: 'retry' });
+      const classes = retry.className.split(/\s+/);
+      // mt-3 (12 px) was under the 16 px floor; Button size=sm is h-9 (36 px), md is 44 px.
+      expect(classes).toContain('mt-4');
+      expect(classes).not.toContain('mt-3');
+      expect(classes).not.toContain('h-9');
+      expect(screen.getByText('draftsLoadFailed')).toBeInTheDocument();
+    } finally {
+      swrError.current = null;
     }
   });
 

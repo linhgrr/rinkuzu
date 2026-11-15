@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { hasSessionCookie, publicPathForInternalTwin, signedOutTwinPath } from './public-cache';
+import {
+  hasSessionCookie,
+  publicPathForInternalTwin,
+  publicPathname,
+  signedOutTwinPath,
+} from './public-cache';
 
 describe('hasSessionCookie', () => {
   it.each([
@@ -70,5 +75,18 @@ describe('publicPathForInternalTwin', () => {
 
   it.each(['/vi/explore', '/vi/signed-outx', '/signed-out/explore'])('ignores %s', (pathname) => {
     expect(publicPathForInternalTwin(pathname)).toBeNull();
+  });
+});
+
+describe('publicPathname', () => {
+  it.each([
+    ['/signed-out/explore', '/explore'],
+    ['/signed-out/explore/toan-hoc', '/explore/toan-hoc'],
+    ['/signed-out', '/'],
+    ['/explore', '/explore'],
+    ['/signed-outx', '/signed-outx'],
+    ['/', '/'],
+  ])('reports %s as %s', (pathname, expected) => {
+    expect(publicPathname(pathname)).toBe(expected);
   });
 });

@@ -52,3 +52,14 @@ export function publicPathForInternalTwin(pathname: string): string | null {
   const [, locale, rest = ''] = match;
   return `/${locale}${rest}`;
 }
+
+/**
+ * The public, locale-less pathname for one the router reports. Inside a twin
+ * the router sees the rewritten route (`/signed-out/explore`); links, active
+ * states and sign-in callbacks must use the URL the visitor is on.
+ */
+export function publicPathname(pathname: string): string {
+  const prefix = `/${SIGNED_OUT_TWIN_SEGMENT}`;
+  if (pathname === prefix) return '/';
+  return pathname.startsWith(`${prefix}/`) ? pathname.slice(prefix.length) : pathname;
+}

@@ -17,17 +17,24 @@ const TOKEN = 'T'.repeat(43);
 const NOW = new Date('2026-11-10T03:00:00.000Z');
 const IP = '203.0.113.7';
 
+const SUBMITTED_AT = new Date('2026-11-10T02:59:52.000Z');
+
+/** A `ready` record is complete unless the test says otherwise (RIN-1619). */
 function record(overrides: Partial<GuestDraftRecord> = {}): GuestDraftRecord {
+  const complete = overrides.status === 'ready';
   return {
     id: '6730a0000000000000000001',
     apiDraftId: 'api-draft-1',
     status: 'processing',
     title: null,
     questionCount: 0,
+    complete,
+    completion: complete ? 'full' : null,
     locale: 'en',
     entry: 'landing',
     source: 'pdf',
     failureReason: null,
+    createdAt: SUBMITTED_AT,
     ...overrides,
   };
 }
@@ -68,6 +75,8 @@ function setup(existing: GuestDraftRecord | null = null) {
     findByTokenHash: vi.fn(async () => existing),
     markReady: vi.fn<IGuestQuizDraftRepository['markReady']>(async () => true),
     markFailed: vi.fn(async () => true),
+    storeFirstBatch: vi.fn<IGuestQuizDraftRepository['storeFirstBatch']>(async () => true),
+    completeDraft: vi.fn<IGuestQuizDraftRepository['completeDraft']>(async () => true),
   } satisfies IGuestQuizDraftRepository;
   const limiter = {
     reserve: vi.fn<GuestDraftLimiter['reserve']>(async () => ({ ok: true })),
@@ -88,6 +97,7 @@ function setup(existing: GuestDraftRecord | null = null) {
   } satisfies GuestDraftUpstream;
   const events = {
     started: vi.fn(async () => undefined),
+    firstBatchReady: vi.fn(async () => undefined),
     ready: vi.fn(async () => undefined),
     failed: vi.fn(async () => undefined),
     claimed: vi.fn(async () => undefined),
@@ -354,6 +364,8 @@ describe('GuestDraftService.status', () => {
         progressPercent: 100,
         title: 'Cells',
         questionCount: 2,
+        complete: true,
+        completion: 'full',
         failureReason: null,
       },
     });
@@ -499,5 +511,314 @@ describe('GuestDraftService ready title (RIN-1546)', () => {
 
     expect(repository.markReady.mock.calls[0]?.[1]?.title).toBe('Quiz 11/10/2026');
     expect(JSON.stringify(repository.create.mock.calls)).not.toContain('Nguyen');
+  });
+});
+
+describe('GuestDraftService first batch (RIN-1619)', () => {
+  const rest: UpstreamQuestions = [
+    { question: 'Q3?', type: 'single', options: ['a', 'b'], correctIndex: 0 },
+    brokenQuestion,
+    { question: 'Q4?', type: 'single', options: ['a', 'b', 'c'], correctIndex: 2 },
+  ];
+  const stored = (count: number) => ({
+    status: 'ready' as const,
+    complete: false,
+    completion: null,
+    title: 'Quiz 11/10/2026',
+    questionCount: count,
+  });
+  const context = {
+    draftId: '6730a0000000000000000001',
+    locale: 'en',
+    entry: 'landing',
+    source: 'pdf',
+  };
+
+  it('stores a partial first batch as playable, keeps the API draft, sends one first_batch_ready', async () => {
+    const { service, repository, upstream, events } = setup(record());
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({
+        questions_ready: 3,
+        questions: readyQuestions,
+        progress: { processed: 2, total: 4, percent: 50 },
+      }),
+    });
+
+    const result = await service.status(TOKEN, IP);
+
+    expect(result).toEqual({
+      ok: true,
+      draft: {
+        status: 'ready',
+        progressPercent: 50,
+        title: 'Quiz 11/10/2026',
+        questionCount: 2,
+        complete: false,
+        completion: null,
+        failureReason: null,
+      },
+    });
+    expect(repository.storeFirstBatch).toHaveBeenCalledWith('6730a0000000000000000001', {
+      title: 'Quiz 11/10/2026',
+      questions: [
+        { question: 'Q1?', options: ['a', 'b'], type: 'single', correctIndex: 1 },
+        { question: 'Q2?', options: ['a', 'b', 'c'], type: 'multiple', correctIndexes: [0, 2] },
+      ],
+    });
+    expect(upstream.remove).not.toHaveBeenCalled();
+    expect(events.firstBatchReady).toHaveBeenCalledExactlyOnceWith(context, 8000);
+    expect(events.ready).not.toHaveBeenCalled();
+  });
+
+  it('keeps reporting progress while the API has no readable question yet', async () => {
+    const { service, repository } = setup(record());
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { status: 'processing', complete: false, completion: null },
+    });
+    expect(repository.storeFirstBatch).not.toHaveBeenCalled();
+  });
+
+  it('waits when the first batch holds no usable question', async () => {
+    const { service, repository, upstream, events } = setup(record());
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ questions_ready: 1, questions: [brokenQuestion] }),
+    });
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { status: 'processing' },
+    });
+    expect(repository.storeFirstBatch).not.toHaveBeenCalled();
+    expect(events.firstBatchReady).not.toHaveBeenCalled();
+  });
+
+  it('a poll that loses the first-batch race answers what was stored and sends nothing', async () => {
+    const { service, repository, upstream, events } = setup(record());
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ questions_ready: 3, questions: readyQuestions }),
+    });
+    repository.storeFirstBatch.mockResolvedValue(false);
+    repository.findByTokenHash
+      .mockResolvedValueOnce(record())
+      .mockResolvedValueOnce(record(stored(2)));
+
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { questionCount: 2, complete: false },
+    });
+    expect(events.firstBatchReady).not.toHaveBeenCalled();
+  });
+
+  it('keeps polling an incomplete draft and answers its stored view meanwhile', async () => {
+    const { service, repository, upstream } = setup(record(stored(2)));
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({
+        questions_ready: 3,
+        questions: readyQuestions,
+        progress: { processed: 3, total: 4, percent: 75 },
+      }),
+    });
+
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { status: 'ready', progressPercent: 75, questionCount: 2, complete: false },
+    });
+    expect(upstream.get).toHaveBeenCalledOnce();
+    expect(repository.storeFirstBatch).not.toHaveBeenCalled();
+    expect(repository.completeDraft).not.toHaveBeenCalled();
+  });
+
+  it('a transient API error on an incomplete draft keeps it playable', async () => {
+    const { service, repository, upstream } = setup(record(stored(2)));
+    upstream.get.mockResolvedValue({ ok: false, status: 503, code: null, meta: null });
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { status: 'ready', complete: false },
+    });
+    expect(repository.completeDraft).not.toHaveBeenCalled();
+  });
+
+  it('on completion appends only the questions beyond the stored ones, then removes the API draft', async () => {
+    const { service, repository, upstream, events } = setup(record(stored(2)));
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({
+        status: 'completed',
+        title: 'Cells',
+        questions_ready: 6,
+        questions: [...readyQuestions, ...rest],
+      }),
+    });
+
+    const result = await service.status(TOKEN, IP);
+
+    expect(repository.completeDraft).toHaveBeenCalledWith('6730a0000000000000000001', {
+      storedCount: 2,
+      questions: [
+        { question: 'Q3?', options: ['a', 'b'], type: 'single', correctIndex: 0 },
+        { question: 'Q4?', options: ['a', 'b', 'c'], type: 'single', correctIndex: 2 },
+      ],
+      title: 'Cells',
+      completion: 'full',
+    });
+    expect(result).toEqual({
+      ok: true,
+      draft: {
+        status: 'ready',
+        progressPercent: 100,
+        title: 'Cells',
+        questionCount: 4,
+        complete: true,
+        completion: 'full',
+        failureReason: null,
+      },
+    });
+    expect(upstream.remove).toHaveBeenCalledWith('api-draft-1');
+    expect(events.ready).toHaveBeenCalledExactlyOnceWith(context);
+    expect(events.firstBatchReady).not.toHaveBeenCalled();
+    expect(repository.markReady).not.toHaveBeenCalled();
+  });
+
+  it('a poll that loses the append race appends nothing more and sends no second ready', async () => {
+    const { service, repository, upstream, events } = setup(record(stored(2)));
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ status: 'completed', questions: [...readyQuestions, ...rest] }),
+    });
+    repository.completeDraft.mockResolvedValue(false);
+    repository.findByTokenHash
+      .mockResolvedValueOnce(record(stored(2)))
+      .mockResolvedValueOnce(record({ status: 'ready', title: 'Cells', questionCount: 4 }));
+
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { questionCount: 4, complete: true },
+    });
+    expect(events.ready).not.toHaveBeenCalled();
+  });
+
+  it('carries the API completion first_batch_only onto the record', async () => {
+    const { service, repository, upstream } = setup(record(stored(2)));
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({
+        status: 'completed',
+        completion: 'first_batch_only',
+        questions: readyQuestions,
+      }),
+    });
+
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { questionCount: 2, complete: true, completion: 'first_batch_only' },
+    });
+    expect(repository.completeDraft).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ questions: [], completion: 'first_batch_only' }),
+    );
+  });
+
+  it.each([
+    [
+      'failed',
+      {
+        ok: true as const,
+        draft: upstreamDraft({ status: 'failed', failure_reason: 'extract_failed' }),
+      },
+    ],
+    ['cancelled', { ok: true as const, draft: upstreamDraft({ status: 'cancelled' }) }],
+    ['expired', { ok: true as const, draft: upstreamDraft({ status: 'expired' }) }],
+    ['404', { ok: false as const, status: 404, code: 'not_found', meta: null }],
+  ])(
+    'an upstream %s after the first batch keeps it: complete, no refund, no failed event',
+    async (_, answer) => {
+      const { service, repository, upstream, limiter, events } = setup(record(stored(2)));
+      upstream.get.mockResolvedValue(answer);
+
+      const result = await service.status(TOKEN, IP);
+
+      expect(result).toEqual({
+        ok: true,
+        draft: {
+          status: 'ready',
+          progressPercent: 100,
+          title: 'Quiz 11/10/2026',
+          questionCount: 2,
+          complete: true,
+          completion: 'first_batch_only',
+          failureReason: null,
+        },
+      });
+      expect(repository.completeDraft).toHaveBeenCalledWith('6730a0000000000000000001', {
+        storedCount: 2,
+        questions: [],
+        completion: 'first_batch_only',
+      });
+      expect(upstream.remove).toHaveBeenCalledWith('api-draft-1');
+      expect(repository.markFailed).not.toHaveBeenCalled();
+      expect(limiter.refundIp).not.toHaveBeenCalled();
+      expect(events.failed).not.toHaveBeenCalled();
+      expect(events.ready).not.toHaveBeenCalled();
+    },
+  );
+
+  it('a direct completion with no partial step is one ready draft with both events', async () => {
+    const { service, repository, upstream, events } = setup(record());
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ status: 'completed', title: 'Cells', questions: readyQuestions }),
+    });
+
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { status: 'ready', complete: true, completion: 'full' },
+    });
+    expect(repository.storeFirstBatch).not.toHaveBeenCalled();
+    expect(repository.completeDraft).not.toHaveBeenCalled();
+    expect(events.firstBatchReady).toHaveBeenCalledExactlyOnceWith(context, 8000);
+    expect(events.ready).toHaveBeenCalledOnce();
+    expect(events.firstBatchReady.mock.invocationCallOrder[0]).toBeLessThan(
+      events.ready.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('a direct first_batch_only completion stores that completion', async () => {
+    const { service, repository, upstream } = setup(record());
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({
+        status: 'completed',
+        completion: 'first_batch_only',
+        questions: readyQuestions,
+      }),
+    });
+
+    expect(await service.status(TOKEN, IP)).toMatchObject({
+      ok: true,
+      draft: { completion: 'first_batch_only' },
+    });
+    expect(repository.markReady).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ completion: 'first_batch_only' }),
+    );
+  });
+
+  it('refreshHashed polls by hash; releaseUpstream deletes the API draft', async () => {
+    const { service, repository, upstream } = setup(record(stored(2)));
+    upstream.get.mockResolvedValue({
+      ok: true,
+      draft: upstreamDraft({ status: 'completed', questions: [...readyQuestions, ...rest] }),
+    });
+
+    await service.refreshHashed('f'.repeat(64));
+    expect(repository.findByTokenHash).toHaveBeenCalledWith('f'.repeat(64));
+    expect(repository.completeDraft).toHaveBeenCalledOnce();
+
+    await service.releaseUpstream('api-draft-9');
+    expect(upstream.remove).toHaveBeenLastCalledWith('api-draft-9');
   });
 });

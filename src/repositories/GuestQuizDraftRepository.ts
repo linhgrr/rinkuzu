@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 import type {
   ClaimableGuestDraft,
+  GuestDraftCompleteUpdate,
   GuestDraftQuestion,
   GuestDraftQuiz,
   GuestDraftReadyUpdate,
@@ -19,7 +20,17 @@ import type { QuizQuestionPersistenceRecord } from '@/repositories/types/QuizPer
 
 type StoredGuestDraft = Pick<
   GuestQuizDraftDocument,
-  'apiDraftId' | 'status' | 'title' | 'questions' | 'locale' | 'entry' | 'source' | 'failureReason'
+  | 'apiDraftId'
+  | 'status'
+  | 'title'
+  | 'questions'
+  | 'complete'
+  | 'completion'
+  | 'locale'
+  | 'entry'
+  | 'source'
+  | 'failureReason'
+  | 'createdAt'
 > & { _id: Types.ObjectId };
 
 const RECORD_PROJECTION = {
@@ -27,11 +38,22 @@ const RECORD_PROJECTION = {
   status: 1,
   title: 1,
   questions: 1,
+  complete: 1,
+  completion: 1,
   locale: 1,
   entry: 1,
   source: 1,
   failureReason: 1,
+  createdAt: 1,
 } as const;
+
+/** A ready draft is complete unless it was stored with only its first batch (RIN-1619). */
+function completionOf(
+  doc: Pick<GuestQuizDraftDocument, 'status' | 'complete' | 'completion'>,
+): Pick<GuestDraftRecord, 'complete' | 'completion'> {
+  const complete = doc.status === 'ready' && doc.complete !== false;
+  return { complete, completion: complete ? (doc.completion ?? 'full') : null };
+}
 
 function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
   return {
@@ -40,14 +62,16 @@ function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
     status: doc.status,
     title: doc.title ?? null,
     questionCount: doc.questions.length,
+    ...completionOf(doc),
     locale: doc.locale,
     entry: doc.entry,
     source: doc.source ?? 'pdf',
     failureReason: doc.failureReason ?? null,
+    createdAt: doc.createdAt,
   };
 }
 
-type StoredReadyDraft = {
+type StoredReadyDraft = Pick<GuestQuizDraftDocument, 'status' | 'complete' | 'completion'> & {
   _id: Types.ObjectId;
   title?: string;
   questions: QuizQuestionPersistenceRecord[];
@@ -55,7 +79,7 @@ type StoredReadyDraft = {
 
 type StoredClaimableDraft = Pick<
   GuestQuizDraftDocument,
-  'apiDraftId' | 'title' | 'locale' | 'entry' | 'source'
+  'apiDraftId' | 'title' | 'locale' | 'entry' | 'source' | 'status' | 'complete'
 > & { _id: Types.ObjectId; questions: QuizQuestionDocument[] };
 
 /** Only the fields a guest question has: no subdocument `_id`, no images. */
@@ -92,7 +116,7 @@ export class GuestQuizDraftRepository
     await connectDB();
     const doc = await GuestQuizDraftModel.findOne(
       { tokenHash, status: 'ready' },
-      { title: 1, questions: 1 },
+      { status: 1, title: 1, questions: 1, complete: 1, completion: 1 },
     )
       .lean<StoredReadyDraft>()
       .exec();
@@ -104,6 +128,7 @@ export class GuestQuizDraftRepository
       questions: doc.questions.map((question, index) =>
         QuizPersistenceMapper.toQuestionEntity(question, index),
       ),
+      ...completionOf(doc),
     };
   }
 
@@ -112,7 +137,42 @@ export class GuestQuizDraftRepository
       status: 'ready',
       title: update.title,
       questions: update.questions,
+      complete: true,
+      completion: update.completion ?? 'full',
     });
+  }
+
+  async storeFirstBatch(id: string, update: GuestDraftReadyUpdate): Promise<boolean> {
+    return this.transition(id, {
+      status: 'ready',
+      title: update.title,
+      questions: update.questions,
+      complete: false,
+    });
+  }
+
+  async completeDraft(id: string, update: GuestDraftCompleteUpdate): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) return false;
+    await connectDB();
+    // Guarded on the stored count: of two polls that saw the same first batch, one appends.
+    const result = await GuestQuizDraftModel.updateOne(
+      {
+        _id: new Types.ObjectId(id),
+        status: 'ready',
+        complete: false,
+        questions: { $size: update.storedCount },
+      },
+      {
+        $push: { questions: { $each: update.questions } },
+        $set: {
+          complete: true,
+          completion: update.completion,
+          ...(update.title === undefined ? {} : { title: update.title }),
+        },
+      },
+      { runValidators: true },
+    );
+    return result.modifiedCount === 1;
   }
 
   async markFailed(id: string, failureReason: string): Promise<boolean> {
@@ -125,7 +185,16 @@ export class GuestQuizDraftRepository
     // The TTL monitor runs about once a minute: `expiresAt` is checked here too.
     const docs = await GuestQuizDraftModel.find(
       { tokenHash: { $in: [...tokenHashes] }, status: 'ready', expiresAt: { $gt: now } },
-      { apiDraftId: 1, title: 1, questions: 1, locale: 1, entry: 1, source: 1 },
+      {
+        apiDraftId: 1,
+        title: 1,
+        questions: 1,
+        locale: 1,
+        entry: 1,
+        source: 1,
+        status: 1,
+        complete: 1,
+      },
     )
       // Newest first, so the claim's first slug is the draft the guest played (RIN-1485).
       .sort({ _id: -1 })
@@ -139,6 +208,7 @@ export class GuestQuizDraftRepository
       locale: doc.locale,
       entry: doc.entry,
       source: doc.source ?? 'pdf',
+      complete: completionOf(doc).complete,
     }));
   }
 

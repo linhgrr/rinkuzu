@@ -18,6 +18,7 @@ const draft: ClaimableGuestDraft = {
   locale: 'vi',
   entry: 'landing',
   source: 'pdf',
+  complete: true,
 };
 
 function setup(found: ClaimableGuestDraft[] = [draft]) {
@@ -33,15 +34,20 @@ function setup(found: ClaimableGuestDraft[] = [draft]) {
   };
   const guestAttempts = { claimHashed: vi.fn(async () => ['attempt-1']) };
   const events = { claimed: vi.fn(async () => undefined) };
+  const refresher = {
+    refreshHashed: vi.fn(async (_tokenHash: string) => undefined),
+    releaseUpstream: vi.fn(async (_apiDraftId: string) => undefined),
+  };
   const service = new GuestDraftClaimService(
     drafts,
     attempts,
     quizzes,
     guestAttempts,
     events,
+    refresher,
     () => NOW,
   );
-  return { service, drafts, attempts, quizzes, guestAttempts, events };
+  return { service, drafts, attempts, quizzes, guestAttempts, events, refresher };
 }
 
 describe('GuestDraftClaimService (RIN-1447)', () => {
@@ -152,5 +158,69 @@ describe('GuestDraftClaimService (RIN-1447)', () => {
 
     await expect(service.claimHashed('user-1', [])).resolves.toEqual([]);
     expect(drafts.findClaimable).not.toHaveBeenCalled();
+  });
+});
+
+describe('GuestDraftClaimService incomplete drafts (RIN-1619)', () => {
+  const firstBatch: ClaimableGuestDraft = {
+    ...draft,
+    questions: Array.from({ length: 5 }, (_, index) => ({
+      question: `Q${index + 1}?`,
+      options: ['a', 'b'],
+      type: 'single' as const,
+      correctIndex: 0,
+    })),
+    complete: false,
+  };
+
+  it('polls every token once, then claims a still-incomplete draft with all it holds', async () => {
+    const { service, drafts, quizzes, refresher } = setup([firstBatch]);
+
+    await expect(service.claim('user-1', [TOKEN, OTHER])).resolves.toEqual(['fake-biology-quiz']);
+
+    expect(refresher.refreshHashed.mock.calls).toEqual([
+      [hashGuestClaimToken(TOKEN)],
+      [hashGuestClaimToken(OTHER)],
+    ]);
+    expect(drafts.findClaimable).toHaveBeenCalledTimes(2);
+    expect(refresher.refreshHashed.mock.invocationCallOrder[0]).toBeLessThan(
+      drafts.findClaimable.mock.invocationCallOrder[1] ?? 0,
+    );
+    expect(quizzes.createQuizFromDraft).toHaveBeenCalledWith('user-1', 'api-draft-1', {
+      title: 'Fake biology quiz',
+      questions: firstBatch.questions,
+      submitToPremium: false,
+    });
+    expect(refresher.releaseUpstream).toHaveBeenCalledExactlyOnceWith('api-draft-1');
+    expect(drafts.deleteClaimed).toHaveBeenCalledWith(firstBatch.id);
+  });
+
+  it('claims the full set when the poll completed the draft, and releases nothing', async () => {
+    const full: ClaimableGuestDraft = {
+      ...firstBatch,
+      questions: [...firstBatch.questions, ...firstBatch.questions],
+      complete: true,
+    };
+    const { service, drafts, quizzes, refresher } = setup([firstBatch]);
+    drafts.findClaimable.mockResolvedValueOnce([firstBatch]).mockResolvedValueOnce([full]);
+
+    await service.claim('user-1', [TOKEN]);
+
+    expect(quizzes.createQuizFromDraft).toHaveBeenCalledWith(
+      'user-1',
+      'api-draft-1',
+      expect.objectContaining({ questions: full.questions }),
+    );
+    expect(refresher.releaseUpstream).not.toHaveBeenCalled();
+  });
+
+  it('never polls when every claimable draft is complete', async () => {
+    const { service, drafts, refresher } = setup();
+
+    await service.claim('user-1', [TOKEN]);
+
+    expect(refresher.refreshHashed).not.toHaveBeenCalled();
+    expect(refresher.releaseUpstream).not.toHaveBeenCalled();
+    expect(drafts.findClaimable).toHaveBeenCalledOnce();
   });
 });

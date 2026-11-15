@@ -1,7 +1,10 @@
 import 'server-only';
 
 import type { IGuestDraftAttemptService } from '@/interfaces/services/IGuestDraftAttemptService';
-import type { IGuestDraftService } from '@/interfaces/services/IGuestDraftService';
+import type {
+  GuestDraftRefresher,
+  IGuestDraftService,
+} from '@/interfaces/services/IGuestDraftService';
 import { createGuestDraftEvents } from '@/lib/guest-draft/events';
 import { createGuestDraftLimiter } from '@/lib/guest-draft/limits';
 import { createGuestDraftUpstream } from '@/lib/guest-draft/upstream';
@@ -10,9 +13,9 @@ import { QuizAttemptProgressRepository } from '@/repositories/QuizAttemptProgres
 import { GuestDraftAttemptService } from '@/services/quiz/GuestDraftAttemptService';
 import { GuestDraftService } from '@/services/quiz/GuestDraftService';
 
-let service: IGuestDraftService | undefined;
+let service: GuestDraftService | undefined;
 
-export function getGuestDraftService(): IGuestDraftService {
+function guestDraftService(): GuestDraftService {
   service ??= new GuestDraftService(
     new GuestQuizDraftRepository(),
     createGuestDraftLimiter(),
@@ -20,6 +23,15 @@ export function getGuestDraftService(): IGuestDraftService {
     createGuestDraftEvents(),
   );
   return service;
+}
+
+export function getGuestDraftService(): IGuestDraftService {
+  return guestDraftService();
+}
+
+/** The same service, as the sign-up claim's one poll before it claims (RIN-1619). */
+export function getGuestDraftRefresher(): GuestDraftRefresher {
+  return guestDraftService();
 }
 
 let attemptService: IGuestDraftAttemptService | undefined;

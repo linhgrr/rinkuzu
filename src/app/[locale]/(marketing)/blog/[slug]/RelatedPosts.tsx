@@ -1,4 +1,4 @@
-import { Link } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import Image from 'next/image';
 import type { Locale } from '@/i18n/config';
 import type { BlogPost } from '@/lib/blog/content';
@@ -27,7 +27,7 @@ export function RelatedPosts({ posts, locale }: Props) {
         {posts.map((post, index) => {
           const spansRow = index === posts.length - 1 && posts.length % 2 === 1;
           return (
-            <Link
+            <IntentPrefetchLink
               key={post.slug}
               href={`/blog/${post.slug}`}
               className={`group block min-w-0 rounded-3xl overflow-hidden border border-neutral-200 transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-xl${spansRow ? ' md:col-span-2' : ''}`}
@@ -64,7 +64,7 @@ export function RelatedPosts({ posts, locale }: Props) {
                   {isVi ? 'Đọc bài viết →' : 'Read article →'}
                 </span>
               </div>
-            </Link>
+            </IntentPrefetchLink>
           );
         })}
       </div>

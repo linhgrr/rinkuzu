@@ -16,6 +16,11 @@ vi.mock('next-intl/server', () => ({
     ),
 }));
 
+vi.mock('@/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/i18n/navigation')>()),
+  useRouter: () => ({ prefetch: vi.fn() }),
+}));
+
 vi.mock('@/features/quiz/components/ReportQuizPageLink', () => ({
   ReportQuizPageLink: (props: {
     slug: string;

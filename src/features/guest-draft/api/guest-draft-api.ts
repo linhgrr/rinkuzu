@@ -29,6 +29,7 @@ function toProgress(dto: GuestDraftStatusDto): GuestDraftProgress {
     percent: Math.max(0, Math.min(100, Math.round(dto.progressPercent))),
     questionCount: dto.questionCount,
     title: dto.title,
+    complete: dto.complete,
   };
 }
 
@@ -120,15 +121,21 @@ export async function fetchGuestDraftProgress(token: string): Promise<GuestDraft
   return toProgress(dto);
 }
 
+/** A ready guest draft for the player; `complete` false while more questions may come (RIN-1620). */
+export interface GuestDraftPlay {
+  quiz: QuizPlayViewModel;
+  complete: boolean;
+}
+
 /** The questions of a ready guest draft as the player's quiz (RIN-1448). 404: gone or not ready. */
-export async function fetchGuestDraftPlay(token: string): Promise<QuizPlayViewModel> {
+export async function fetchGuestDraftPlay(token: string): Promise<GuestDraftPlay> {
   const dto = await fetchApiData<GuestDraftPlayDto>('/api/guest-drafts/play', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),
   });
   const now = new Date().toISOString();
-  return {
+  const quiz: QuizPlayViewModel = {
     id: GUEST_DRAFT_PLAY_SLUG,
     slug: GUEST_DRAFT_PLAY_SLUG,
     title: dto.title,
@@ -140,6 +147,7 @@ export async function fetchGuestDraftPlay(token: string): Promise<QuizPlayViewMo
     updatedAt: now,
     questions: dto.questions,
   };
+  return { quiz, complete: dto.complete };
 }
 
 /** `POST /api/guest-drafts/attempt`: scored on the server, stored as a RIN-912 guest attempt. */

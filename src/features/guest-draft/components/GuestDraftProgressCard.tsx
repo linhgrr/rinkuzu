@@ -32,19 +32,29 @@ function statusLine(
   props: GuestDraftProgressCardProps,
 ): string {
   const count = props.progress?.questionCount ?? 0;
-  if (props.phase === 'ready') return t('ready', { count });
+  if (props.phase === 'ready') {
+    // A first batch never states a total: more are on the way (RIN-1620, spec state 1).
+    return props.progress?.complete === false
+      ? t('readyFirstBatch', { count })
+      : t('ready', { count });
+  }
   if (props.phase === 'uploading') return props.source === 'text' ? t('sending') : t('uploading');
   if (props.pollErrors > 0) return t('pollError');
   return t('processing', { percent: props.progress?.percent ?? 0, count });
 }
 
-/** Upload and processing progress of a guest draft, then "Quiz ready" (RIN-1448 AC4). */
+/**
+ * Upload and processing progress of a guest draft, then "Quiz ready" (RIN-1448 AC4), or
+ * "First 5 questions ready" when the player opens on the first batch (RIN-1620).
+ */
 export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
   const { phase, label, meta, progress, onCancel, onPlayNow } = props;
   const t = useTranslations('guestDraft.progress');
   const playRef = useRef<HTMLButtonElement>(null);
   const ready = phase === 'ready';
   const percent = ready ? 100 : (progress?.percent ?? 0);
+  // A full bar reads "all done"; a first-batch hand-off shows for under a second without one.
+  const showBar = !(ready && progress?.complete === false);
 
   useEffect(() => {
     if (ready) playRef.current?.focus();
@@ -70,16 +80,18 @@ export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
           {meta ? <p className="text-xs text-neutral-500">{meta}</p> : null}
         </div>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
-        <div
-          data-testid="guest-draft-progress-fill"
-          className={cn(
-            'h-full rounded-full bg-brand-trust transition-[width] duration-500',
-            phase === 'uploading' && 'w-2/5 motion-safe:animate-pulse',
-          )}
-          style={phase === 'uploading' ? undefined : { width: `${percent}%` }}
-        />
-      </div>
+      {showBar ? (
+        <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
+          <div
+            data-testid="guest-draft-progress-fill"
+            className={cn(
+              'h-full rounded-full bg-brand-trust transition-[width] duration-500',
+              phase === 'uploading' && 'w-2/5 motion-safe:animate-pulse',
+            )}
+            style={phase === 'uploading' ? undefined : { width: `${percent}%` }}
+          />
+        </div>
+      ) : null}
       <p role="status" aria-live="polite" className="text-sm text-neutral-600">
         {statusLine(t, props)}
       </p>

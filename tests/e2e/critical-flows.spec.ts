@@ -411,6 +411,8 @@ interface SeededGuestDraft {
 async function seedReadyGuestDraft(
   db: Db,
   token: string = randomBytes(32).toString('base64url'),
+  /** False: only the first batch is stored and more may come (RIN-1619, RIN-1620). */
+  complete = true,
 ): Promise<SeededGuestDraft> {
   const id = new ObjectId();
   const apiDraftId = `e2e-guest-${randomUUID()}`;
@@ -430,6 +432,8 @@ async function seedReadyGuestDraft(
         correctIndex: 0,
       },
     ],
+    complete,
+    ...(complete ? { completion: 'full' } : {}),
     locale: 'en',
     entry: 'landing',
     expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
@@ -1606,6 +1610,58 @@ test.describe('production critical paths', () => {
             .deleteMany({ key: { $in: [...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] } }),
         ]);
         await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
+  test('plays a partial guest draft and takes the rest in without a reload @critical-quiz-guest-draft-partial', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1620: the player opens on the first batch; the rest arrives while the learner plays.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const draft = await seedReadyGuestDraft(fixture.db, undefined, false);
+      try {
+        await storeGuestDraftToken(page, draft.token);
+        await page.goto('/en/try/pdf/play');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+        await expect(page.getByText('More questions are being made.')).toBeVisible();
+        await page.evaluate(() => {
+          document.documentElement.dataset['noReload'] = '1';
+        });
+        await chooseOption(page, 'Mitochondria');
+
+        await fixture.db
+          .collection<{
+            questions: object[];
+            complete: boolean;
+            completion: string;
+          }>('guestquizdrafts')
+          .updateOne(
+            { _id: draft.id },
+            {
+              $set: { complete: true, completion: 'full' },
+              $push: {
+                questions: {
+                  _id: new ObjectId(),
+                  question: 'Which organelle holds the genome in this fake guest draft?',
+                  options: ['Nucleus', 'Golgi'],
+                  type: 'single',
+                  correctIndex: 0,
+                },
+              },
+            },
+          );
+
+        // The next 2 s check finds the rest: the pending line goes, the page is not reloaded
+        // and the question the learner is on, with its answer, stays.
+        await expect(page.getByText('More questions are being made.')).toBeHidden({
+          timeout: 20_000,
+        });
+        await expect(page.locator('html')).toHaveAttribute('data-no-reload', '1');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+      } finally {
+        await cleanupGuestDraft(fixture.db, draft);
       }
     });
   });

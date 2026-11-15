@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { OptionImage, QuestionImage } from '@/components/ui/ImageDisplay';
 import { QuestionContent } from '@/components/ui/QuestionContent';
+import { QuestionTotal } from '@/features/quiz/components/player/QuestionTotal';
 import { useHydrated } from '@/hooks/useHydrated';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
@@ -147,7 +148,7 @@ export function QuizQuestionCard({
             {t('previous')}
           </Button>
           <div className="whitespace-nowrap text-sm text-neutral-600">
-            {questionIndex + 1} / {questionCount}
+            {questionIndex + 1} / <QuestionTotal count={questionCount} />
           </div>
           {questionIndex === questionCount - 1 ? (
             <Button onClick={onSubmit} loading={submitting}>

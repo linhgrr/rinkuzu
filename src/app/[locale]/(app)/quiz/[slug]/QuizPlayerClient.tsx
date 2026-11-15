@@ -79,6 +79,57 @@ type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
   questionIndexMap: number[];
 };
 
+/**
+ * Questions stored after the round opened, e.g. the rest of a guest draft (RIN-1620), with
+ * their options shuffled and their index in the whole quiz. Every call shuffles afresh; the
+ * reducer keeps only the ones the round does not hold yet.
+ */
+function shuffledAppendix(
+  quiz: QuizPlayViewModel,
+  questions: QuizPlayViewModel['questions'],
+  random: () => number,
+): ShuffledQuizQuestion[] {
+  const { quiz: appendix } = createQuizPlayerData({ ...quiz, questions }, debugLog, random);
+  const offset = quiz.questions.length;
+  return appendix.questions.map((question) => ({
+    ...question,
+    originalQuestionIndex: question.originalQuestionIndex + offset,
+  }));
+}
+
+/**
+ * The round holds questions 0..n-1 of the quiz, so the new ones are those from n on. They go
+ * to the end: the current question, the answers and the scroll position stay (RIN-1620).
+ */
+function appendQuestions(
+  state: QuizPlayerState,
+  questions: ShuffledQuizQuestion[],
+): QuizPlayerState {
+  const quiz = state.quiz;
+  if (!quiz) return state;
+  const fresh = questions
+    .filter((question) => question.originalQuestionIndex >= quiz.questions.length)
+    .sort((a, b) => a.originalQuestionIndex - b.originalQuestionIndex);
+  if (fresh.length === 0) return state;
+  const allQuestions = [...quiz.questions, ...fresh];
+  return {
+    ...state,
+    quiz: {
+      ...quiz,
+      questions: allQuestions,
+      questionCount: allQuestions.length,
+      questionIndexMap: [
+        ...quiz.questionIndexMap,
+        ...fresh.map((question) => question.originalQuestionIndex),
+      ],
+    },
+    userAnswers: [
+      ...state.userAnswers,
+      ...fresh.map((question): QuizAnswer => (question.type === 'multiple' ? [] : -1)),
+    ],
+  };
+}
+
 function shuffleArray<T>(array: T[], random: () => number): T[] {
   const shuffled = [...array];
 
@@ -407,7 +458,8 @@ type QuizPlayerAction =
   | { type: 'selectAnswer'; answerIndex: number }
   | { type: 'goToNextQuestion' }
   | { type: 'goToPreviousQuestion' }
-  | { type: 'setCurrentQuestionIndex'; value: number };
+  | { type: 'setCurrentQuestionIndex'; value: number }
+  | { type: 'appendQuestions'; questions: ShuffledQuizQuestion[] };
 
 const initialQuizPlayerState: QuizPlayerState = {
   quiz: null,
@@ -426,6 +478,14 @@ const initialQuizPlayerState: QuizPlayerState = {
 };
 
 function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): QuizPlayerState {
+  if (action.type === 'appendQuestions') return appendQuestions(state, action.questions);
+  return playerStepReducer(state, action);
+}
+
+function playerStepReducer(
+  state: QuizPlayerState,
+  action: Exclude<QuizPlayerAction, { type: 'appendQuestions' }>,
+): QuizPlayerState {
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.value };
@@ -728,7 +788,33 @@ interface QuizPlayerClientProps {
    * attempt route, saves no progress, shows `notice` above the question and no
    * report/discussion (a draft has no quiz page).
    */
-  guestDraft?: { submitAttempt: QuizAttemptSubmitter; notice: ReactNode };
+  guestDraft?: {
+    submitAttempt: QuizAttemptSubmitter;
+    notice: ReactNode;
+    /** Questions stored after `initialQuiz`, appended to the running round (RIN-1620). */
+    moreQuestions?: QuizPlayViewModel['questions'];
+  };
+}
+
+/**
+ * Appends questions that arrive while the round is running (RIN-1620). `initialQuiz` stays
+ * the same object, so the load effect never restarts the round.
+ */
+function useAppendedQuestions(
+  initialQuiz: QuizPlayViewModel | null,
+  moreQuestions: QuizPlayViewModel['questions'] | undefined,
+  dispatch: (action: QuizPlayerAction) => void,
+) {
+  useEffect(() => {
+    if (!initialQuiz || !moreQuestions || moreQuestions.length === 0) return;
+    void preloadMathRenderer(
+      moreQuestions.flatMap((question) => [question.question, ...question.options]),
+    );
+    dispatch({
+      type: 'appendQuestions',
+      questions: shuffledAppendix(initialQuiz, moreQuestions, Math.random),
+    });
+  }, [initialQuiz, moreQuestions, dispatch]);
 }
 
 /**
@@ -823,6 +909,7 @@ export default function QuizPlayerClient({
   );
   const [state, dispatch] = useReducer(quizPlayerReducer, firstStart, startedPlayerState);
   const pendingFirstStart = useRef(firstStart);
+  useAppendedQuestions(initialQuiz, guestDraft?.moreQuestions, dispatch);
 
   const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
     slug,

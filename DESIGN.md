@@ -55,6 +55,9 @@ All layout containers, cards, padding, margins, gaps, button heights, and icon b
     tokens. Panel radius `20px` is the named `radius-panel` token.
   - Fractional or non-grid artwork geometry is allowed when it preserves crop, aspect ratio, transform,
     or optical alignment. Register recurring exceptions in `quality/design-system-policy.json`.
+- **Spacing rules and the pre-PR checklist** are in [4.4 Spacing Rules](#44-spacing-rules) and
+  [4.5 Before You Open a UI PR](#45-before-you-open-a-ui-pr). They hold the numbers that design review,
+  QA and `ops/local-ci/ui-audit.mjs` check against.
 
 #### App-Wide Design System Primitive Tokens:
 
@@ -585,6 +588,94 @@ Usage:
 
 ---
 
+## 4.4 Spacing Rules
+
+These rules come from the 2026-11-11 spacing audit (RIN-1553). Cramped or uneven spacing that breaks
+one of them is a defect, not a matter of taste: design review and QA report it as a failure.
+
+1. **Scale.** Layout gaps, padding and margins use only 4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48 / 64 px
+   (Tailwind steps `1 2 3 4 5 6 8 10 12 16`). Half steps (`0.5 1.5 2.5 3.5`) are allowed inside a
+   control (icon gap, badge, chip), never between blocks. No `[Npx]` class where a step exists.
+2. **Proximity.** The gap inside a group is at most half the gap between groups.
+
+   | Relation                        | Mobile (375) | Desktop (1024+) |
+   | ------------------------------- | -----------: | --------------: |
+   | Title to its own content        |      8–12 px |         8–12 px |
+   | Block to block inside a card    |     12–16 px |        12–16 px |
+   | Text block to the control below |      ≥ 16 px |         ≥ 16 px |
+   | Card to card                    |        16 px |           24 px |
+   | Section to section              |        32 px |           48 px |
+
+   A heading sits closer to the content it introduces than to the content above it.
+
+3. **Card padding.** One value per card kind:
+
+   | Card kind                  | Padding      |
+   | -------------------------- | ------------ |
+   | Quiz card, list card, stat | `p-4`        |
+   | Panel or section card      | `p-4 sm:p-5` |
+   | Hero card                  | `p-6`        |
+
+   A card never nests a card with the same padding at 375 px: the outer card drops to `p-3` or loses its
+   border.
+
+4. **Gutters.** The page side gutter is 16 px at 375 px, 24 px from 640 px and 32 px from 1024 px. Text
+   is never closer than 16 px to the viewport edge. Nothing scrolls horizontally at 320 px.
+5. **Targets.** Every link, button, chip, pill and icon button has a hit area of at least 44 × 44 px
+   (`min-h-11` / `size-11`). The visual can be smaller when the hit area is padded
+   (`inline-flex min-h-11 items-center`). Adjacent targets are at least 8 px apart (`gap-2`). Stacked nav
+   rows are 44 px tall with `gap-1` or more, never `gap-0`. Links inside a sentence are exempt.
+6. **Buttons.** Label padding `px-4` for `sm`, `px-[18px]` for `md` (the named optical token) and `px-8`
+   for hero CTAs. Icon-to-label gap is 8 px (`gap-2`) at every size, never `gap-[10px]`. Labels fit on one
+   line at 375 px in vi and en; shorten the label rather than let it wrap.
+7. **Ratchet.** `baseline["arbitrary-layout-spacing"]` in `quality/design-system-policy.json` only goes
+   down (`npm run check:design-system`): a PR that removes debt lowers it to the new count. A new `[Npx]` spacing or sizing class needs an `exceptions` row
+   in that file with a `rationale`. Landing and auth (`excludedPaths`) are Figma-locked and outside the
+   count; changing their offsets needs a Founder-approved issue.
+8. **Bottom-aligned actions keep a floor.** When `mt-auto`, `justify-between` or `min-h-*` pushes an
+   action to the bottom of a card, the action sits in a wrapper with `pt-4` (or `mt-4`), so content and
+   action are never closer than 16 px however long the copy is. Cards of one kind in one grid row share
+   their padding and gap classes. Never put `min-h-*` on a card only to equalise heights: the grid row
+   stretches the cards (`h-full`), and the floor wrapper keeps the gap.
+
+   ```tsx
+   <li className="flex h-full flex-col gap-3 p-4 sm:p-5">
+     <h3>…</h3>
+     <p>…</p>
+     <div className="mt-auto pt-4">
+       <Button>…</Button>
+     </div>
+   </li>
+   ```
+
+States never move the layout: no shift or scale on hover, focus rings are not clipped by
+`overflow: hidden`, and skeletons have the size of the content they stand in for.
+The hover lift on `.btn-primary`, `.feature-card`, `.card-interactive` and `.upload-dropzone` in
+`globals.css` predates this rule and moves to a colour-and-shadow hover in its own UI change.
+
+---
+
+## 4.5 Before You Open a UI PR
+
+Check your own 375 px and 1440 px screenshots (and 320 px for overflow) against 4.4, then measure them
+with `node ops/local-ci/ui-audit.mjs --base <url> --paths /en/x,/vi/x` from the ops repo. Put the fail and
+warn counts and "spacing checklist: ok" (or what you left and why) in the PR body.
+
+- [ ] Every gap, padding and margin is a scale step (rule 1); no new `[Npx]` spacing class (rule 7).
+- [ ] Text to the control after it ≥ 16 px; group gaps clearly larger than gaps inside a group (rule 2).
+- [ ] No large empty gap inside a card that is not between groups (rules 2 and 8).
+- [ ] Cards of one kind have the same padding and inner gaps; ≥ 16 px padding at 375 px (rule 3).
+- [ ] Cards in one row have the same height with their actions aligned at the bottom, through `h-full`
+      and a `mt-auto pt-4` action wrapper, not `min-h-*` (rule 8).
+- [ ] Inside a card, title, text and actions share one left edge.
+- [ ] Side gutter ≥ 16 px at 375 px; no horizontal scroll at 320 px (rule 4).
+- [ ] Targets ≥ 44 × 44 px with ≥ 8 px between them (rule 5).
+- [ ] Button labels fit on one line at 375 px in vi and en (rule 6).
+- [ ] Body text line-height 1.4–1.5, lines at most about 75–90 characters on desktop.
+- [ ] Hover, focus and loading states do not move the layout.
+
+---
+
 ## 5. Elevation & Borders
 
 ## 5.1 Shadow Tokens
@@ -715,7 +806,7 @@ Use these tiers consistently across the product:
 
 | Tier   |      Height |   Padding | Usage                                                  |
 | ------ | ----------: | --------: | ------------------------------------------------------ |
-| `sm`   |        36px | 0 12-14px | Dense table actions, pagination, compact modal actions |
+| `sm`   |        36px |    0 16px | Dense table actions, pagination, compact modal actions |
 | `md`   |        44px |    0 18px | Default button size across app and admin               |
 | `lg`   |        52px | 0 24-32px | Hero actions, primary flow CTAs                        |
 | `icon` | 44px square |         0 | Icon-only buttons with full touch target               |
@@ -723,6 +814,9 @@ Use these tiers consistently across the product:
 Rules:
 
 - Do not create custom one-off button heights unless the interaction is truly special-purpose.
+- Padding and icon gap follow [4.4 rule 6](#44-spacing-rules). `sm` is 36 px visually; give it a 44 px hit
+  area (rule 5) wherever it is not inside a dense table row. `Button` `sm` still uses `px-3` and moves to
+  `px-4` with the next change to that component.
 - Table actions should prefer `sm`.
 - Modal footer buttons and toolbar actions should prefer `md`.
 - Marketing hero actions may use `lg` or pill variants, but should still map back to these heights.
@@ -827,6 +921,15 @@ Guidelines:
   padding: var(--space-6);
 }
 ```
+
+Padding is one value per card kind ([4.4 rule 3](#44-spacing-rules)): quiz, list and stat cards `p-4`,
+panel and section cards `p-4 sm:p-5`, hero cards `p-6`. A card whose action sits at the bottom keeps a
+16 px floor above it ([4.4 rule 8](#44-spacing-rules)).
+
+The `.card` and `.feature-card` classes in `globals.css` (shown here as they are today) predate 4.4:
+they use `space-6` padding and the feature card lifts on hover. New components take the padding of
+their kind from rule 3 and change only colour and shadow on hover; the two classes are brought in line in
+their own UI change.
 
 ### Interactive Feature Card
 

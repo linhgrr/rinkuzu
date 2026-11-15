@@ -149,9 +149,8 @@ test.describe('signed-in paste text (RIN-1542)', () => {
       await expect(
         list.getByRole('heading', { level: 3, name: enCreate.untitledQuiz }),
       ).toBeVisible({ timeout: 20_000 });
-      await expect(
-        list.getByRole('button', { name: enCreate.processingDraft, exact: true }),
-      ).toBeDisabled();
+      // A processing draft shows its status word, not a disabled button (RIN-1733).
+      await expect(list.getByText(enCreate.draftStatus.processing, { exact: true })).toBeVisible();
     });
   });
 

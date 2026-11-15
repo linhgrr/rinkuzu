@@ -28,6 +28,18 @@ vi.mock('next-intl', () => ({
   useTranslations: () => translate,
 }));
 
+interface FakeDraft {
+  id: string;
+  title: string;
+  sourceType: string;
+  status: string;
+  questionCount: number;
+  updatedAt: string;
+  progress?: { processed: number; total: number; percent: number };
+  error?: string | null;
+  errorCode?: string | null;
+}
+
 const swrDrafts = vi.hoisted(() => ({
   current: [
     {
@@ -38,18 +50,28 @@ const swrDrafts = vi.hoisted(() => ({
       questionCount: 2,
       updatedAt: '2026-07-28T00:00:00.000Z',
     },
-  ],
+  ] as FakeDraft[],
 }));
 
 const swrError = vi.hoisted(() => ({ current: null as Error | null }));
 
+interface SwrOptions {
+  refreshInterval: (latest: FakeDraft[] | undefined) => number;
+  refreshWhenHidden: boolean;
+  revalidateOnFocus: boolean;
+}
+const swrOptions = vi.hoisted(() => ({ current: undefined as SwrOptions | undefined }));
+
 vi.mock('swr', () => ({
-  default: () => ({
-    data: swrDrafts.current,
-    error: swrError.current,
-    isLoading: false,
-    mutate: vi.fn(),
-  }),
+  default: (_key: string, _fetcher: unknown, options: SwrOptions) => {
+    swrOptions.current = options;
+    return {
+      data: swrDrafts.current,
+      error: swrError.current,
+      isLoading: false,
+      mutate: vi.fn(),
+    };
+  },
 }));
 
 // jsdom has no HTMLDialogElement.showModal; the stub keeps the open/title contract.
@@ -72,6 +94,11 @@ vi.mock('@/features/quiz/components/PublicQuizNotice', () => ({
 const routerPush = vi.hoisted(() => vi.fn());
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: routerPush }),
+  Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock('@/lib/quiz/draftApi', () => ({
@@ -83,6 +110,7 @@ vi.mock('@/lib/quiz/draftApi', () => ({
 const LONG_DRAFT_BASE = {
   sourceType: 'pdf',
   questionCount: 0,
+  progress: { processed: 0, total: 1, percent: 0 },
   updatedAt: '2026-07-28T00:00:00.000Z',
 };
 
@@ -215,7 +243,7 @@ describe('CreateQuizHubPage', () => {
     const longTitle = 'A'.repeat(40) + ' ' + 'Chapter '.repeat(10).trim() + ' ' + 'B'.repeat(80);
     const previous = swrDrafts.current;
     swrDrafts.current = [
-      { ...LONG_DRAFT_BASE, id: 'draft-long', title: longTitle, status: 'failed' },
+      { ...LONG_DRAFT_BASE, id: 'draft-long', title: longTitle, status: 'completed' },
       { ...LONG_DRAFT_BASE, id: 'draft-busy', title: longTitle, status: 'processing' },
     ];
     try {
@@ -249,6 +277,114 @@ describe('CreateQuizHubPage', () => {
     } finally {
       swrDrafts.current = previous;
     }
+  });
+
+  describe('draft states (RIN-1733)', () => {
+    const base = { ...LONG_DRAFT_BASE, title: 'Biology notes' };
+
+    function renderWith(draft: Partial<FakeDraft> & { status: string }) {
+      const previous = swrDrafts.current;
+      swrDrafts.current = [{ ...base, id: 'draft-x', ...draft }];
+      try {
+        return render(<CreateQuizHubPage />);
+      } finally {
+        swrDrafts.current = previous;
+      }
+    }
+
+    it('shows processed of total with a progress bar while processing', () => {
+      renderWith({ status: 'processing', progress: { processed: 2, total: 5, percent: 40 } });
+
+      const bar = screen.getByRole('progressbar', { name: 'draftProgress' });
+      expect(bar).toHaveAttribute('aria-valuenow', '2');
+      expect(bar).toHaveAttribute('aria-valuemax', '5');
+      expect(screen.getByText('draftStatus.processing')).toBeInTheDocument();
+      // No disabled "Processing" button any more: the badge and bar carry the state.
+      expect(screen.queryByRole('button', { name: 'continueEditing' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'deleteDraftNamed' })).toBeEnabled();
+    });
+
+    it('shows an indeterminate label and no bar when the total is unknown', () => {
+      renderWith({ status: 'processing', progress: { processed: 0, total: 0, percent: 0 } });
+
+      expect(screen.getByText('draftProgressIndeterminate')).toBeInTheDocument();
+      expect(screen.queryByRole('progressbar')).toBeNull();
+    });
+
+    it('shows a queued draft with its status word and no bar', () => {
+      renderWith({ status: 'queued', progress: { processed: 0, total: 3, percent: 0 } });
+
+      expect(screen.getByText('draftStatus.queued')).toBeInTheDocument();
+      expect(screen.queryByRole('progressbar')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'continueEditing' })).toBeNull();
+    });
+
+    it('makes Continue editing the primary action of a completed draft', () => {
+      renderWith({ status: 'completed' });
+
+      const button = screen.getByRole('button', { name: 'continueEditing' });
+      expect(button).toHaveClass('btn-primary');
+      fireEvent.click(button);
+      expect(routerPush).toHaveBeenCalledWith('/draft/draft-x/edit');
+    });
+
+    it('keeps the other Continue buttons secondary', () => {
+      renderWith({ status: 'drafting' });
+
+      expect(screen.getByRole('button', { name: 'continueEditing' })).toHaveClass('btn-secondary');
+    });
+
+    it('shows a mapped reason and Try again for a failed draft, never the server text', () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      renderWith({
+        status: 'failed',
+        error: 'E11000 duplicate key quiz_drafts',
+        errorCode: 'ocr_request_failed',
+      });
+
+      expect(screen.getByText('errors.api.codes.ocrRequestFailed')).toBeInTheDocument();
+      expect(screen.queryByText(/E11000/)).toBeNull();
+      expect(screen.getByRole('link', { name: 'draftTryAgain' })).toHaveAttribute(
+        'href',
+        '/create/pdf',
+      );
+      expect(screen.queryByRole('button', { name: 'continueEditing' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'deleteDraftNamed' })).toBeEnabled();
+    });
+
+    it('falls back to the generic reason when the failure has no code', () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      renderWith({ status: 'failed', error: 'raw server text', errorCode: null });
+
+      expect(screen.getByText('draftFailedReason')).toBeInTheDocument();
+      expect(screen.queryByText('raw server text')).toBeNull();
+    });
+
+    it.each([
+      ['expired', 'draftExpiredReason'],
+      ['cancelled', 'draftCancelledReason'],
+    ])('offers only Delete for a %s draft, with its reason', (status, reason) => {
+      renderWith({ status });
+
+      expect(screen.getByText(reason)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'continueEditing' })).toBeNull();
+      expect(screen.queryByRole('link', { name: 'draftTryAgain' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'deleteDraftNamed' })).toBeEnabled();
+    });
+
+    it('polls only while a draft is queued or processing, and not in a hidden tab', () => {
+      render(<CreateQuizHubPage />);
+
+      const options = swrOptions.current;
+      if (!options) throw new Error('useSWR got no options');
+      const draft = (status: string): FakeDraft => ({ ...base, id: status, status });
+      expect(options.refreshInterval([draft('queued')])).toBe(30_000);
+      expect(options.refreshInterval([draft('completed'), draft('processing')])).toBe(30_000);
+      expect(options.refreshInterval([draft('completed'), draft('failed')])).toBe(0);
+      expect(options.refreshInterval(undefined)).toBe(0);
+      expect(options.refreshWhenHidden).toBe(false);
+      expect(options.revalidateOnFocus).toBe(true);
+    });
   });
 
   // RIN-1339 (spec RIN-1336 Part 1, AC 3): one short line under the method cards.

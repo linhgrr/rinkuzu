@@ -1,27 +1,22 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import {
-  HiOutlineArrowRight,
-  HiOutlineClipboardList,
-  HiOutlineClock,
-  HiOutlineCloudUpload,
-  HiOutlineDocumentText,
-  HiOutlinePencilAlt,
-  HiOutlineTrash,
-} from 'react-icons/hi';
+import { HiOutlineArrowRight, HiOutlineClipboardList, HiOutlineCloudUpload } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useRouter } from '@/i18n/navigation';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
 import { createManualQuizDraft, deleteQuizDraft, listQuizDrafts } from '@/lib/quiz/draftApi';
+import { DRAFT_SYNC_INTERVAL_MS } from '@/lib/quiz/draftSyncInterval';
+import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { ROUTES } from '@/shared/constants/routes';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
+import { DraftRow, isDraftActive } from '@/features/quiz/components/create/DraftRow';
 import { QUIZ_DRAFTS_HUB_KEY } from '@/features/quiz/components/create/quiz-drafts-hub-key';
 
 /**
@@ -46,7 +41,15 @@ export function CreateQuizHubPage() {
     error,
     isLoading,
     mutate,
-  } = useSWR(QUIZ_DRAFTS_HUB_KEY, () => listQuizDrafts());
+  } = useSWR(QUIZ_DRAFTS_HUB_KEY, () => listQuizDrafts(), {
+    // Poll only while a draft is queued or processing, and never in a hidden tab (RIN-1733).
+    refreshInterval: (latest) =>
+      latest?.some((draft) => isDraftActive(draft.status)) ? DRAFT_SYNC_INTERVAL_MS : 0,
+    refreshWhenHidden: false,
+    revalidateOnFocus: true,
+  });
+  const [readyAnnouncement, setReadyAnnouncement] = useState('');
+  const previousStatuses = useRef<ReadonlyMap<string, QuizDraft['status']>>(new Map());
   // Viewer time zone: the list renders client-side only (SWR), so no hydration pin is needed.
   const dateFormatter = useMemo(
     () =>
@@ -56,6 +59,22 @@ export function CreateQuizHubPage() {
       }),
     [locale],
   );
+
+  // Say so when a draft finishes while the hub is open; the first load announces nothing.
+  useEffect(() => {
+    if (!drafts) return;
+    const before = previousStatuses.current;
+    const finished = drafts.filter((draft) => {
+      const previous = before.get(draft.id);
+      return draft.status === 'completed' && previous !== undefined && isDraftActive(previous);
+    });
+    previousStatuses.current = new Map(drafts.map((draft) => [draft.id, draft.status]));
+    if (finished.length > 0) {
+      setReadyAnnouncement(
+        finished.map((draft) => t('draftReadyAnnouncement', { title: draft.title })).join(' '),
+      );
+    }
+  }, [drafts, t]);
 
   const handleCreateManual = async () => {
     if (isCreatingManual) return;
@@ -202,12 +221,16 @@ export function CreateQuizHubPage() {
             {t('yourDrafts')}
           </h2>
 
+          <p role="status" aria-live="polite" className="sr-only">
+            {readyAnnouncement}
+          </p>
+
           {isLoading ? (
             <div className="mt-5 grid gap-3" aria-label={t('loadingDrafts')}>
               {[0, 1].map((item) => (
                 <div
                   key={item}
-                  className="h-24 animate-pulse rounded-xl border border-line bg-white"
+                  className="h-28 animate-pulse rounded-xl border border-line bg-white sm:h-24"
                 />
               ))}
             </div>
@@ -220,56 +243,14 @@ export function CreateQuizHubPage() {
             </div>
           ) : drafts?.length ? (
             <div data-testid="quiz-drafts-list" className="mt-5 grid grid-cols-1 gap-3">
-              {drafts.map((draft) => {
-                const canContinue = !['queued', 'processing'].includes(draft.status);
-                return (
-                  <Card key={draft.id} className="border-line bg-white p-0 shadow-none">
-                    <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0 sm:flex-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                          {draft.sourceType === 'manual' ? (
-                            <HiOutlinePencilAlt className="size-5 shrink-0 text-brand-trust" />
-                          ) : (
-                            <HiOutlineDocumentText className="size-5 shrink-0 text-neutral-600" />
-                          )}
-                          <h3
-                            title={draft.title}
-                            className="line-clamp-2 min-w-0 break-words font-semibold text-neutral-950 sm:line-clamp-1"
-                          >
-                            {draft.title}
-                          </h3>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
-                          <span>{t(`draftStatus.${draft.status}`)}</span>
-                          <span>{t('draftQuestionCount', { count: draft.questionCount })}</span>
-                          <span className="inline-flex items-center gap-1.5">
-                            <HiOutlineClock className="size-4" aria-hidden="true" />
-                            {dateFormatter.format(new Date(draft.updatedAt))}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 gap-2">
-                        <Button
-                          variant="outline"
-                          disabled={!canContinue}
-                          onClick={() => push(ROUTES.DRAFT.EDIT(draft.id))}
-                        >
-                          {canContinue ? t('continueEditing') : t('processingDraft')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t('deleteDraftNamed', { title: draft.title })}
-                          onClick={() => setDraftToDelete(draft.id)}
-                          className="text-neutral-500 hover:text-red-600"
-                        >
-                          <HiOutlineTrash className="size-5" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {drafts.map((draft) => (
+                <DraftRow
+                  key={draft.id}
+                  draft={draft}
+                  dateFormatter={dateFormatter}
+                  onDelete={setDraftToDelete}
+                />
+              ))}
             </div>
           ) : (
             <div className="mt-5 rounded-xl border border-dashed border-line bg-white p-8 text-center">

@@ -85,6 +85,7 @@ function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
         answers: data.answers,
         premiumSubmissionId: data.premiumSubmissionId,
         premiumSnapshotHash: data.premiumSnapshotHash,
+        preview: data.preview,
         retryOfAttemptId: data.retryOfAttemptId,
         questionIndices: data.questionIndices,
         mode: data.mode,
@@ -172,6 +173,7 @@ async function createAttempt(
         ...(data.premiumSnapshotHash !== undefined
           ? { premiumSnapshotHash: data.premiumSnapshotHash }
           : {}),
+        ...(data.preview === true ? { preview: true } : {}),
         quizSnapshot: {
           ...data.quizSnapshot,
           questions: data.quizSnapshot.questions.map(({ id, ...question }) => ({

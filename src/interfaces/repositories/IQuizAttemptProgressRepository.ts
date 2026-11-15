@@ -23,6 +23,8 @@ interface QuizAttemptSubmissionData {
   takenAt: Date;
   premiumSubmissionId?: string;
   premiumSnapshotHash?: string;
+  /** RIN-1722: Premium preview attempt. */
+  preview?: boolean;
   /** Retry-missed attempt: the source attempt and the quiz question index of each answer. */
   retryOfAttemptId?: string;
   /** Retry (ascending) or quick round (play order): the quiz question index of each answer. */

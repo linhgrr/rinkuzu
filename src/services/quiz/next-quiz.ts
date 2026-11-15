@@ -19,6 +19,8 @@ export interface NextQuizRequest {
   owner: AttemptOwnerIdentity;
   currentSlug: string;
   locale?: string;
+  /** Offer a starter even when the learner has attempted all of them. */
+  includeAttempted?: boolean;
 }
 
 /**
@@ -32,7 +34,12 @@ export class NextQuizResolver {
     private readonly attempts: AttemptedQuizSlugLookup,
   ) {}
 
-  async resolve({ owner, currentSlug, locale }: NextQuizRequest): Promise<NextQuizDto | null> {
+  async resolve({
+    owner,
+    currentSlug,
+    locale,
+    includeAttempted = false,
+  }: NextQuizRequest): Promise<NextQuizDto | null> {
     try {
       const { starterQuizzes } = await loadStarterQuizzes(this.starters);
       const options = starterQuizzes.filter(
@@ -41,10 +48,12 @@ export class NextQuizResolver {
       if (options.length === 0) return null;
 
       const attempted = new Set(
-        await this.attempts.findAttemptedQuizSlugs(
-          owner,
-          options.map(({ slug }) => slug),
-        ),
+        includeAttempted
+          ? []
+          : await this.attempts.findAttemptedQuizSlugs(
+              owner,
+              options.map(({ slug }) => slug),
+            ),
       );
       const next = options.find((quiz) => !attempted.has(quiz.slug));
       return next ? { slug: next.slug, title: next.title, quick: next.quick } : null;

@@ -119,6 +119,7 @@ export class PremiumQuizPersistenceMapper {
       absoluteExpiresAt: record.absoluteExpiresAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      ...(record.preview === true ? { preview: true } : {}),
       ...(record.completedAt === undefined ? {} : { completedAt: record.completedAt }),
     };
   }

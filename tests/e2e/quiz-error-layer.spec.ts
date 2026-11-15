@@ -102,7 +102,7 @@ function approvedSubmission(input: {
       description: `A fake Premium quiz used only by the error-layer E2E (${input.runId}).`,
       questions: [question('First premium question?'), question('Second premium question?')],
     },
-    snapshotHash: `e2e-${input.runId}-${input.slug}`,
+    snapshotHash: createHash('sha256').update(`e2e-${input.runId}-${input.slug}`).digest('hex'),
     questionHashes: [],
     duplicateReport: {
       exactDocumentRewarded: false,
@@ -230,10 +230,13 @@ test.describe('quiz API error layer (RIN-805)', () => {
     await expectNoRawServerText(page);
   });
 
-  test('a learner without credit or subscription sees the unlock card', async ({ page }) => {
+  // RIN-1723: the quiz itself now opens a preview; flashcards stay behind the unlock card.
+  test('a learner without credit or subscription sees the unlock card on flashcards', async ({
+    page,
+  }) => {
     await signIn(page, learner.email);
 
-    await page.goto(`/vi/quiz/${slug}`);
+    await page.goto(`/vi/quiz/${slug}/flashcards`);
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     await expect(page.getByText(viQuiz.premiumUnlockDescription)).toBeVisible();
     // RIN-1014: at 0 credits the unlock is disabled and labelled, with the balance shown.

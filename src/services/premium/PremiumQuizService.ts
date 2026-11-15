@@ -49,6 +49,7 @@ import {
   hashPremiumSnapshot,
   premiumSnapshotSimilarity,
 } from '@/services/premium/premium-fingerprints';
+import { playableQuestionCount, previewLockedError } from '@/services/premium/premium-preview';
 
 const DUPLICATE_CANDIDATE_LIMIT = 500;
 const FUZZY_DUPLICATE_THRESHOLD = 0.72;
@@ -81,6 +82,10 @@ interface PremiumBatchQuestion {
   optionImages?: (string | undefined)[];
 }
 
+interface PremiumPreviewFacts {
+  fullQuestionCount: number;
+}
+
 interface PremiumBatchResponse {
   sessionId: string;
   quizId: string;
@@ -98,6 +103,8 @@ interface PremiumBatchResponse {
   absoluteExpiresAt: string;
   currentQuestionIndex: number;
   answers: Array<PremiumAnswer | null>;
+  /** RIN-1722: present only on a preview session; `totalQuestions` is the preview length. */
+  preview?: PremiumPreviewFacts;
 }
 
 export interface PremiumFlashcardResponse {
@@ -141,6 +148,7 @@ interface PremiumSessionSubmitResult {
   correctAnswers: number;
   totalQuestions: number;
   sessionId: string;
+  preview?: true;
 }
 
 interface PremiumPlaySessionStart {
@@ -620,6 +628,12 @@ export class PremiumQuizService {
     return this.canAccess(context, quizId, publication.authorId);
   }
 
+  /** Question count of a published version, for the preview result's "full quiz" line. */
+  async getSubmissionQuestionCount(submissionId: string): Promise<number | null> {
+    const publication = await this.premiumRepository.findSubmissionById(submissionId);
+    return publication ? publication.snapshot.questions.length : null;
+  }
+
   async canAccessPublishedQuiz(
     context: PremiumAccessContext,
     quizId: string,
@@ -645,7 +659,7 @@ export class PremiumQuizService {
     context: PremiumAccessContext,
     quizId: string,
   ): Promise<PremiumFlashcardResponse> {
-    const { publication, session } = await this.beginPlaySession(context, quizId);
+    const { publication, session } = await this.beginPlaySession(context, quizId, false);
     const questionIndex = Math.min(
       session.currentQuestionIndex,
       publication.snapshot.questions.length - 1,
@@ -659,6 +673,7 @@ export class PremiumQuizService {
     cursor: string,
   ): Promise<PremiumFlashcardResponse> {
     const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
+    if (session.preview === true) throw previewLockedError();
     await this.requireBatchQuota(sessionId, userId, 'Too many Premium flashcard requests');
     const publication = await this.requireFreshSessionPublication(session, decoded);
     return this.buildFlashcard(publication, session, decoded.batchIndex);
@@ -670,6 +685,7 @@ export class PremiumQuizService {
     cursor: string,
   ): Promise<PremiumFlashcardRevealResponse> {
     const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
+    if (session.preview === true) throw previewLockedError();
     if (decoded.snapshotHash !== session.snapshotHash) {
       throw new PremiumQuizError('invalid_cursor', 'Cursor snapshot is stale');
     }
@@ -715,6 +731,13 @@ export class PremiumQuizService {
   ): Promise<PremiumPlaySession> {
     const session = await this.requireActiveSession(sessionId, userId);
     const publication = await this.premiumRepository.findSubmissionById(session.submissionId);
+    if (
+      publication &&
+      session.preview === true &&
+      questionIndex >= playableQuestionCount(session, publication.snapshot.questions.length)
+    ) {
+      throw previewLockedError();
+    }
     const question = publication?.snapshot.questions[questionIndex];
     if (!publication || !question) {
       throw new PremiumQuizError('invalid_state', 'Question does not exist in this session');
@@ -759,8 +782,12 @@ export class PremiumQuizService {
     if (!publication || publication.snapshotHash !== session.snapshotHash) {
       throw new PremiumQuizError('conflict', 'Published quiz version is unavailable');
     }
+    const questions = publication.snapshot.questions.slice(
+      0,
+      playableQuestionCount(session, publication.snapshot.questions.length),
+    );
     let correctAnswers = 0;
-    const answers = publication.snapshot.questions.map((question, index) => {
+    const answers = questions.map((question, index) => {
       const answer = session.answers[index] ?? (question.type === 'single' ? -1 : []);
       if (question.type === 'single' && typeof answer === 'number') {
         if (answer === question.correctIndex) correctAnswers += 1;
@@ -776,9 +803,9 @@ export class PremiumQuizService {
       }
       return answer;
     });
-    const totalQuestions = publication.snapshot.questions.length;
+    const totalQuestions = questions.length;
     const score = Math.round((correctAnswers / totalQuestions) * 100);
-    const wrongQuestions = publication.snapshot.questions
+    const wrongQuestions = questions
       .map((question, index) => ({ question, index }))
       .filter(({ question, index }) => {
         const answer = answers[index];
@@ -799,13 +826,14 @@ export class PremiumQuizService {
       quizSlug: publication.snapshot.slug,
       premiumSubmissionId: publication.id,
       premiumSnapshotHash: publication.snapshotHash,
-      quizSnapshot: { integrity: 'complete', ...publication.snapshot },
+      quizSnapshot: { integrity: 'complete', ...publication.snapshot, questions },
       answers,
       score,
       correctAnswers,
       totalQuestions,
       wrongQuestions,
       takenAt: new Date(),
+      ...(session.preview === true ? { preview: true } : {}),
     });
     if (session.completedAt === undefined) {
       const completed = await this.premiumRepository.completeSession(sessionId, userId, new Date());
@@ -817,6 +845,7 @@ export class PremiumQuizService {
       correctAnswers,
       totalQuestions,
       sessionId,
+      ...(session.preview === true ? { preview: true as const } : {}),
     };
   }
 
@@ -840,20 +869,18 @@ export class PremiumQuizService {
   private async beginPlaySession(
     context: PremiumAccessContext,
     quizId: string,
+    allowPreview = true,
   ): Promise<PremiumPlaySessionStart> {
     const publication = await this.premiumRepository.findActivePublicationByQuizId(quizId);
     if (!publication) throw new PremiumQuizError('not_found', 'Premium quiz not found');
-    if (!(await this.canAccess(context, quizId, publication.authorId))) {
-      throw new PremiumQuizError(
-        'unlock_required',
-        'Premium subscription or one credit is required',
-      );
-    }
+    const entitled = await this.canAccess(context, quizId, publication.authorId);
+    if (!entitled && !allowPreview) throw previewLockedError();
     const session = await this.premiumRepository.createSession({
       userId: context.userId,
       quizId,
       submissionId: publication.id,
       snapshotHash: publication.snapshotHash,
+      ...(entitled ? {} : { preview: true }),
       now: new Date(),
     });
     return { publication, session };
@@ -921,18 +948,24 @@ export class PremiumQuizService {
     session: PremiumPlaySession,
     batchIndex: number,
   ): Promise<PremiumBatchResponse> {
+    const fullCount = publication.snapshot.questions.length;
+    const playable = playableQuestionCount(session, fullCount);
     const startIndex = batchIndex * BATCH_SIZE;
-    const questions = publication.snapshot.questions.slice(startIndex, startIndex + BATCH_SIZE);
+    if (session.preview === true && startIndex >= playable) throw previewLockedError();
+    const questions = publication.snapshot.questions.slice(
+      startIndex,
+      Math.min(startIndex + BATCH_SIZE, playable),
+    );
     if (questions.length === 0)
       throw new PremiumQuizError('invalid_cursor', 'Batch is out of range');
-    const totalBatches = Math.ceil(publication.snapshot.questions.length / BATCH_SIZE);
+    const totalBatches = Math.ceil(playable / BATCH_SIZE);
     const cursorBase = this.buildCursorBase(publication, session);
     return {
       sessionId: session.id,
       quizId: publication.sourceQuizId,
       submissionId: publication.id,
       title: publication.snapshot.title,
-      totalQuestions: publication.snapshot.questions.length,
+      totalQuestions: playable,
       batchIndex,
       startIndex,
       questions: await Promise.all(questions.map(toBatchQuestion)),
@@ -940,10 +973,8 @@ export class PremiumQuizService {
       idleExpiresAt: session.idleExpiresAt.toISOString(),
       absoluteExpiresAt: session.absoluteExpiresAt.toISOString(),
       currentQuestionIndex: session.currentQuestionIndex,
-      answers: Array.from(
-        { length: publication.snapshot.questions.length },
-        (_, index) => session.answers[index] ?? null,
-      ),
+      answers: Array.from({ length: playable }, (_, index) => session.answers[index] ?? null),
+      ...(session.preview === true ? { preview: { fullQuestionCount: fullCount } } : {}),
       ...(publication.snapshot.description === undefined
         ? {}
         : { description: publication.snapshot.description }),

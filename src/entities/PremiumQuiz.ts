@@ -140,6 +140,8 @@ export interface PremiumPlaySession {
   currentQuestionIndex: number;
   highestBatch: number;
   sessionCode: string;
+  /** RIN-1722: a preview session plays only the first questions; absent means a full session. */
+  preview?: boolean;
   idleExpiresAt: Date;
   absoluteExpiresAt: Date;
   completedAt?: Date;

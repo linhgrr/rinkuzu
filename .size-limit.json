@@ -29,7 +29,7 @@
     {
       "name": "public-discovery",
       "limit": "340 KiB",
-      "patterns": ["^/\\[locale\\]/(?:explore(?:/\\[topic\\])?|quizzes)$"]
+      "patterns": ["^/\\[locale\\]/(?:(?:signed-out/)?explore(?:/\\[topic\\])?|quizzes)$"]
     },
     {
       "name": "dashboard-admin",

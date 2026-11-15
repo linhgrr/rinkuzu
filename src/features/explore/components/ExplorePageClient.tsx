@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/navigation';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
@@ -96,6 +96,13 @@ interface ExplorePageClientProps {
   hubLinks?: ReactNode;
 }
 
+/** The URL state the page reads: `q`, `type` and `page`. */
+type ExploreSearchParams = Pick<URLSearchParams, 'get' | 'toString'>;
+
+interface ExplorePageViewProps extends ExplorePageClientProps {
+  searchParams: ExploreSearchParams;
+}
+
 /**
  * No Suspense around this page (RIN-1518). `/explore` is rendered per request
  * (the app layout reads the session), so `useSearchParams` does not suspend on
@@ -104,12 +111,21 @@ interface ExplorePageClientProps {
  * and tabs (the LCP text) out of the first paint for seconds on mobile.
  */
 export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = {}) {
+  const searchParams = useSearchParams();
+  return <ExplorePageView hubLinks={hubLinks} searchParams={searchParams} />;
+}
+
+/**
+ * The page for given URL state. The cached signed-out twin (RIN-1646) renders
+ * it with empty params as the server HTML, because a static page cannot read
+ * the query on the server; the client then renders `ExplorePageClient`.
+ */
+function ExplorePageView({ hubLinks, searchParams }: ExplorePageViewProps) {
   const t = useTranslations('explore');
   const tAdaptive = useTranslations('adaptiveLearning');
   const tAdaptiveDashboard = useTranslations('adaptiveLearning.dashboard');
   const locale = useLocale();
   const { replace } = useRouter();
-  const searchParams = useSearchParams();
   const query = searchParams.get('q')?.trim() ?? '';
   const activeType = parseSearchType(searchParams.get('type'));
   const page = parseSearchPage(searchParams.get('page'));
@@ -391,5 +407,22 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
         </div>
       </div>
     </main>
+  );
+}
+
+const NO_SEARCH_PARAMS: ExploreSearchParams = new URLSearchParams();
+
+/**
+ * `/explore` in the cached signed-out twin (RIN-1646). A static page cannot
+ * read the query on the server, so the server HTML is the page without a
+ * query (the Suspense fallback, written in place in the shell, so the heading,
+ * search and tabs still paint first, RIN-1518); the client then renders the
+ * page for the real URL.
+ */
+export function CachedExplorePageClient({ hubLinks = null }: ExplorePageClientProps = {}) {
+  return (
+    <Suspense fallback={<ExplorePageView hubLinks={hubLinks} searchParams={NO_SEARCH_PARAMS} />}>
+      <ExplorePageClient hubLinks={hubLinks} />
+    </Suspense>
   );
 }

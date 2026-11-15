@@ -15,8 +15,8 @@ describe('route-scoped font loading contract', () => {
     );
   });
 
-  it('loads Inter and Montserrat only inside authenticated application routes', () => {
-    const appLayout = fs.readFileSync('src/app/[locale]/(app)/layout.tsx', 'utf8');
+  it('loads Inter and Montserrat only inside the app shell (app routes and their signed-out twins)', () => {
+    const appLayout = fs.readFileSync('src/components/app-chrome/AppShell.tsx', 'utf8');
 
     expect(appLayout).toContain("import { Inter, Montserrat } from 'next/font/google'");
     expect(appLayout).toContain('${inter.className} ${montserrat.variable}');

@@ -137,12 +137,12 @@ export function PremiumPreviewResultCard({
     );
   } else if (walletError) {
     balanceLine = (
-      <div className="flex flex-wrap items-center gap-x-2">
+      <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-ink-muted">{t('premiumPreviewBalanceError')}</p>
         <Button
           variant="ghost"
           size="sm"
-          className="min-h-11 px-2 text-brand-trust"
+          className="min-h-11 shrink-0 px-2 text-brand-trust"
           onClick={() => void mutate()}
         >
           {t('premiumPreviewRetry')}

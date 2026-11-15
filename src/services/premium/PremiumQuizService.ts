@@ -34,6 +34,7 @@ import type {
 } from '@/dtos/premium-quiz';
 import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 import { logger } from '@/lib/logger';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { notifyQuizIndexNow } from '@/lib/seo/quiz-search-change';
 import { getAuthorId } from '@/services/quiz/quiz-helpers';
 import { can, resolveEntitlements } from '@/lib/entitlements';
@@ -411,7 +412,10 @@ export class PremiumQuizService {
     if (!this.submissionRecovery) return false;
     try {
       const restored = await this.submissionRecovery.restorePublicAfterFailedSubmission(quizId);
-      if (restored) this.notifyMadePublic(quizId);
+      if (restored) {
+        this.notifyMadePublic(quizId);
+        await this.revalidateQuizById(quizId);
+      }
       return restored;
     } catch (error) {
       logger.error({ error, quizId }, 'Premium submission failed and the quiz stayed private');
@@ -485,8 +489,20 @@ export class PremiumQuizService {
       ...(input.overrideReason === undefined ? {} : { overrideReason: input.overrideReason }),
     });
     if (result.quizMadePublic === true) this.notifyMadePublic(result.submission.sourceQuizId);
+    // Approve puts the quiz behind the Premium sign-in prompt; reject can make it public (RIN-1647).
+    revalidateQuizPages([result.submission.snapshot.slug]);
     if (input.decision === 'reject') await this.queueRejectEmail(result);
     return result;
+  }
+
+  /** The slug is not at hand after a repository transaction: read it, never throw (RIN-1647). */
+  private async revalidateQuizById(quizId: string): Promise<void> {
+    try {
+      const quiz = await this.quizRepository.findById(quizId);
+      revalidateQuizPages([quiz?.slug]);
+    } catch (error) {
+      logger.warn({ error, quizId }, 'quiz page revalidation after a restore failed');
+    }
   }
 
   /** RIN-1500: the quiz is public now and may be indexable; never throws. */

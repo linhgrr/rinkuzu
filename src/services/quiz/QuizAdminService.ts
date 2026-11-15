@@ -24,6 +24,7 @@ import type {
 } from '@/dtos/quiz';
 import { isNonIndexableQuizOwner } from '@/shared/constants/analytics-exclusions';
 import { detectQuizContentLocale, isQuizIndexable } from '@/lib/seo/quiz-indexability';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { logger } from '@/lib/logger';
 import { notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
@@ -142,6 +143,7 @@ export class QuizAdminService {
         };
       }
 
+      revalidateQuizPages([quiz.slug]);
       return { success: true, data: DeleteResultDtoMapper.toDto(id) };
     } catch (error) {
       logger.error({ error }, 'Delete admin quiz error');
@@ -223,6 +225,7 @@ export class QuizAdminService {
           'Quiz visibility audit write failed; reverting the change',
         );
         await this.quizRepository.update(quiz.id, { visibility: from });
+        revalidateQuizPages([quiz.slug]);
         return {
           success: false,
           code: 'internal_error',
@@ -232,6 +235,8 @@ export class QuizAdminService {
       }
 
       notifyQuizSearchChange(this.visibilityDeps.quizIndexNow, quiz, updated);
+      // A hidden quiz leaves its cached signed-out page within the request (RIN-1647).
+      revalidateQuizPages([quiz.slug, updated.slug]);
       return {
         success: true,
         data: AdminQuizDtoMapper.toVisibilityChange(quiz, visibility, true),

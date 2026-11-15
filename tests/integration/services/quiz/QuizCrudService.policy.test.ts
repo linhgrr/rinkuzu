@@ -86,6 +86,7 @@ describe('QuizCrudService Premium source publication policy', () => {
       id: 'quiz-1',
       author: 'user-1',
       visibility: 'public',
+      slug: 'updated',
     });
     quizRepository.update.mockResolvedValue({
       id: 'quiz-1',

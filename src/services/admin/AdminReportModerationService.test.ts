@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Report } from '@/entities/Report';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { AdminReportModerationService } from '@/services/admin/AdminReportModerationService';
+
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 
 vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -75,6 +78,7 @@ describe('AdminReportModerationService', () => {
       await service.syncIndexHold(report({ reason: 'personal_data' }), 'dismissed');
 
       expect(indexHold.releaseReportHold).not.toHaveBeenCalled();
+      expect(revalidateQuizPages).not.toHaveBeenCalled();
     });
 
     it('holds the quiz again when a hold report is reopened', async () => {
@@ -82,6 +86,7 @@ describe('AdminReportModerationService', () => {
 
       expect(indexHold.holdForReport).toHaveBeenCalledWith('quiz-1', now);
       expect(indexHold.releaseReportHold).not.toHaveBeenCalled();
+      expect(revalidateQuizPages).toHaveBeenCalledWith(['algebra']);
     });
 
     it.each(['none', 'wrong_content', 'offensive'] as const)(

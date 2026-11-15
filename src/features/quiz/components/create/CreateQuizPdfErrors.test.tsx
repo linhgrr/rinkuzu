@@ -188,6 +188,18 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
     expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
 
+  it('replaces a stale file error with the submit message: one alert only', async () => {
+    const { container } = render(<CreateQuizPage />);
+    fireEvent.change(screen.getByLabelText('quizTitle'), { target: { value: 'Chapter 1' } });
+    pick(container, textFile());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('pdfWrongType'));
+
+    fireEvent.click(screen.getByRole('button', { name: /createQuizBackground/ }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('uploadOnePDF'));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
   it('cancels with one link to the create hub, no button nested in an anchor', () => {
     const { container } = render(<CreateQuizPage />);
 

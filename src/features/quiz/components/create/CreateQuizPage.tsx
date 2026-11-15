@@ -637,17 +637,17 @@ export function CreateQuizPage() {
     event.preventDefault();
 
     if (!state.title.trim()) {
-      dispatch({ type: 'patch', value: { submitError: t('titleRequired') } });
+      dispatch({ type: 'patch', value: { error: '', submitError: t('titleRequired') } });
       return;
     }
 
     if (!state.pdfFile) {
-      dispatch({ type: 'patch', value: { submitError: t('uploadOnePDF') } });
+      dispatch({ type: 'patch', value: { error: '', submitError: t('uploadOnePDF') } });
       return;
     }
 
     if (state.submitToPremium && !state.rightsAttested) {
-      dispatch({ type: 'patch', value: { submitError: t('premiumRightsRequired') } });
+      dispatch({ type: 'patch', value: { error: '', submitError: t('premiumRightsRequired') } });
       return;
     }
 

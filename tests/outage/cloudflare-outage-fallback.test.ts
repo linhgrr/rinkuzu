@@ -4,7 +4,7 @@ import {
   type ColoCache,
   type OutageEnvironment,
 } from '../../infra/cloudflare/outage-fallback/src/index';
-import { renderOutagePage } from '../../infra/cloudflare/outage-fallback/src/page';
+import { renderOutagePage } from '../../infra/cloudflare/outage-fallback/src/outage-page';
 
 const SITE = 'https://www.rinkuzu.app';
 const NOTIFY_TOKEN = 'test-outage-notify-token-that-is-long-enough';
@@ -14,6 +14,12 @@ const ENV: OutageEnvironment = {
   OUTAGE_NOTIFY_TOKEN: NOTIFY_TOKEN,
   NOTIFY_API_URL: 'https://api.example.test/api/internal/outage-notify',
 };
+
+function envWithout(key: keyof OutageEnvironment): OutageEnvironment {
+  const env = { ...ENV };
+  delete env[key];
+  return env;
+}
 
 type Fetcher = (request: Request) => Promise<Response>;
 
@@ -327,7 +333,7 @@ describe('outage fallback: healthy origin', () => {
       new Request(`${SITE}/`, {
         headers: { 'x-rinkuzu-edge': 'forged', 'x-rinkuzu-client-ip': '198.51.100.1' },
       }),
-      { ...ENV, EDGE_SHARED_SECRET: undefined },
+      envWithout('EDGE_SHARED_SECRET'),
     );
 
     expect(received?.headers.get('x-rinkuzu-edge')).toBeNull();
@@ -447,7 +453,7 @@ describe('outage fallback: notify form', () => {
   it('uses the default API URL when none is configured', async () => {
     const { run, fetcher } = setup(async () => new Response('{}', { status: 202 }));
 
-    await run(notifyPost(validFields), { ...ENV, NOTIFY_API_URL: undefined });
+    await run(notifyPost(validFields), envWithout('NOTIFY_API_URL'));
 
     expect(fetcher.mock.calls[0]?.[0].url).toBe(
       'https://api.rinkuzu.app/api/internal/outage-notify',
@@ -511,10 +517,7 @@ describe('outage fallback: notify form', () => {
   it('renders unavailable without calling the API when the token is not set', async () => {
     const { run, fetcher } = setup(apiStub(202));
 
-    const response = await run(notifyPost(validFields), {
-      ...ENV,
-      OUTAGE_NOTIFY_TOKEN: undefined,
-    });
+    const response = await run(notifyPost(validFields), envWithout('OUTAGE_NOTIFY_TOKEN'));
 
     expect(response.status).toBe(503);
     expect(fetcher).not.toHaveBeenCalled();

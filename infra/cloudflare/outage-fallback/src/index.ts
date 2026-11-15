@@ -6,7 +6,7 @@ import {
   type ContextQuery,
   type NotifyState,
   type OutageLocale,
-} from './page';
+} from './outage-page';
 
 /**
  * Outage fallback in front of rinkuzu.app (RIN-1651, spec RIN-1643).

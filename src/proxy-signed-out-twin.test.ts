@@ -70,6 +70,64 @@ describe('proxy: signed-out twins (RIN-1646)', () => {
   });
 });
 
+describe('proxy: signed-out quiz landing twin (RIN-1647)', () => {
+  it.each([
+    ['/vi/quiz/toan-12', '/vi/signed-out/quiz/toan-12'],
+    ['/en/quiz/toan-12', '/en/signed-out/quiz/toan-12'],
+    ['/vi/quiz/toan-12?', '/vi/signed-out/quiz/toan-12'],
+  ])('rewrites a cookie-less GET of %s to the cached twin', async (path, twin) => {
+    const response = await run(path, { cookie: 'NEXT_LOCALE=vi' });
+
+    expect(response.headers.get('x-middleware-rewrite')).toBe(`${ORIGIN}${twin}`);
+    expect(response.headers.get('x-middleware-request-x-rinkuzu-signed-out-twin')).toBe('1');
+  });
+
+  it.each([
+    '/vi/quiz/toan-12?mode=quick',
+    '/vi/quiz/toan-12?mode=full',
+    '/vi/quiz/toan-12?retryOf=6a8ed20a3d0a1892cacdfe0b',
+    '/vi/quiz/toan-12?entry=quiz_landing',
+    '/vi/quiz/toan-12?entry=hub&topic=toan-hoc',
+    '/vi/quiz/toan-12?view=play',
+    '/vi/quiz/toan-12?utm_source=threads',
+  ])('keeps the dynamic route for %s (the query changes the page)', async (path) => {
+    const response = await run(path);
+
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it.each(['/vi/quiz/toan-12/flashcards', '/vi/quiz/toan-12/result', '/vi/quiz'])(
+    'keeps the dynamic route for %s',
+    async (path) => {
+      const response = await run(path);
+
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+    },
+  );
+
+  it.each(['__Secure-authjs.session-token=x', 'authjs.session-token=not-a-jwt'])(
+    'keeps the dynamic route for a signed-in request with %s',
+    async (cookie) => {
+      const response = await run('/vi/quiz/toan-12', { cookie });
+
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+    },
+  );
+
+  it('keeps the dynamic route for a POST', async () => {
+    const response = await run('/vi/quiz/toan-12', { method: 'POST' });
+
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('redirects a direct request for the quiz twin to its public URL', async () => {
+    const response = await run('/vi/signed-out/quiz/toan-12');
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(`${ORIGIN}/vi/quiz/toan-12`);
+  });
+});
+
 describe('proxy: Cloudflare-CDN-Cache-Control (RIN-1679)', () => {
   const header = async (path: string, init: { method?: string; cookie?: string } = {}) =>
     (await run(path, init)).headers.get('cloudflare-cdn-cache-control');

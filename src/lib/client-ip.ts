@@ -18,7 +18,7 @@ function secretsMatch(received: string, expected: string): boolean {
 }
 
 /**
- * The visitor address forwarded by the Cloudflare edge Worker, or null.
+ * @public Unit-tested directly. The visitor address forwarded by the Cloudflare edge Worker, or null.
  *
  * Behind the Worker, Vercel sees Cloudflare's edge as the client, so the usual
  * `x-real-ip` / `x-forwarded-for` hold a Cloudflare address. The Worker sends

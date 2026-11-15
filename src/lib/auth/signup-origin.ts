@@ -5,7 +5,7 @@ const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 /** Vercel's "unknown" and "Tor" pseudo-countries. */
 const NO_COUNTRY_CODES = new Set(['XX', 'T1']);
 
-/** The edge country header as stored on a new account: a real alpha-2 code, else null. */
+/** @public Unit-tested directly. The edge country header as stored on a new account: a real alpha-2 code, else null. */
 export function signupCountryOf(header: string | null | undefined): string | null {
   if (!header || !COUNTRY_CODE_PATTERN.test(header) || NO_COUNTRY_CODES.has(header)) return null;
   return header;

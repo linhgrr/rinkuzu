@@ -618,7 +618,7 @@ describe('AdminService mutation coverage', () => {
     });
 
     it('getActivityStats uses fixed recent limits and date bucket inputs', async () => {
-      const now = new Date('2026-07-16T15:30:00.000Z');
+      const now = new Date('2026-07-16T12:00:00.000Z');
       vi.useFakeTimers();
       vi.setSystemTime(now);
 

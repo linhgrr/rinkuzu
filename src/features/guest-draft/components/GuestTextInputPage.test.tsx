@@ -37,10 +37,12 @@ import { GuestTextInputPage } from './GuestTextInputPage';
 
 const messages = { en: { guestDraft: enGuest }, vi: { guestDraft: viGuest } } as const;
 
-function renderPage(locale: 'en' | 'vi' = 'en') {
+function renderPage(locale: 'en' | 'vi' = 'en', search = '') {
+  // The page is static (RIN-1645): the hook reads `?entry=` from the URL at submit time.
+  window.history.replaceState(null, '', `/${locale}/try/text${search}`);
   return render(
     <NextIntlClientProvider locale={locale} messages={messages[locale]}>
-      <GuestTextInputPage entry="try_text" />
+      <GuestTextInputPage />
     </NextIntlClientProvider>,
   );
 }
@@ -135,6 +137,21 @@ describe('GuestTextInputPage', () => {
     const stored = window.localStorage.getItem(GUEST_DRAFTS_STORAGE_KEY) ?? '';
     expect(stored).not.toContain('Private');
     expect(JSON.stringify(window.sessionStorage)).not.toContain('Private');
+  });
+
+  it('sends a known ?entry= from the page URL instead of try_text (RIN-1645)', async () => {
+    createGuestTextDraft.mockResolvedValue({
+      status: 'processing',
+      percent: 10,
+      questionCount: 0,
+      title: null,
+    });
+    renderPage('en', '?entry=create');
+    type(`Notes ${'z'.repeat(300)}`);
+    await act(async () => {
+      fireEvent.click(submit());
+    });
+    expect(createGuestTextDraft).toHaveBeenCalledWith(expect.objectContaining({ entry: 'create' }));
   });
 
   it('maps a too-short 422 to the too-short alert and keeps the text', async () => {

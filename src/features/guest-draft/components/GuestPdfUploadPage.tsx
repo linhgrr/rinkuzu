@@ -19,7 +19,6 @@ import { GUEST_DRAFT_LIMIT_COPY } from '@/features/guest-draft/lib/guest-limit-c
 import type { GuestUploadState } from '@/features/guest-draft/lib/guest-upload-state';
 import { Link } from '@/i18n/navigation';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
-import type { GuestDraftEntry } from '@/shared/constants/guest-draft';
 import { ROUTES } from '@/shared/constants/routes';
 
 const SIGN_UP_HREF = withAuthCallback(ROUTES.REGISTER, ROUTES.CREATE_QUIZ_PDF);
@@ -101,15 +100,14 @@ function FlowBody({ flow }: { flow: Flow }) {
 }
 
 interface GuestPdfUploadPageProps {
-  entry?: GuestDraftEntry | undefined;
   /** Server-rendered copy under the widget (RIN-1498); the widget stays first on screen. */
   children?: ReactNode;
 }
 
 /** `/try/pdf` (RIN-1448): a signed-out visitor turns their own PDF into a quiz and plays it. */
-export function GuestPdfUploadPage({ entry, children }: GuestPdfUploadPageProps) {
+export function GuestPdfUploadPage({ children }: GuestPdfUploadPageProps) {
   const t = useTranslations('guestDraft.upload');
-  const flow = useGuestPdfDraft(entry);
+  const flow = useGuestPdfDraft();
 
   return (
     <main className="min-h-dvh bg-neutral-50 px-4 py-8 sm:px-6">

@@ -283,6 +283,8 @@ export default defineConfig(
     '.code-review-graph/**',
     '.gitnexus/**',
     '.next/**',
+    // Local `wrangler dev` output of the Cloudflare Workers (RIN-1651).
+    '**/.wrangler/**',
     '.adaptive-contract-check-*/**',
     '.lighthouseci/**',
     '.performance-baseline/**',

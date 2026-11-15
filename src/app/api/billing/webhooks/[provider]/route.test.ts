@@ -2,11 +2,13 @@ import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { recordPaymentEventMock, recordDiagnosticMock, consumeRateLimitMock } = vi.hoisted(() => ({
-  recordPaymentEventMock: vi.fn(),
-  recordDiagnosticMock: vi.fn(),
-  consumeRateLimitMock: vi.fn(),
-}));
+const { recordPaymentEventMock, recordDiagnosticMock, consumeRateLimitMock, kickDrainMock } =
+  vi.hoisted(() => ({
+    kickDrainMock: vi.fn(),
+    recordPaymentEventMock: vi.fn(),
+    recordDiagnosticMock: vi.fn(),
+    consumeRateLimitMock: vi.fn(),
+  }));
 
 vi.mock('@/lib/billing-factory', () => ({
   createWebhookInboxRepository: () => ({
@@ -14,6 +16,7 @@ vi.mock('@/lib/billing-factory', () => ({
     recordDiagnostic: recordDiagnosticMock,
   }),
 }));
+vi.mock('@/lib/billing-inbox-kick', () => ({ kickWebhookInboxDrain: kickDrainMock }));
 vi.mock('@/lib/billing-rate-limit', () => ({
   consumeBillingRateLimit: consumeRateLimitMock,
 }));
@@ -88,6 +91,33 @@ describe('POST /api/billing/webhooks/[provider]', () => {
     // The budget exists for traffic we could not authenticate. Charging the
     // provider's own retries against it would throttle real money.
     expect(consumeRateLimitMock).not.toHaveBeenCalled();
+  });
+
+  it('starts the inbox drain on a verified payment, so Premium does not wait for the cron', async () => {
+    await POST(webhookRequest(PAYMENT), PARAMS);
+
+    expect(kickDrainMock).toHaveBeenCalledTimes(1);
+    // Kicked only once the row is stored: a drain that ran first would find nothing.
+    expect(recordPaymentEventMock.mock.invocationCallOrder[0]).toBeLessThan(
+      kickDrainMock.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('kicks again on a redelivery, in case the first kick was lost', async () => {
+    recordPaymentEventMock.mockResolvedValue({ duplicate: true, inboxId: 'inbox-1' });
+
+    await POST(webhookRequest(PAYMENT), PARAMS);
+
+    expect(kickDrainMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not drain for a delivery it could not authenticate', async () => {
+    const tampered = JSON.parse(PAYMENT) as { signature: string };
+    tampered.signature = '0'.repeat(64);
+
+    await POST(webhookRequest(JSON.stringify(tampered)), PARAMS);
+
+    expect(kickDrainMock).not.toHaveBeenCalled();
   });
 
   it('keys the stored source hash rather than storing the address', async () => {

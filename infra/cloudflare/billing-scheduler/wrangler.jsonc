@@ -16,8 +16,11 @@
     "required": ["BILLING_INTERNAL_HMAC_SECRET"],
   },
   "triggers": {
-    // Every minute: a paid order should become Premium in seconds, not minutes,
-    // and the per-attempt backoff in the application decides real provider load.
-    "crons": ["* * * * *"],
+    // Every 15 minutes, as a safety net only (RIN-1625). A paid order becomes
+    // Premium in seconds because the payment webhook drains the inbox itself
+    // and /checkout settles on return; this tick catches a lost kick, an order
+    // the provider never sent a webhook for, and the billing alert sweep.
+    // Each tick is two Function invocations: 96 ticks x 2 = 192 a day.
+    "crons": ["*/15 * * * *"],
   },
 }

@@ -1,4 +1,5 @@
 import { Link } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { buildLocalizedMetadata } from '@/lib/seo';
@@ -71,7 +72,7 @@ export default async function AuthorsPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6">
           <div className="grid sm:grid-cols-2 gap-6">
             {authors.map((author) => (
-              <Link
+              <IntentPrefetchLink
                 key={author.slug}
                 href={`/blog/authors/${author.slug}`}
                 className="group overflow-hidden rounded-3xl border border-neutral-200 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg"
@@ -96,7 +97,7 @@ export default async function AuthorsPage({ params }: Props) {
                     {author.shortBio}
                   </p>
                 </div>
-              </Link>
+              </IntentPrefetchLink>
             ))}
           </div>
         </div>

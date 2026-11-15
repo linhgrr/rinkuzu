@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { QuizCard, QuizCardSkeleton } from './QuizCard';
 
 vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ prefetch: vi.fn() }),
   Link: ({
     href,
     children,

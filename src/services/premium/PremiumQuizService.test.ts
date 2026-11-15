@@ -705,6 +705,19 @@ describe('PremiumQuizService preview (RIN-1722)', () => {
     ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
   });
 
+  it('refuses flashcard card and reveal for a preview cursor with unlock_required', async () => {
+    const { service, premiumRepository, session } = previewSetup();
+    const start = await service.startSession({ userId: learner }, '507f191e810c19729de860ea');
+    const cursor = start.nextCursor ?? '';
+    premiumRepository.findSession.mockResolvedValue(session);
+    await expect(service.getFlashcard(session.userId, session.id, cursor)).rejects.toMatchObject({
+      code: 'unlock_required',
+    } satisfies Partial<PremiumQuizError>);
+    await expect(service.revealFlashcard(session.userId, session.id, cursor)).rejects.toMatchObject(
+      { code: 'unlock_required' } satisfies Partial<PremiumQuizError>,
+    );
+  });
+
   it('refuses saveProgress at index 5 and accepts index 4', async () => {
     const { service, premiumRepository, session } = previewSetup();
     premiumRepository.updateProgress.mockResolvedValue(session);

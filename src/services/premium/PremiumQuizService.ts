@@ -673,6 +673,7 @@ export class PremiumQuizService {
     cursor: string,
   ): Promise<PremiumFlashcardResponse> {
     const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
+    if (session.preview === true) throw previewLockedError();
     await this.requireBatchQuota(sessionId, userId, 'Too many Premium flashcard requests');
     const publication = await this.requireFreshSessionPublication(session, decoded);
     return this.buildFlashcard(publication, session, decoded.batchIndex);
@@ -684,6 +685,7 @@ export class PremiumQuizService {
     cursor: string,
   ): Promise<PremiumFlashcardRevealResponse> {
     const { decoded, session } = await this.decodeSessionCursor(sessionId, userId, cursor);
+    if (session.preview === true) throw previewLockedError();
     if (decoded.snapshotHash !== session.snapshotHash) {
       throw new PremiumQuizError('invalid_cursor', 'Cursor snapshot is stale');
     }

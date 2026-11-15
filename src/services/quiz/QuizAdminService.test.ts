@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { Quiz } from '@/entities/Quiz';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { QuizAdminService } from '@/services/quiz/QuizAdminService';
+
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 
 const quiz: Quiz = {
   id: '507f191e810c19729de860ea',
@@ -224,6 +227,7 @@ describe('QuizAdminService', () => {
         id: quiz.id,
         author: quiz.author,
         visibility: quiz.visibility,
+        slug: quiz.slug,
       }),
       delete: vi.fn().mockResolvedValue(true),
     });
@@ -238,6 +242,7 @@ describe('QuizAdminService', () => {
     expect(repository.findAccessById).toHaveBeenCalledWith('507f191e810c19729de860ea');
     expect(repository.findById).not.toHaveBeenCalled();
     expect(repository.delete).toHaveBeenCalledWith('507f191e810c19729de860ea');
+    expect(revalidateQuizPages).toHaveBeenCalledWith([quiz.slug]);
   });
 
   describe('setAdminQuizVisibility', () => {
@@ -270,6 +275,8 @@ describe('QuizAdminService', () => {
       expect(repository.update).toHaveBeenCalledTimes(1);
       expect(repository.update).toHaveBeenCalledWith(quiz.id, { visibility: 'personal' });
       expect(deps.premiumRepository.findActivePublicationByQuizId).not.toHaveBeenCalled();
+      // RIN-1647: the hidden quiz leaves its cached signed-out page at once.
+      expect(revalidateQuizPages).toHaveBeenCalledWith([quiz.slug, quiz.slug]);
       expect(deps.auditRepository.record).toHaveBeenCalledTimes(1);
       expect(deps.auditRepository.record).toHaveBeenCalledWith({
         actorId: actor.id,
@@ -314,6 +321,7 @@ describe('QuizAdminService', () => {
       });
       expect(repository.update).not.toHaveBeenCalled();
       expect(deps.auditRepository.record).not.toHaveBeenCalled();
+      expect(revalidateQuizPages).not.toHaveBeenCalled();
     });
 
     it('returns 404 for a missing quiz', async () => {
@@ -358,6 +366,7 @@ describe('QuizAdminService', () => {
       expect(result).toMatchObject({ success: false, statusCode: 500 });
       expect(repository.update).toHaveBeenNthCalledWith(1, quiz.id, { visibility: 'personal' });
       expect(repository.update).toHaveBeenNthCalledWith(2, quiz.id, { visibility: 'public' });
+      expect(revalidateQuizPages).toHaveBeenCalledWith([quiz.slug]);
     });
 
     it('fails closed when constructed without audit dependencies', async () => {

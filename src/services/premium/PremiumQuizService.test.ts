@@ -8,6 +8,7 @@ import type {
 } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
 import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
 
@@ -17,6 +18,7 @@ const entitlementMocks = vi.hoisted(() => ({
 
 const loggerMocks = vi.hoisted(() => ({ warn: vi.fn() }));
 
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 vi.mock('@/lib/logger', () => ({
   logger: { warn: loggerMocks.warn, info: vi.fn(), error: vi.fn() },
 }));
@@ -579,6 +581,33 @@ describe('PremiumQuizService', () => {
       expect(notifier.queueRejectEmail).not.toHaveBeenCalled();
     });
 
+    it.each(['approve', 'reject', 'request_changes'] as const)(
+      'revalidates the cached signed-out page after %s (RIN-1647)',
+      async (decision) => {
+        const { service, premiumRepository } = setup();
+        const result = decided('approved');
+        premiumRepository.decide.mockResolvedValue(result);
+
+        await service.decide('507f191e810c19729de860ef', result.submission.id, {
+          decision,
+          credits: 0,
+        });
+
+        expect(revalidateQuizPages).toHaveBeenCalledWith([result.submission.snapshot.slug]);
+      },
+    );
+
+    it('revalidates nothing when the decision itself fails (RIN-1647)', async () => {
+      const { service, premiumRepository } = setup();
+      premiumRepository.decide.mockRejectedValue(new PremiumQuizError('conflict', 'changed'));
+
+      await service
+        .decide('507f191e810c19729de860ef', publication().id, { decision: 'approve', credits: 3 })
+        .catch(() => undefined);
+
+      expect(revalidateQuizPages).not.toHaveBeenCalled();
+    });
+
     it('keeps the decision when the email cannot be queued, and logs it', async () => {
       const { service, premiumRepository, notifier } = setup();
       const result = decided('rejected');
@@ -664,6 +693,18 @@ describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
       causeCode: null,
       quizId: source.id,
     });
+  });
+
+  it('revalidates the restored quiz page by its slug (RIN-1647)', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.createSubmission.mockRejectedValue(new Error('db write failed'));
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    await service
+      .submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true })
+      .catch(() => undefined);
+
+    expect(revalidateQuizPages).toHaveBeenCalledWith([source.slug]);
   });
 
   it('keeps the Premium refusal as the cause', async () => {

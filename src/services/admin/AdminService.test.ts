@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { AdminService } from '@/services/admin/AdminService';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
@@ -6,6 +7,8 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUserRepository';
 import type { IDashboardQuizRepository } from '@/interfaces/repositories/IDashboardQuizRepository';
+
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 
 const pagination = {
   currentPage: 1,
@@ -274,6 +277,8 @@ describe('AdminService report and stats contracts', () => {
       },
     });
     expect(updateQuestionById).toHaveBeenCalledWith(quizId, questionId, input);
+    // RIN-1647: the edited question shows on the cached signed-out page at once.
+    expect(revalidateQuizPages).toHaveBeenCalledWith(['algebra']);
   });
 
   // RIN-1341: an admin edit that adds personal data flags the quiz like an owner edit.

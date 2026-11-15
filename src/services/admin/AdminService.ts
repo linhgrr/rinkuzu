@@ -35,6 +35,7 @@ import type { IRecentUserRepository } from '@/interfaces/repositories/IRecentUse
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IAdminStatsRepository } from '@/interfaces/repositories/IAdminStatsRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { logger } from '@/lib/logger';
 import { resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
@@ -341,6 +342,8 @@ export class AdminService implements IAdminService {
     if (!quiz) return;
     const contentFlags = resolveQuizContentFlags(quiz, quiz.contentFlags, new Date());
     await this.quizRepository.update(quizId, { contentFlags });
+    // The edited question and any new flag show on the cached signed-out page (RIN-1647).
+    revalidateQuizPages([quiz.slug]);
   }
 
   async updateReportedQuestion(

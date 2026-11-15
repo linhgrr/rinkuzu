@@ -25,6 +25,8 @@ export default defineConfig({
     retry: 0,
     testTimeout: 20_000,
     environment: 'node',
+    // next-intl's middleware imports `next/server` without an extension (RIN-1679).
+    server: { deps: { inline: ['next-intl'] } },
     include: ['src/**/*.{test,spec}.ts', 'tests/**/*.{test,spec}.ts'],
     exclude: [
       'node_modules/**',

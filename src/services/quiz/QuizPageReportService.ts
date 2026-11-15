@@ -5,6 +5,7 @@ import type { IQuizPageReportRepository } from '@/interfaces/repositories/IRepor
 import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { notifyQuizIndexNow } from '@/lib/seo/quiz-search-change';
 import { QuizDiscussionDtoMapper } from '@/mappers/quiz/QuizDiscussionDtoMapper';
 import { holdsQuizIndex, type ReportReason } from '@/shared/constants/report-reason';
@@ -63,6 +64,8 @@ export class QuizPageReportService {
             slug: quiz.slug,
             cause: 'index-hold',
           });
+          // The page turns noindex at once, not after the revalidate window (RIN-1647).
+          revalidateQuizPages([quiz.slug]);
         }
       }
 

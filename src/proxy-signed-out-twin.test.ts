@@ -69,3 +69,41 @@ describe('proxy: signed-out twins (RIN-1646)', () => {
     expect(response.headers.get('location')).toBe(`${ORIGIN}/vi/explore/toan-hoc?q=a`);
   });
 });
+
+describe('proxy: Cloudflare-CDN-Cache-Control (RIN-1679)', () => {
+  const header = async (path: string, init: { method?: string; cookie?: string } = {}) =>
+    (await run(path, init)).headers.get('cloudflare-cdn-cache-control');
+
+  it('is public for a cookie-less public page and the explore twin', async () => {
+    expect(await header('/vi/about')).toBe('public, max-age=300, stale-while-revalidate=600');
+    expect(await header('/vi/explore')).toBe('public, max-age=300, stale-while-revalidate=600');
+  });
+
+  it('is no-store with a session cookie, a POST, or a non-allowlisted page', async () => {
+    expect(await header('/vi/about', { cookie: 'authjs.session-token=junk' })).toBe('no-store');
+    expect(await header('/vi/about', { method: 'POST' })).toBe('no-store');
+    expect(await header('/vi/quiz/some-slug')).toBe('no-store');
+  });
+
+  it('is no-store on a redirect and absent on /api', async () => {
+    expect(await header('/vi/signed-out/explore')).toBe('no-store');
+    expect(await header('/api/ready')).toBeNull();
+  });
+});
+
+describe('proxy: proxied twin pass keeps the public header (RIN-1679)', () => {
+  it('judges a marked twin request by its public URL, an unmarked one as no-store', async () => {
+    const marked = await proxy(
+      new NextRequest(`${ORIGIN}/vi/signed-out/explore`, {
+        headers: { 'x-rinkuzu-signed-out-twin': '1' },
+      }),
+      {} as NextFetchEvent,
+    );
+    expect(marked?.headers.get('cloudflare-cdn-cache-control')).toBe(
+      'public, max-age=300, stale-while-revalidate=600',
+    );
+
+    const direct = await run('/vi/signed-out/explore');
+    expect(direct.headers.get('cloudflare-cdn-cache-control')).toBe('no-store');
+  });
+});

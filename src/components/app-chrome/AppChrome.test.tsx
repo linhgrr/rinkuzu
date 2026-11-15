@@ -20,8 +20,9 @@ const SIGNED_IN: SessionState = {
   status: 'authenticated',
 };
 
-const { swrMock, sessionState, routeState } = vi.hoisted(() => ({
+const { swrMock, prefetchMock, sessionState, routeState } = vi.hoisted(() => ({
   swrMock: vi.fn(),
+  prefetchMock: vi.fn(),
   sessionState: { current: null as unknown },
   routeState: { pathname: '/dashboard' },
 }));
@@ -41,7 +42,7 @@ vi.mock('@/i18n/navigation', () => ({
     </a>
   ),
   usePathname: () => routeState.pathname,
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), prefetch: prefetchMock }),
 }));
 
 vi.mock('next-auth/react', () => ({
@@ -69,6 +70,24 @@ describe('AppChrome', () => {
   beforeEach(() => {
     sessionState.current = SIGNED_IN;
     routeState.pathname = '/dashboard';
+    prefetchMock.mockClear();
+  });
+
+  it('prefetches a sidebar target once, on hover or focus, never on mount (RIN-1707)', () => {
+    swrMock.mockReturnValue({ data: undefined, isLoading: false });
+    render(
+      <AppChrome>
+        <main>Dashboard content</main>
+      </AppChrome>,
+    );
+    expect(prefetchMock).not.toHaveBeenCalled();
+
+    const link = screen.getAllByRole('link').find((a) => a.getAttribute('href') === '/create');
+    expect(link).toBeDefined();
+    fireEvent.pointerEnter(link as HTMLElement);
+    fireEvent.focus(link as HTMLElement);
+    expect(prefetchMock).toHaveBeenCalledTimes(1);
+    expect(prefetchMock).toHaveBeenCalledWith('/create');
   });
 
   it('provides a skip link and semantic active navigation', async () => {

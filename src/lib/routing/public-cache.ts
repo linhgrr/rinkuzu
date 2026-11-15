@@ -64,6 +64,36 @@ export function publicPathname(pathname: string): string {
   return pathname.startsWith(`${prefix}/`) ? pathname.slice(prefix.length) : pathname;
 }
 
+/** Edge cache lifetime for public HTML (RIN-1679). */
+const CDN_PUBLIC_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=600';
+const CDN_NO_STORE = 'no-store';
+
+// Pages every visitor sees alike when signed out. `/quiz/<slug>` joins once
+// RIN-1647 makes it a signed-out twin.
+const PUBLIC_PAGE_PATH =
+  /^\/(?:vi|en)(?:\/(?:(?:about|faq|contact|pricing|privacy|terms|cookies|try|explore)|try\/(?:pdf|text)|blog(?:\/.*)?|explore\/[^/]+))?\/?$/;
+
+export interface CdnCacheInput {
+  method: string;
+  pathname: string;
+  cookieNames: Iterable<string>;
+  status: number;
+  setsCookie: boolean;
+}
+
+/**
+ * The `Cloudflare-CDN-Cache-Control` value for a page response: public only for
+ * a cookie-less GET/HEAD of an allowlisted path that is a plain 200 without a
+ * Set-Cookie. Session cookie presence is enough; no decoding.
+ */
+export function cdnCacheControlFor(input: CdnCacheInput): string {
+  const { method, pathname, cookieNames, status, setsCookie } = input;
+  if (method !== 'GET' && method !== 'HEAD') return CDN_NO_STORE;
+  if (status !== 200 || setsCookie) return CDN_NO_STORE;
+  if (!PUBLIC_PAGE_PATH.test(pathname) || hasSessionCookie(cookieNames)) return CDN_NO_STORE;
+  return CDN_PUBLIC_CACHE_CONTROL;
+}
+
 /** The internal twin path of a quiz page; `slug` is already URL-encoded. */
 export function signedOutTwinQuizPath(locale: string, slug: string): string {
   return `/${locale}/${SIGNED_OUT_TWIN_SEGMENT}/quiz/${slug}`;

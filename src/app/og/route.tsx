@@ -4,6 +4,8 @@ import { parseOgParams } from './parse-og-params';
 export const runtime = 'edge';
 
 const SIZE = { width: 1200, height: 630 };
+// Pure function of the query string (RIN-1679).
+const CACHE_CONTROL = 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
 const LIGHT_MINT = '#e9fdf4';
 
 export function GET(request: Request): ImageResponse {
@@ -78,6 +80,6 @@ export function GET(request: Request): ImageResponse {
         rinkuzu.app · Powered by Gemini AI
       </span>
     </div>,
-    SIZE,
+    { ...SIZE, headers: { 'Cache-Control': CACHE_CONTROL } },
   );
 }

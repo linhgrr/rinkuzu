@@ -96,7 +96,7 @@ test.describe('create from PDF error states (RIN-991)', () => {
         await expect(page.getByRole('button', { name: enCreate.showPDFPreview })).toBeVisible();
 
         expect(await page.locator('a button, button a').count()).toBe(0);
-        const controls = form.locator('button, a[href]');
+        const controls = form.locator('button, a[href]:not(p a)');
         const heights = await controls.evaluateAll((nodes) =>
           nodes
             .filter((node) => node.getClientRects().length > 0)

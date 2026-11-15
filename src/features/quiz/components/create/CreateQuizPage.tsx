@@ -1,6 +1,7 @@
 'use client';
 
-import { Link, useRouter } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import { matchesMedia } from '@/hooks/useMediaQuery';
 import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 import { useCallback, useEffect, useReducer } from 'react';
@@ -59,7 +60,7 @@ interface CreateQuizState {
   pdfFile: File | null;
   showPDFViewer: boolean;
   extracting: boolean;
-  /** File-level errors (type, size, pages), shown above the card. */
+  /** File-level errors (type, size, pages), shown in the card above the dropzone. */
   error: string;
   /** Submit-step errors, shown next to the submit button (RIN-991). */
   submitError: string;
@@ -394,8 +395,6 @@ function CreateQuizFormCard({
 
   return (
     <>
-      <CreateQuizErrorAlert message={error} className="mx-auto mb-6 max-w-2xl" />
-
       <Card
         variant="glass"
         className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl"
@@ -451,25 +450,28 @@ function CreateQuizFormCard({
               disabled={extracting}
             />
 
-            <UploadSection
-              extracting={extracting}
-              getInputProps={getInputProps}
-              getRootProps={getRootProps}
-              isDragActive={isDragActive}
-              onRemoveFile={onRemoveFile}
-              pdfFile={pdfFile}
-              maxPages={maxPages}
-              t={t}
-            />
+            <div className="space-y-6">
+              <CreateQuizErrorAlert message={error} focusOnShow />
+              <UploadSection
+                extracting={extracting}
+                getInputProps={getInputProps}
+                getRootProps={getRootProps}
+                isDragActive={isDragActive}
+                onRemoveFile={onRemoveFile}
+                pdfFile={pdfFile}
+                maxPages={maxPages}
+                t={t}
+              />
+            </div>
 
-            <div className="flex flex-col gap-4 pt-4">
+            <div className="flex flex-col gap-4">
               {pdfFile && (
                 <div className="flex justify-center">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={onTogglePreview}
-                    className="min-h-[40px] border-green-200 px-4 text-brand-trust hover:bg-green-50"
+                    className="min-h-11 border-green-200 px-4 text-brand-trust hover:bg-green-50"
                   >
                     {showPDFViewer ? (
                       <HiOutlineEyeOff className="size-4 mr-2" />
@@ -484,23 +486,19 @@ function CreateQuizFormCard({
               <CreateQuizErrorAlert message={submitError} focusOnShow />
 
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-                <Link href="/">
-                  <Button type="button" variant="outline" className="w-full sm:w-auto">
-                    <HiOutlineX className="size-4 mr-2" />
-                    {tCommon('cancel')}
-                  </Button>
-                </Link>
+                <IntentPrefetchLink
+                  href={ROUTES.CREATE_QUIZ}
+                  className="btn btn-secondary min-h-11 w-full sm:w-auto"
+                >
+                  <HiOutlineX className="size-4 mr-2" />
+                  {tCommon('cancel')}
+                </IntentPrefetchLink>
 
                 <Button
                   type="submit"
                   variant="gradient"
                   size="lg"
                   loading={extracting}
-                  disabled={
-                    !title.trim() ||
-                    !pdfFile ||
-                    (privacyControl?.submitToPremium === true && !privacyControl.rightsAttested)
-                  }
                   className="w-full sm:w-auto"
                 >
                   {extracting ? (
@@ -646,6 +644,11 @@ export function CreateQuizPage() {
       return;
     }
 
+    if (state.submitToPremium && !state.rightsAttested) {
+      dispatch({ type: 'patch', value: { submitError: t('premiumRightsRequired') } });
+      return;
+    }
+
     dispatch({ type: 'patch', value: { extracting: true, error: '', submitError: '' } });
 
     let pendingS3Key: string | null = null;
@@ -693,9 +696,9 @@ export function CreateQuizPage() {
   }
 
   return (
-    <div className="min-h-[100dvh]">
-      <main className="pt-20">
-        <div className="flex min-h-[100dvh]">
+    <div>
+      <main className="pt-6">
+        <div className="flex">
           <div
             className={`px-4 pb-8 sm:px-6 lg:px-8 ${state.showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
           >
@@ -722,7 +725,9 @@ export function CreateQuizPage() {
               onSubmit={(event) => {
                 void handleBackgroundExtract(event);
               }}
-              onTitleChange={(value) => dispatch({ type: 'patch', value: { title: value } })}
+              onTitleChange={(value) =>
+                dispatch({ type: 'patch', value: { title: value, submitError: '' } })
+              }
               onTogglePreview={() =>
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }

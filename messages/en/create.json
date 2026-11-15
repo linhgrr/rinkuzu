@@ -94,6 +94,7 @@
   "titleRequired": "Quiz title is required",
   "selectCategory": "Please select a category",
   "uploadOnePDF": "Please upload at least one PDF file",
+  "premiumRightsRequired": "Confirm that you have the right to share this document to submit it to Premium",
   "quizInformation": "Quiz Information",
   "editTitleDescription": "Edit the quiz title and description",
   "quizTitleRequired": "Quiz Title (Required)",

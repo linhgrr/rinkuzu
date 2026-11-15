@@ -32,7 +32,7 @@ nonce` plus a single-use nonce:
 - `POST /api/internal/billing/process` drains the webhook inbox and sweeps the paid-but-unfulfilled backlog.
 - `POST /api/internal/billing/reconcile` polls due payment attempts against the provider and releases expired promo reservations.
 
-`infra/cloudflare/billing-scheduler` is the only caller. It runs on a one-minute Cloudflare cron and signs each request with `BILLING_INTERNAL_HMAC_SECRET`. **Without a running scheduler, a customer only becomes Premium if they return to `/checkout` from the provider — anyone who pays and closes the tab is charged and gets nothing.** `src/services/billing/billing-security.test.ts` pins the scheduler's signing string against the verifier.
+`infra/cloudflare/billing-scheduler` is the only caller. It runs on a 15-minute Cloudflare cron as a safety net and signs each request with `BILLING_INTERNAL_HMAC_SECRET`. The payment webhook (`/api/billing/webhooks/[provider]`) drains the inbox itself after it answers the provider (`kickWebhookInboxDrain`, RIN-1625), so a paid order becomes Premium in seconds; the cron only picks up a lost kick and orders the provider never sent a webhook for. **Without a running scheduler, a lost kick or a missing webhook leaves a customer who paid and closed the tab without Premium.** `src/services/billing/billing-security.test.ts` pins the scheduler's signing string against the verifier.
 
 Each drain stops on a wall-clock budget (see `DEFAULT_BATCH_BUDGET_MS`) so the serverless function never dies mid-batch and burns inbox attempt counts. A batch that stops early reports `exhaustedBudget` and logs a warning.
 

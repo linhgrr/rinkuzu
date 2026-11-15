@@ -3,6 +3,7 @@ import { billingWebhookParamsSchema } from '@/dtos/billing';
 import { readAndValidateRouteParams } from '@/lib/api/request';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { createWebhookInboxRepository } from '@/lib/billing-factory';
+import { kickWebhookInboxDrain } from '@/lib/billing-inbox-kick';
 import { consumeBillingRateLimit } from '@/lib/billing-rate-limit';
 import type {
   IWebhookInboxRepository,
@@ -73,6 +74,9 @@ export async function POST(
 
     if (outcome.kind === 'accepted') {
       const result = await inbox.recordPaymentEvent(paymentEventFromWebhook(outcome, facts));
+      // Kicked on a redelivery too: the provider retrying is the sign the first
+      // kick may have been lost, and the drain's lease makes a second one safe.
+      kickWebhookInboxDrain();
       return apiOk(result, 200);
     }
 

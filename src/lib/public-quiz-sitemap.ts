@@ -1,3 +1,4 @@
+import { isProductionBuildPhase } from '@/lib/build-phase';
 import { getQuizService } from '@/lib/quiz-factory';
 import { logger } from '@/lib/logger';
 
@@ -13,6 +14,7 @@ const PUBLIC_QUIZ_SITEMAP_LIMIT = 5000;
 export async function loadPublicQuizSitemapEntries(
   failureMessage: string,
 ): Promise<PublicQuizSitemapEntry[]> {
+  if (isProductionBuildPhase()) return [];
   try {
     // Indexable quizzes only: no test or company owners (RIN-840), 5+ questions (RIN-1241).
     const quizzes = await getQuizService().getPublicSitemapQuizzes(PUBLIC_QUIZ_SITEMAP_LIMIT);

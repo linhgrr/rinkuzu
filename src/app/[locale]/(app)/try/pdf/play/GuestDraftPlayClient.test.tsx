@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import enGuest from '../../../../../../../messages/en/guestDraft.json';
 import { ApiResponseError } from '@/lib/api/client';
+import { readGuestDraftRound } from '@/features/guest-draft/lib/guest-draft-round';
 import {
   addGuestDraftClaim,
   rememberClaimedGuestDraftQuiz,
@@ -101,6 +102,8 @@ describe('GuestDraftPlayClient (RIN-1448)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/');
     playerProps.current = null;
     session.status = 'unauthenticated';
   });
@@ -271,6 +274,69 @@ describe('GuestDraftPlayClient (RIN-1448)', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       const guestDraft = playerProps.current?.['guestDraft'] as { moreQuestions: unknown[] };
       expect(guestDraft.moreQuestions).toEqual([]);
+    });
+
+    it('stops polling when the draft is gone (404) and keeps the round', async () => {
+      fetchGuestDraftProgress.mockRejectedValue(
+        new ApiResponseError({ message: 'gone', status: 404, payload: null }),
+      );
+      renderClient();
+
+      await screen.findByTestId('player');
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+      await waitFor(() =>
+        expect(screen.getByTestId('counter')).toHaveTextContent('Question 1 of 2'),
+      );
+      expect(screen.getByTestId('counter')).not.toHaveTextContent('+');
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      expect(fetchGuestDraftProgress).toHaveBeenCalledOnce();
+    });
+
+    it('remembers the round it submitted, from the first question, while more is pending', async () => {
+      fetchGuestDraftProgress.mockResolvedValue(status(2, false));
+      submitGuestDraftAttempt.mockResolvedValue({ attemptId: 'attempt-first', score: 50 });
+      renderClient('text');
+      await screen.findByTestId('player');
+
+      const guestDraft = playerProps.current?.['guestDraft'] as {
+        submitAttempt: (input: object) => Promise<unknown>;
+      };
+      const input = { answers: [1, 0], idempotencyKey: 'key', guestClaimToken: 'claim' };
+      await guestDraft.submitAttempt(input);
+
+      // No range for the first round: the server takes the first answers.length questions.
+      expect(submitGuestDraftAttempt).toHaveBeenCalledWith('fake-draft-token', input);
+      expect(readGuestDraftRound('attempt-first')).toEqual({
+        from: 0,
+        count: 2,
+        pending: true,
+        source: 'text',
+      });
+    });
+
+    it('plays only the new questions after "Keep going" and submits their range', async () => {
+      window.history.replaceState(null, '', '/try/pdf/play?from=2');
+      fetchGuestDraftPlay.mockReset();
+      fetchGuestDraftPlay.mockResolvedValueOnce({ quiz: fullDraft, complete: true });
+      submitGuestDraftAttempt.mockResolvedValue({ attemptId: 'attempt-second', score: 100 });
+      renderClient();
+      await screen.findByTestId('player');
+
+      const opened = playerProps.current?.['initialQuiz'] as { questions: { id: string }[] };
+      expect(opened.questions.map((item) => item.id)).toEqual(['q3', 'q4']);
+      expect(screen.getByTestId('counter')).toHaveTextContent('Question 1 of 2');
+
+      const guestDraft = playerProps.current?.['guestDraft'] as {
+        submitAttempt: (input: object) => Promise<unknown>;
+      };
+      const input = { answers: [0, 1], idempotencyKey: 'key-2', guestClaimToken: 'claim-2' };
+      await guestDraft.submitAttempt(input);
+      expect(submitGuestDraftAttempt).toHaveBeenCalledWith('fake-draft-token', {
+        ...input,
+        questionRange: { from: 2, count: 2 },
+      });
+      expect(readGuestDraftRound('attempt-second')).toMatchObject({ from: 2, count: 2 });
+      window.history.replaceState(null, '', '/');
     });
 
     it('keeps polling through a failed check and stops on unmount', async () => {

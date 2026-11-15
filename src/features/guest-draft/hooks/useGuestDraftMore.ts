@@ -27,10 +27,7 @@ const MORE_MAX_POLLS = 300;
  * The card for one status answer: null when the draft needs no card (the round already
  * covers every stored question of a finished draft).
  */
-function moreFor(
-  progress: GuestDraftProgress,
-  round: GuestDraftRound,
-): GuestDraftMore | null {
+function moreFor(progress: GuestDraftProgress, round: GuestDraftRound): GuestDraftMore | null {
   if (progress.status === 'failed') return { kind: 'failed' };
   const finished = progress.status === 'ready' && progress.complete !== false;
   if (!finished) return { kind: 'pending' };

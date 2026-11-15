@@ -179,7 +179,10 @@ export function DraftRow({ draft, dateFormatter, onDelete }: DraftRowProps) {
             </Button>
           ) : null}
           {status === 'failed' ? (
-            <Link href={ROUTES.CREATE_QUIZ_PDF} className="btn btn-secondary">
+            <Link
+              href={draft.sourceType === 'text' ? ROUTES.CREATE_QUIZ_TEXT : ROUTES.CREATE_QUIZ_PDF}
+              className="btn btn-secondary"
+            >
               {t('draftTryAgain')}
             </Link>
           ) : null}

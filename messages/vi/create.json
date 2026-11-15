@@ -19,7 +19,7 @@
   "continueEditing": "Tiếp tục",
   "draftProgress": "Đã xử lý {processed}/{total} phần",
   "draftProgressIndeterminate": "Đang chuẩn bị câu hỏi…",
-  "draftFailedReason": "Chưa xử lý xong. Thử lại với cùng tệp.",
+  "draftFailedReason": "Chưa xử lý xong. Hãy thử lại.",
   "draftExpiredReason": "Bản nháp này đã hết hạn. Hãy xóa và bắt đầu lại.",
   "draftCancelledReason": "Đã hủy xử lý.",
   "draftTryAgain": "Thử lại",

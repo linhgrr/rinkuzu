@@ -19,7 +19,7 @@
   "continueEditing": "Continue",
   "draftProgress": "{processed} of {total} parts processed",
   "draftProgressIndeterminate": "Preparing your questions…",
-  "draftFailedReason": "Processing didn't finish. Try again with the same file.",
+  "draftFailedReason": "Processing didn't finish. Try again.",
   "draftExpiredReason": "This draft expired. Delete it and start again.",
   "draftCancelledReason": "Processing was cancelled.",
   "draftTryAgain": "Try again",

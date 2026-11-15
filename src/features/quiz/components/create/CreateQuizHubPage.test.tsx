@@ -352,6 +352,15 @@ describe('CreateQuizHubPage', () => {
       expect(screen.getByRole('button', { name: 'deleteDraftNamed' })).toBeEnabled();
     });
 
+    it('sends a failed paste-text draft back to the text form (RIN-1733)', () => {
+      renderWith({ status: 'failed', sourceType: 'text', errorCode: null });
+
+      expect(screen.getByRole('link', { name: 'draftTryAgain' })).toHaveAttribute(
+        'href',
+        '/create/text',
+      );
+    });
+
     it('falls back to the generic reason when the failure has no code', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       renderWith({ status: 'failed', error: 'raw server text', errorCode: null });

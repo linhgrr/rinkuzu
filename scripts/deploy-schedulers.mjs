@@ -165,8 +165,7 @@ for (const worker of selected) {
     }
     const secretResult = run([WRANGLER, 'secret', 'put', secret], {
       cwd,
-      input: `${process.env[secret].trim()}
-`,
+      input: `${process.env[secret].trim()}\n`,
     });
     if (secretResult.status !== 0) {
       console.error(`[deploy] failed to publish ${secret} for ${worker.name}`);

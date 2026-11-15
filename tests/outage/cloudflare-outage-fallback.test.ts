@@ -203,20 +203,44 @@ describe('outage fallback: origin down', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
-  it('treats a Vercel platform error on an API route as the origin being down', async () => {
-    const { run } = setup(
-      async () =>
-        new Response('FUNCTION_INVOCATION_FAILED', {
-          status: 500,
-          headers: { 'x-vercel-error': 'FUNCTION_INVOCATION_FAILED' },
-        }),
-    );
+  it.each([
+    [500, 'FUNCTION_INVOCATION_FAILED'],
+    [504, 'FUNCTION_INVOCATION_TIMEOUT'],
+  ])(
+    'passes a function-level %i %s on an API route through and keeps the site up',
+    async (status, code) => {
+      const { run, fetcher, cache } = setup(
+        async () => new Response(code, { status, headers: { 'x-vercel-error': code } }),
+      );
 
-    const response = await run(new Request(`${SITE}/api/quizzes`));
+      const response = await run(new Request(`${SITE}/api/x`));
+      expect(response.status).toBe(status);
+      expect(response.headers.get('x-vercel-error')).toBe(code);
+      expect(await response.text()).toBe(code);
+      expect((cache as FakeCache).entries.size).toBe(0);
 
-    expectOutageHeaders(response);
-    expect(await response.text()).not.toContain('FUNCTION_INVOCATION_FAILED');
-  });
+      await run(navigation('/en'));
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each([
+    [500, 'FUNCTION_INVOCATION_FAILED'],
+    [504, 'FUNCTION_INVOCATION_TIMEOUT'],
+  ])(
+    'serves the page for a function-level %i %s on a navigation without setting the flag',
+    async (status, code) => {
+      const { run, cache } = setup(
+        async () => new Response(code, { status, headers: { 'x-vercel-error': code } }),
+      );
+
+      const response = await run(navigation('/en/quizzes'));
+
+      expectOutageHeaders(response);
+      expect(await response.text()).not.toContain(code);
+      expect((cache as FakeCache).entries.size).toBe(0);
+    },
+  );
 });
 
 describe('outage fallback: down flag', () => {
@@ -259,6 +283,41 @@ describe('outage fallback: down flag', () => {
 
     const [entry] = [...(cache as FakeCache).entries.values()];
     expect(entry?.headers.get('cache-control')).toBe('max-age=30');
+  });
+
+  it.each([
+    ['402 DEPLOYMENT_DISABLED', 402, { 'x-vercel-error': 'DEPLOYMENT_DISABLED' }],
+    ['503 DEPLOYMENT_PAUSED', 503, { 'x-vercel-error': 'DEPLOYMENT_PAUSED' }],
+    ['404 DEPLOYMENT_NOT_FOUND', 404, { 'x-vercel-error': 'DEPLOYMENT_NOT_FOUND' }],
+    ['Cloudflare 522', 522, {}],
+    ['Cloudflare 520', 520, {}],
+    ['Cloudflare 530', 530, {}],
+    ['502 without x-vercel-error', 502, {}],
+    ['504 without x-vercel-error', 504, {}],
+  ])('sets the flag for %s', async (_label, status, headers) => {
+    const { run, fetcher, cache } = setup(async () => new Response('x', { status, headers }));
+
+    const api = await run(new Request(`${SITE}/api/x`));
+    expect(api.status).toBe(503);
+    expectOutageHeaders(api);
+    expect((cache as FakeCache).entries.size).toBe(1);
+
+    await run(navigation('/en'));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['500 without x-vercel-error', 500, {}],
+    ['503 without x-vercel-error', 503, {}],
+    ['502 NO_RESPONSE_FROM_FUNCTION', 502, { 'x-vercel-error': 'NO_RESPONSE_FROM_FUNCTION' }],
+    ['429 FUNCTION_THROTTLED', 429, { 'x-vercel-error': 'FUNCTION_THROTTLED' }],
+  ])('does not set the flag for %s', async (_label, status, headers) => {
+    const { run, cache } = setup(async () => new Response('x', { status, headers }));
+
+    await run(navigation('/en'));
+    await run(new Request(`${SITE}/api/x`));
+
+    expect((cache as FakeCache).entries.size).toBe(0);
   });
 });
 

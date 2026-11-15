@@ -168,18 +168,21 @@ function outageResponse(request: Request): Response {
 }
 
 /**
- * Failures that mean the whole origin is down, not one route: the platform's
- * own error pages (402 DEPLOYMENT_DISABLED and every `x-vercel-error`) and the
- * gateway codes. The app returns its own 5xx JSON from many API routes; those
- * must not flip the whole site to the outage page.
+ * Failures that mean the whole deployment or origin is gone, so the colo may
+ * skip the origin for 30 s: 402, Vercel's `DEPLOYMENT_*` errors at any status,
+ * Cloudflare's origin errors 520–530, and a 502/504 from a gateway in front of
+ * the app (no `x-vercel-error`). Function-level `x-vercel-error` codes
+ * (`FUNCTION_INVOCATION_FAILED`, `FUNCTION_INVOCATION_TIMEOUT`, ...) and the
+ * app's own 5xx are one broken route: they are handled per request and must
+ * never flip the whole site to the outage page.
  */
 function isOriginDown(response: Response): boolean {
-  return (
-    response.status === 402 ||
-    response.status === 502 ||
-    response.status === 504 ||
-    (response.status >= 500 && response.headers.has('x-vercel-error'))
-  );
+  const { status } = response;
+  const vercelError = response.headers.get('x-vercel-error');
+  if (status === 402) return true;
+  if (vercelError?.startsWith('DEPLOYMENT_')) return true;
+  if (status >= 520 && status <= 530) return true;
+  return (status === 502 || status === 504) && vercelError === null;
 }
 
 function downFlagKey(request: Request): Request {
@@ -286,7 +289,7 @@ async function proxy(
     void response?.body?.cancel().catch(() => undefined);
     return outageResponse(request);
   }
-  // An app-level 5xx on a page is a broken page either way; show the outage
+  // An app- or function-level 5xx on a page is a broken page either way; show the outage
   // page there too, but leave API errors (their JSON envelope) to the app.
   if (response.status >= 500 && isNavigation(request)) {
     void response.body?.cancel().catch(() => undefined);

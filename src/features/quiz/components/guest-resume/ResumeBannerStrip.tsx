@@ -146,7 +146,7 @@ export default function ResumeBannerStrip({
           <Button
             loading={signingIn}
             onClick={saveWithGoogle}
-            className="flex-1 gap-2 whitespace-nowrap sm:flex-none"
+            className="flex-1 gap-2 whitespace-nowrap px-3 sm:flex-none sm:px-4"
           >
             <span className="hidden size-6 items-center justify-center rounded-full bg-white sm:inline-flex">
               <GoogleLogo />
@@ -159,7 +159,7 @@ export default function ResumeBannerStrip({
               captureAnalyticsEvent('guest_resume_banner_clicked', { ...props, target: 'view' })
             }
             className={cn(
-              'btn btn-secondary flex-1 whitespace-nowrap sm:flex-none',
+              'btn btn-secondary shrink-0 whitespace-nowrap px-3 sm:px-4',
               SEE_CLASS[tone],
             )}
           >

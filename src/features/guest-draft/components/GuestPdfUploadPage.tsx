@@ -17,6 +17,7 @@ import { GuestPdfDropZone } from '@/features/guest-draft/components/GuestPdfDrop
 import { useGuestPdfDraft } from '@/features/guest-draft/hooks/useGuestPdfDraft';
 import { GUEST_DRAFT_LIMIT_COPY } from '@/features/guest-draft/lib/guest-limit-copy';
 import type { GuestUploadState } from '@/features/guest-draft/lib/guest-upload-state';
+import { GuestResumeBanner } from '@/features/quiz/components/guest-resume/GuestResumeBanner';
 import { Link } from '@/i18n/navigation';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
@@ -110,19 +111,26 @@ export function GuestPdfUploadPage({ children }: GuestPdfUploadPageProps) {
   const flow = useGuestPdfDraft();
 
   return (
-    <main className="min-h-dvh bg-neutral-50 px-4 py-8 sm:px-6">
-      <div className="mx-auto max-w-xl space-y-6">
-        <Pill>{t('badge')}</Pill>
-        <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
-          {t('title')}
-        </h1>
-        <p className="text-base text-neutral-600">{t('subtitle', GUEST_DRAFT_LIMIT_COPY)}</p>
-        <FlowBody flow={flow} />
-        <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
-          {t('higherLimits')}
-        </Link>
-        {children}
-      </div>
-    </main>
+    <>
+      <GuestResumeBanner page="try" widthClass="max-w-3xl" mainId="main-content" />
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="min-h-dvh bg-neutral-50 px-4 py-8 outline-none sm:px-6"
+      >
+        <div className="mx-auto max-w-xl space-y-6">
+          <Pill>{t('badge')}</Pill>
+          <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
+            {t('title')}
+          </h1>
+          <p className="text-base text-neutral-600">{t('subtitle', GUEST_DRAFT_LIMIT_COPY)}</p>
+          <FlowBody flow={flow} />
+          <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
+            {t('higherLimits')}
+          </Link>
+          {children}
+        </div>
+      </main>
+    </>
   );
 }

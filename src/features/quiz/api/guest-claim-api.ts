@@ -1,6 +1,10 @@
 import type { ClaimGuestDraftsResponseDto } from '@/dtos/guest-draft';
 import type { ClaimGuestAttemptsResponseDto } from '@/dtos/quiz';
-import { clearGuestClaims, readGuestClaims } from '@/features/quiz/lib/guest-claims';
+import {
+  clearGuestClaims,
+  consumeResumeBannerSignIn,
+  readGuestClaims,
+} from '@/features/quiz/lib/guest-claims';
 import {
   clearGuestDraftClaims,
   readGuestDraftClaims,
@@ -52,9 +56,14 @@ async function postStoredGuestClaims(): Promise<void> {
     );
     // The server already dropped wrong, expired or used tokens: forget them all.
     clearGuestClaims();
+    const fromResumeBanner = consumeResumeBannerSignIn();
     if (claimedAttemptIds.length > 0) {
-      // The count only: never the ids, the tokens or the email.
-      captureAnalyticsEvent('guest_attempt_claimed', { count: claimedAttemptIds.length });
+      // The count only: never the ids, the tokens or the email. `source` is set when the
+      // sign-in started from the resume banner (RIN-1714).
+      captureAnalyticsEvent('guest_attempt_claimed', {
+        count: claimedAttemptIds.length,
+        ...(fromResumeBanner ? { source: 'resume_banner' } : {}),
+      });
     }
   } catch (error) {
     // A 400 means the stored tokens can never pass; anything else (429, 5xx,

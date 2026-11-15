@@ -9,6 +9,7 @@ import Testimonials from './Testimonials';
 import BottomCta from './BottomCta';
 import LearnMore from './LearnMore';
 import TextureBackground from './TextureBackground';
+import { GuestResumeBanner } from '@/features/quiz/components/guest-resume/GuestResumeBanner';
 
 interface LandingPageProps {
   isAuthenticated?: boolean;
@@ -21,6 +22,15 @@ export default function LandingPage({ isAuthenticated = false, locale }: Landing
     <div className="relative w-full overflow-clip bg-[#06090e] min-h-screen text-white font-unbounded">
       <TextureBackground />
       <Header isAuthenticated={isAuthenticated} locale={locale} />
+      {isAuthenticated ? null : (
+        <GuestResumeBanner
+          page="landing"
+          tone="dark"
+          placement="landing"
+          widthClass="max-w-[1920px]"
+          mainId="landing-main-content"
+        />
+      )}
 
       <main
         id="landing-main-content"

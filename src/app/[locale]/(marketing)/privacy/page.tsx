@@ -523,7 +523,7 @@ function PrivacyPolicyContent() {
           <p>
             If RinKuzu is briefly unavailable, you can leave your email on the status page to hear
             when it is back. We store your email, your language, the page you came from and any
-            campaign tags in the link (UTM), only to send you one &ldquo;we&apos;re back&rdquo;
+            campaign tags in the link (UTM), only to send you one &ldquo;we&rsquo;re back&rdquo;
             email.
           </p>
           <p>

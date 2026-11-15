@@ -39,6 +39,14 @@ export async function getLandingStarterHref(locale: string): Promise<string | nu
   return landingStarterResolver.resolveHref(locale);
 }
 
+/**
+ * Locale-unprefixed href of the locale's starter quiz with no `entry` (RIN-1653): for
+ * links that carry their own UTM attribution. Null when none; never throws.
+ */
+export async function getStarterQuizHref(locale: string): Promise<string | null> {
+  return landingStarterResolver.resolveHref(locale, {});
+}
+
 /** Locale-unprefixed href behind a blog post's quiz card (RIN-1258); null when none; never throws. */
 export async function getBlogTryHref(locale: string, input: BlogTryInput): Promise<string | null> {
   return blogTryResolver.resolveHref(locale, input);

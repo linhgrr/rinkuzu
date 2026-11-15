@@ -12,6 +12,9 @@ const CSRF_EXEMPT_API_PREFIXES = ['/api/auth/', '/api/billing/webhooks/'];
  */
 const CSRF_EXEMPT_API_PATHS = new Set([
   '/api/internal/communications/worker',
+  // One-off "we are back" send (RIN-1653), called by SRE with curl. The handler
+  // checks `Authorization: Bearer <CRON_SECRET>` (`hasCronSecretBearer`).
+  '/api/internal/outage-notify/send',
   // Driven by the Cloudflare billing scheduler, which is server-to-server and
   // therefore sends no Origin, Referer or Sec-Fetch-Site. Both handlers call
   // `assertInternalBillingRequest`: HMAC over method, path, timestamp and

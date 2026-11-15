@@ -125,7 +125,7 @@ export default function ResumeBannerStrip({
         )}
       >
         <p className="flex min-w-0 flex-col text-sm leading-5 sm:flex-1 sm:flex-row sm:items-baseline sm:gap-1">
-          <span className="font-semibold">{lead}</span>
+          <span className="font-semibold lg:shrink-0">{lead}</span>
           {title || othersLabel ? (
             <>
               {title ? (

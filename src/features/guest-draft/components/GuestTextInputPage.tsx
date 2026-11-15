@@ -126,7 +126,7 @@ export function GuestTextInputPage({ children }: GuestTextInputPageProps) {
 
   return (
     <>
-      <GuestResumeBanner page="try" widthClass="max-w-3xl" mainId="main-content" />
+      <GuestResumeBanner page="try" widthClass="max-w-5xl" mainId="main-content" />
       <main
         id="main-content"
         tabIndex={-1}

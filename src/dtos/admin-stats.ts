@@ -246,6 +246,16 @@ const activationEmailWeekSchema = activationEmailCountsSchema
   })
   .strict();
 
+/** One UTC ISO week of the guest funnel (RIN-1711), by attempt or opt-in week. */
+const guestFunnelWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    guestCompleted: countSchema,
+    guestClaimed7d: countSchema,
+    reviewOptInFromGuest: countSchema,
+  })
+  .strict();
+
 /**
  * Aggregate-only by contract: integers, rates, dates and definition strings.
  * Strict at every level so a future field cannot leak learner data unnoticed.
@@ -277,6 +287,9 @@ export const adminActivationStatsSchema = z
         activationEmail: z.string(),
         activatedByEntry: z.string(),
         blogPosts: z.string(),
+        guestCompleted: z.string(),
+        guestClaimed7d: z.string(),
+        reviewOptInFromGuest: z.string(),
       })
       .strict(),
     // 'unavailable': the adaptive API did not answer, so every number is
@@ -285,6 +298,8 @@ export const adminActivationStatsSchema = z
     weeks: z.array(adminActivationWeekSchema),
     // Same weeks as `weeks`, bucketed by send week rather than signup week.
     activationEmail: z.object({ weeks: z.array(activationEmailWeekSchema) }).strict(),
+    // Same weeks as `weeks`, bucketed by the week the guest attempt or opt-in happened in.
+    guestFunnel: z.object({ weeks: z.array(guestFunnelWeekSchema) }).strict(),
   })
   .strict();
 

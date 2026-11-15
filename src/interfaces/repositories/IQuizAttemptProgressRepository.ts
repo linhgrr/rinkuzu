@@ -66,19 +66,25 @@ export interface IQuizAttemptProgressRepository {
   recordSubmittedAttempt(data: RecordQuizAttemptProgressData): Promise<RecordedQuizAttempt>;
 }
 
+/** A claimed attempt with the hash of the token that claimed it (RIN-1711). Never log either. */
+export interface ClaimedGuestAttemptRef {
+  attemptId: string;
+  tokenHash: string;
+}
+
 export interface IGuestAttemptClaimRepository {
   /**
    * Attaches each unclaimed, token-identified guest attempt taken since
    * `claimableSince` to `userId` (single use: the hash is removed) and applies
    * the user progress a signed-in submit would have written. Returns the ids
-   * claimed; hashes that match nothing are dropped.
+   * claimed with their token hashes; hashes that match nothing are dropped.
    */
   claimGuestAttempts(
     userId: string,
     tokenHashes: readonly string[],
     now: Date,
     claimableSince: Date,
-  ): Promise<string[]>;
+  ): Promise<ClaimedGuestAttemptRef[]>;
 }
 
 /** The quiz a guest draft became. */

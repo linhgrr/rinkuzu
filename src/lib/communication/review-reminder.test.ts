@@ -207,6 +207,48 @@ describe('review reminder consent (AC3/AC4)', () => {
     });
   });
 
+  it('records guest_result_review and schedules the same d2 and d5 rows (RIN-1711)', async () => {
+    const guestOptIn = () =>
+      optInReviewReminder({
+        userId: USER_ID,
+        email: 'learner@gmail.com',
+        attemptId: ATTEMPT_ID,
+        locale: 'en',
+        ip: null,
+        consentSource: 'guest_result_review',
+        now: new Date(TAKEN_AT.getTime() + HOUR),
+      });
+
+    await expect(guestOptIn()).resolves.toEqual({
+      optedIn: true,
+      status: 'scheduled',
+      scheduledFor: new Date(TAKEN_AT.getTime() + 48 * HOUR).toISOString(),
+    });
+    expect(mocks.consentEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'opt_in', source: 'guest_result_review' }),
+    );
+    expect(mocks.outbox.updateOne).toHaveBeenCalledTimes(2);
+  });
+
+  it('shares the 7-day cap with the result-page path (RIN-1711)', async () => {
+    mocks.outbox.updateOne.mockRejectedValue(
+      Object.assign(new Error('E11000 duplicate key'), { code: 11000 }),
+    );
+    mocks.outbox.findOne.mockReturnValue(query({ status: 'completed', availableAt: new Date() }));
+
+    await expect(
+      optInReviewReminder({
+        userId: USER_ID,
+        email: 'learner@gmail.com',
+        attemptId: ATTEMPT_ID,
+        locale: 'en',
+        ip: null,
+        consentSource: 'guest_result_review',
+        now: new Date(TAKEN_AT.getTime() + HOUR),
+      }),
+    ).resolves.toEqual({ optedIn: true, status: 'capped', scheduledFor: null });
+  });
+
   it('reports the weekly cap when the bucket already holds both sent emails', async () => {
     mocks.outbox.updateOne.mockRejectedValue(
       Object.assign(new Error('E11000 duplicate key'), { code: 11000 }),

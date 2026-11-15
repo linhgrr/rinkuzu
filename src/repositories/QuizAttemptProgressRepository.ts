@@ -8,6 +8,7 @@ import QuestionProgress from '@/models/QuestionProgress';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
 import type {
+  ClaimedGuestAttemptRef,
   IGuestAttemptClaimRepository,
   IQuizAttemptProgressRepository,
   RecordedQuizAttempt,
@@ -374,18 +375,18 @@ export class QuizAttemptProgressRepository
     tokenHashes: readonly string[],
     now: Date,
     claimableSince: Date,
-  ): Promise<string[]> {
+  ): Promise<ClaimedGuestAttemptRef[]> {
     if (tokenHashes.length === 0) return [];
     await connectDB();
     const session = await mongoose.startSession();
-    const claimedIds: string[] = [];
+    const claimedIds: ClaimedGuestAttemptRef[] = [];
     try {
       for (const tokenHash of new Set(tokenHashes)) {
         const claimed = await session.withTransaction(async () =>
           claimOneGuestAttempt(userId, tokenHash, now, claimableSince, session),
         );
         if (!claimed) continue;
-        claimedIds.push(claimed.id);
+        claimedIds.push({ attemptId: claimed.id, tokenHash });
         // After the commit, on its own: a failed write here would abort the claim
         // transaction, and the claim must stand without it (RIN-1028 AC5).
         try {

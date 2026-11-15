@@ -461,8 +461,12 @@ const GUEST_ATTEMPT_CLAIM_MAX_TOKENS = 20;
 
 export const claimGuestAttemptsRequestSchema = z.strictObject({
   tokens: z.array(guestClaimTokenSchema).min(1).max(GUEST_ATTEMPT_CLAIM_MAX_TOKENS),
+  /** Subset of `tokens` whose result card ticked the 2-day review email (RIN-1711); others are ignored. */
+  reviewOptInTokens: z.array(guestClaimTokenSchema).max(GUEST_ATTEMPT_CLAIM_MAX_TOKENS).optional(),
 });
 
 export interface ClaimGuestAttemptsResponseDto {
   claimedAttemptIds: string[];
+  /** Claimed attempts that now have the 2-day review email scheduled; attempt ids only. */
+  reviewOptInAttemptIds: string[];
 }

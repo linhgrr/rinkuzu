@@ -73,7 +73,7 @@ class AuthAuditStub implements IAuthAudit {
   record = vi.fn<(input: AuthAuditRecord) => Promise<void>>();
 }
 
-class GuestAttemptClaimStub implements IGuestAttemptClaimService {
+class GuestAttemptClaimStub implements Pick<IGuestAttemptClaimService, 'claimHashed'> {
   claim = vi.fn<(userId: string, tokens: readonly string[]) => Promise<string[]>>();
   claimHashed = vi.fn<(userId: string, hashes: readonly string[]) => Promise<string[]>>();
 }

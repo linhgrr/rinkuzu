@@ -1,4 +1,7 @@
-import type { IGuestAttemptClaimRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type {
+  ClaimedGuestAttemptRef,
+  IGuestAttemptClaimRepository,
+} from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IGuestAttemptClaimService } from '@/interfaces/services/IGuestAttemptClaimService';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 
@@ -18,10 +21,24 @@ export class GuestAttemptClaimService implements IGuestAttemptClaimService {
   ) {}
 
   async claim(userId: string, tokens: readonly string[]): Promise<string[]> {
-    return this.claimHashed(userId, tokens.map(hashGuestClaimToken));
+    return (await this.claimWithHashes(userId, tokens)).map((claim) => claim.attemptId);
+  }
+
+  async claimWithHashes(
+    userId: string,
+    tokens: readonly string[],
+  ): Promise<ClaimedGuestAttemptRef[]> {
+    return this.claimHashedRefs(userId, tokens.map(hashGuestClaimToken));
   }
 
   async claimHashed(userId: string, tokenHashes: readonly string[]): Promise<string[]> {
+    return (await this.claimHashedRefs(userId, tokenHashes)).map((claim) => claim.attemptId);
+  }
+
+  private async claimHashedRefs(
+    userId: string,
+    tokenHashes: readonly string[],
+  ): Promise<ClaimedGuestAttemptRef[]> {
     const hashes = [...new Set(tokenHashes)];
     if (hashes.length === 0) return [];
     const now = this.now();

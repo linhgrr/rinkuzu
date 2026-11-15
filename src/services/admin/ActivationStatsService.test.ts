@@ -105,6 +105,23 @@ function setup(now = NOW) {
       },
     ]),
   };
+  const guestFunnel = {
+    getWeeklyGuestFunnel: vi.fn().mockResolvedValue([
+      {
+        weekStart: new Date('2026-10-26T00:00:00.000Z'),
+        guestCompleted: 5,
+        guestClaimed7d: 2,
+        reviewOptInFromGuest: 1,
+      },
+      // A week outside the window is dropped, not appended.
+      {
+        weekStart: new Date('2026-09-28T00:00:00.000Z'),
+        guestCompleted: 9,
+        guestClaimed7d: 9,
+        reviewOptInFromGuest: 9,
+      },
+    ]),
+  };
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
   const adaptiveEvents = vi.fn().mockResolvedValue(ADAPTIVE_EVENTS);
   const segments = { getActivationSegments: vi.fn().mockResolvedValue([]) };
@@ -112,6 +129,7 @@ function setup(now = NOW) {
     stats,
     segments,
     activationEmail,
+    guestFunnel,
     audit,
     adaptiveEvents,
     now: () => new Date(clock),
@@ -120,6 +138,7 @@ function setup(now = NOW) {
     service,
     stats,
     activationEmail,
+    guestFunnel,
     audit,
     adaptiveEvents,
     advance: (ms: number) => (clock += ms),
@@ -239,6 +258,27 @@ describe('ActivationStatsService', () => {
       { isoWeek: '2026-W45', ...none, byTrigger: { '24h': none, backfill: none } },
     ]);
     expect(result.data.definitions.activationEmail).toMatch(/send \+ 7 days/);
+  });
+
+  it('adds guest funnel counts per window week with definitions (RIN-1711)', async () => {
+    const { service, guestFunnel } = setup();
+    const result = await service.getWeeklyActivation(4, { kind: 'service' });
+    if (!result.success) throw new Error(result.error);
+
+    expect(guestFunnel.getWeeklyGuestFunnel).toHaveBeenCalledWith(
+      new Date('2026-10-12T00:00:00.000Z'),
+      new Date('2026-11-09T00:00:00.000Z'),
+    );
+    const none = { guestCompleted: 0, guestClaimed7d: 0, reviewOptInFromGuest: 0 };
+    expect(result.data.guestFunnel.weeks).toEqual([
+      { isoWeek: '2026-W42', ...none },
+      { isoWeek: '2026-W43', ...none },
+      { isoWeek: '2026-W44', guestCompleted: 5, guestClaimed7d: 2, reviewOptInFromGuest: 1 },
+      { isoWeek: '2026-W45', ...none },
+    ]);
+    expect(result.data.definitions.guestCompleted).toMatch(/excluded account/);
+    expect(result.data.definitions.guestClaimed7d).toMatch(/7 days/);
+    expect(result.data.definitions.reviewOptInFromGuest).toMatch(/guest_result_review/);
   });
 
   it('counts activation-email sends quiz-only when the adaptive API fails', async () => {

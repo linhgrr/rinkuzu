@@ -165,3 +165,6 @@ temp/
 
 # Incremental compiler caches (tsc buildinfo, ESLint), restored in CI as an artifact
 .cache/
+
+# Local wrangler dev state and bundles (infra/cloudflare/*)
+.wrangler/

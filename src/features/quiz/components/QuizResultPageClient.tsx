@@ -849,6 +849,9 @@ function QuizResultContent() {
             <GuestSaveResultCard
               resultPath={resultPath}
               variant={draftResult ? 'draft' : 'review'}
+              wrongCount={result.missedCount}
+              entry={resolveQuizEntryAttribution(get('entry'), get('post'), get('topic')).entry}
+              attemptId={attemptId}
             />
           </>
         ) : null

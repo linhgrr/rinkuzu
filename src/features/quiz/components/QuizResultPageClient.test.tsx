@@ -7,16 +7,27 @@ import { ApiResponseError } from '@/lib/api/client';
 import { addGuestClaim } from '@/features/quiz/lib/guest-claims';
 import { QuizResultPageClient } from './QuizResultPageClient';
 
-const { claimMock, fetchPageDataMock, routeSlug, searchParams, router, session, signInMock } =
-  vi.hoisted(() => ({
-    routeSlug: { value: 'demo' },
-    claimMock: vi.fn(() => Promise.resolve()),
-    fetchPageDataMock: vi.fn(),
-    signInMock: vi.fn(),
-    session: { value: { data: { user: { id: 'u1' } }, status: 'authenticated' } as object },
-    searchParams: { value: new URLSearchParams('attemptId=attempt-1') },
-    router: { push: () => undefined, back: () => undefined, prefetch: () => undefined },
-  }));
+const {
+  claimMock,
+  fetchPageDataMock,
+  optInMock,
+  reminderStatusMock,
+  routeSlug,
+  searchParams,
+  router,
+  session,
+  signInMock,
+} = vi.hoisted(() => ({
+  optInMock: vi.fn(),
+  reminderStatusMock: vi.fn(),
+  routeSlug: { value: 'demo' },
+  claimMock: vi.fn(() => Promise.resolve()),
+  fetchPageDataMock: vi.fn(),
+  signInMock: vi.fn(),
+  session: { value: { data: { user: { id: 'u1' } }, status: 'authenticated' } as object },
+  searchParams: { value: new URLSearchParams('attemptId=attempt-1') },
+  router: { push: () => undefined, back: () => undefined, prefetch: () => undefined },
+}));
 
 vi.mock('next-auth/react', () => ({
   useSession: () => session.value,
@@ -51,6 +62,12 @@ vi.mock('@/features/quiz/api/quiz-result-page-api', () => ({
   createQuizResultBookmark: vi.fn(),
   deleteQuizResultBookmark: vi.fn(),
   fetchQuizResultPageData: (...args: unknown[]) => fetchPageDataMock(...args),
+}));
+
+vi.mock('@/features/quiz/api/review-reminder-api', () => ({
+  fetchReviewReminderStatus: (...args: unknown[]) => reminderStatusMock(...args),
+  optInReviewReminder: (...args: unknown[]) => optInMock(...args),
+  snoozeReviewReminderPrompt: vi.fn(),
 }));
 
 vi.mock('@/features/quiz/api/guest-claim-api', () => ({
@@ -449,5 +466,52 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
 
     expect(await screen.findByRole('button', { name: 'common.retry' })).toBeInTheDocument();
     expect(screen.queryByText('80%')).not.toBeInTheDocument();
+  });
+});
+
+describe('QuizResultPageClient after a guest sign-in with the review offer (RIN-1712)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    searchParams.value = new URLSearchParams('attemptId=attempt-1&score=60');
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+  });
+
+  it('loads the reminder status only after the claim, so an opted-in learner sees the scheduled line, not the question', async () => {
+    const order: string[] = [];
+    let releaseClaim: () => void = () => undefined;
+    claimMock.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseClaim = () => {
+            order.push('claim');
+            resolve();
+          };
+        }),
+    );
+    fetchPageDataMock.mockImplementationOnce(() => {
+      order.push('read');
+      return Promise.resolve({
+        result: { ...guestResult, missedCount: 2 },
+        bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+      });
+    });
+    reminderStatusMock.mockImplementationOnce(() => {
+      order.push('status');
+      return Promise.resolve({ optedIn: true, snoozedUntil: null, eligible: true });
+    });
+    optInMock.mockResolvedValueOnce({ status: 'scheduled', scheduledFor: '2026-11-17T09:00:00Z' });
+
+    render(<QuizResultPageClient />);
+    await waitFor(() => expect(claimMock).toHaveBeenCalled());
+    expect(reminderStatusMock).not.toHaveBeenCalled();
+    expect(fetchPageDataMock).not.toHaveBeenCalled();
+
+    releaseClaim();
+
+    expect(await screen.findByText('scheduled')).toBeInTheDocument();
+    expect(screen.queryByText('question')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'remind' })).not.toBeInTheDocument();
+    expect(order).toEqual(['claim', 'read', 'status']);
   });
 });

@@ -41,6 +41,9 @@ export type AnalyticsEventName =
   | 'guest_draft_claimed'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed'
+  /** Guest result card that leads with the 2-day review offer (RIN-1712); props only `count_wrong`, `entry`. */
+  | 'guest_review_offer_shown'
+  | 'guest_review_offer_clicked'
   /** Guest resume banner (RIN-1710); props only `page` and `claim_age_hours`. */
   | 'guest_resume_banner_shown'
   | 'guest_resume_banner_clicked'

@@ -83,6 +83,15 @@ describe('resolveClientIp', () => {
     expect(resolveClientIp(headers)).toBe(VISITOR);
   });
 
+  it('with CLIENT_IP_HEADER=x-real-ip a forged cf-connecting-ip never wins', async () => {
+    const { resolveClientIp, trustedPlatformIp } = await import('@/lib/client-ip');
+    vi.stubEnv('CLIENT_IP_HEADER', 'x-real-ip');
+    const headers = new Headers({ 'cf-connecting-ip': FORGED, 'x-real-ip': VISITOR });
+    expect(resolveClientIp(headers)).toBe(VISITOR);
+    expect(trustedPlatformIp(headers)).toBe(VISITOR);
+    expect(trustedPlatformIp(new Headers({ 'cf-connecting-ip': FORGED }))).toBeNull();
+  });
+
   it('prefers the edge-secret address, then falls back to the first x-forwarded-for hop', async () => {
     const { resolveClientIp } = await import('@/lib/client-ip');
     vi.stubEnv('EDGE_SHARED_SECRET', EDGE_SECRET);

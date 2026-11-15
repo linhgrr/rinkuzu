@@ -214,7 +214,7 @@ export function CreateQuizHubPage() {
           ) : error ? (
             <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
               <p>{t('draftsLoadFailed')}</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => void mutate()}>
+              <Button variant="outline" className="mt-4" onClick={() => void mutate()}>
                 {tCommon('retry')}
               </Button>
             </div>

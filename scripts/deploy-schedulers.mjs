@@ -3,7 +3,8 @@ import process from 'node:process';
 import 'dotenv/config';
 
 /**
- * Deploys the Cloudflare cron schedulers.
+ * Deploys the Cloudflare Workers: the cron schedulers and the outage fallback
+ * in front of rinkuzu.app (RIN-1651).
  *
  * This is a local operator command rather than a CI job on purpose: the
  * repository's CI security policy forbids long-lived secrets in GitHub Actions
@@ -16,6 +17,7 @@ import 'dotenv/config';
  *   npm run deploy:schedulers -- --dry-run
  *   npm run deploy:schedulers
  *   npm run deploy:schedulers -- --only billing-scheduler
+ *   npm run deploy:schedulers -- --only outage-fallback
  *   npm run deploy:schedulers -- --rotate-secrets
  */
 
@@ -25,14 +27,24 @@ const WRANGLER = 'wrangler@4.42.0';
 const WORKERS = [
   {
     name: 'billing-scheduler',
-    secret: 'BILLING_INTERNAL_HMAC_SECRET',
+    secrets: ['BILLING_INTERNAL_HMAC_SECRET'],
     // Without this worker nothing drains the payment webhook inbox.
     critical: true,
+    cron: true,
   },
   {
     name: 'communications-scheduler',
-    secret: 'CRON_SECRET',
+    secrets: ['CRON_SECRET'],
     critical: false,
+    cron: true,
+  },
+  {
+    // Routes for rinkuzu.app and www.rinkuzu.app are declared in its
+    // wrangler.jsonc; `wrangler deploy` publishes them. No cron.
+    name: 'outage-fallback',
+    secrets: ['OUTAGE_NOTIFY_TOKEN', 'EDGE_SHARED_SECRET'],
+    critical: false,
+    cron: false,
   },
 ];
 
@@ -74,7 +86,9 @@ if (!requireEnv('CLOUDFLARE_ACCOUNT_ID')) missing.push('CLOUDFLARE_ACCOUNT_ID');
 for (const worker of selected) {
   // The app rejects a shared secret shorter than 32 characters at runtime, so
   // deploying one would produce a worker that 401s on every tick.
-  if (!requireEnv(worker.secret, { minLength: 32 })) missing.push(worker.secret);
+  for (const secret of worker.secrets) {
+    if (!requireEnv(secret, { minLength: 32 })) missing.push(secret);
+  }
 }
 if (missing.length) {
   console.error(
@@ -140,21 +154,29 @@ for (const worker of selected) {
   // replacing a working one with a drifted local value breaks the worker
   // silently, and every tick 401s from then on.
   const alreadySet = dryRun ? [] : existingSecretNames(cwd);
-  if (!rotateSecrets && alreadySet.includes(worker.secret)) {
-    console.log(
-      `[deploy] ${worker.secret} is already set on ${worker.name}; left untouched.` +
-        ' Pass --rotate-secrets to replace it.',
-    );
-  } else {
-    const secretResult = run([WRANGLER, 'secret', 'put', worker.secret], {
-      cwd,
-      input: `${process.env[worker.secret].trim()}\n`,
-    });
-    if (secretResult.status !== 0) {
-      console.error(`[deploy] failed to publish ${worker.secret} for ${worker.name}`);
-      failed += 1;
+  let secretFailed = false;
+  for (const secret of worker.secrets) {
+    if (!rotateSecrets && alreadySet.includes(secret)) {
+      console.log(
+        `[deploy] ${secret} is already set on ${worker.name}; left untouched.` +
+          ' Pass --rotate-secrets to replace it.',
+      );
       continue;
     }
+    const secretResult = run([WRANGLER, 'secret', 'put', secret], {
+      cwd,
+      input: `${process.env[secret].trim()}
+`,
+    });
+    if (secretResult.status !== 0) {
+      console.error(`[deploy] failed to publish ${secret} for ${worker.name}`);
+      secretFailed = true;
+      break;
+    }
+  }
+  if (secretFailed) {
+    failed += 1;
+    continue;
   }
 
   const deployResult = run([WRANGLER, 'deploy'], { cwd });
@@ -166,7 +188,7 @@ for (const worker of selected) {
 
   // A worker with no cron trigger deploys cleanly and then never runs, which is
   // indistinguishable from "deployed successfully" unless it is checked.
-  const triggers = run([WRANGLER, 'triggers', 'deploy'], { cwd });
+  const triggers = worker.cron ? run([WRANGLER, 'triggers', 'deploy'], { cwd }) : { status: 0 };
   if (triggers.status !== 0) {
     console.error(`[deploy] failed to sync cron triggers for ${worker.name}`);
     failed += 1;

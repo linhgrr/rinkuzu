@@ -105,3 +105,99 @@ describe('guest quiz draft repository', () => {
     expect(await repository.findByTokenHash(legacyHash)).toMatchObject({ source: 'pdf' });
   }, 20_000);
 });
+
+/** RIN-1619: a first batch is playable; two polls completing it append the rest once. */
+describe('guest quiz draft first batch', () => {
+  const repository = new GuestQuizDraftRepository();
+  const partialHash = 'e'.repeat(64);
+  const legacyReadyHash = 'f'.repeat(64);
+  const fake = (n: number) => ({
+    question: `Fake ${n}?`,
+    options: ['a', 'b'],
+    type: 'single' as const,
+    correctIndex: 0,
+  });
+
+  beforeAll(async () => {
+    process.env['MONGODB_URI'] = integrationDatabaseUri();
+    await connectDB();
+  }, 20_000);
+
+  afterAll(async () => {
+    await GuestQuizDraftModel.deleteMany({ tokenHash: { $in: [partialHash, legacyReadyHash] } });
+  }, 10_000);
+
+  it('appends the rest exactly once, in order, when two polls complete it together', async () => {
+    const created = await repository.create({
+      tokenHash: partialHash,
+      apiDraftId: 'api-draft-partial',
+      locale: 'en',
+      entry: 'landing',
+      source: 'text',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    const firstBatch = [fake(1), fake(2)];
+    expect(
+      await repository.storeFirstBatch(created.id, { title: 'Quiz', questions: firstBatch }),
+    ).toBe(true);
+    expect(await repository.storeFirstBatch(created.id, { title: 'Quiz', questions: [] })).toBe(
+      false,
+    );
+    expect(await repository.findByTokenHash(partialHash)).toMatchObject({
+      status: 'ready',
+      questionCount: 2,
+      complete: false,
+      completion: null,
+    });
+    expect(await repository.findReadyByTokenHash(partialHash)).toMatchObject({
+      complete: false,
+      completion: null,
+    });
+    expect(await repository.findClaimable([partialHash], new Date())).toEqual([
+      expect.objectContaining({ complete: false }),
+    ]);
+
+    const update = {
+      storedCount: 2,
+      questions: [fake(3), fake(4)],
+      title: 'Fake topic',
+      completion: 'full' as const,
+    };
+    const results = await Promise.all([
+      repository.completeDraft(created.id, update),
+      repository.completeDraft(created.id, update),
+    ]);
+
+    expect(results.filter(Boolean)).toHaveLength(1);
+    const ready = await repository.findReadyByTokenHash(partialHash);
+    expect(ready?.questions.map((question) => question.question)).toEqual([
+      'Fake 1?',
+      'Fake 2?',
+      'Fake 3?',
+      'Fake 4?',
+    ]);
+    expect(ready).toMatchObject({ title: 'Fake topic', complete: true, completion: 'full' });
+  }, 20_000);
+
+  it('reads a ready draft stored before RIN-1619 (no complete field) as complete', async () => {
+    await mongoose.connection.collection('guestquizdrafts').insertOne({
+      tokenHash: legacyReadyHash,
+      apiDraftId: 'api-draft-legacy-ready',
+      status: 'ready',
+      title: 'Legacy fake quiz',
+      questions: [fake(1)],
+      locale: 'en',
+      entry: 'landing',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    expect(await repository.findByTokenHash(legacyReadyHash)).toMatchObject({
+      complete: true,
+      completion: 'full',
+    });
+    const id = (await repository.findByTokenHash(legacyReadyHash))?.id ?? '';
+    expect(
+      await repository.completeDraft(id, { storedCount: 1, questions: [], completion: 'full' }),
+    ).toBe(false);
+  }, 20_000);
+});

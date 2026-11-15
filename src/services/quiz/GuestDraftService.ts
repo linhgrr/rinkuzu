@@ -1,4 +1,5 @@
 import type {
+  GuestDraftCompleteUpdate,
   GuestDraftQuestion,
   GuestDraftRecord,
   IGuestQuizDraftRepository,
@@ -7,6 +8,7 @@ import type {
   GuestDraftCreateInput,
   GuestDraftEvents,
   GuestDraftLimiter,
+  GuestDraftRefresher,
   GuestDraftResult,
   GuestDraftUpstream,
   GuestDraftView,
@@ -17,7 +19,11 @@ import type {
   UpstreamGuestDraftResult,
 } from '@/interfaces/services/IGuestDraftService';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
-import { GUEST_DRAFT_TTL_MS, type GuestDraftSource } from '@/shared/constants/guest-draft';
+import {
+  GUEST_DRAFT_TTL_MS,
+  type GuestDraftCompletion,
+  type GuestDraftSource,
+} from '@/shared/constants/guest-draft';
 
 type Clock = () => Date;
 type UpstreamQuestion = NonNullable<UpstreamGuestDraft['questions']>[number];
@@ -61,11 +67,17 @@ function parsedDate(value: string, fallback: Date): Date {
 function viewOf(record: GuestDraftRecord, progressPercent = 0): GuestDraftView {
   return {
     status: record.status,
-    progressPercent: record.status === 'ready' ? 100 : progressPercent,
+    progressPercent: record.complete ? 100 : progressPercent,
     title: record.title,
     questionCount: record.questionCount,
+    complete: record.complete,
+    completion: record.completion,
     failureReason: record.failureReason,
   };
+}
+
+function upstreamCompletion(draft: UpstreamGuestDraft): GuestDraftCompletion {
+  return draft.completion === 'first_batch_only' ? 'first_batch_only' : 'full';
 }
 
 function upstreamError({ status, code, meta }: UpstreamFailure): GuestDraftResult {
@@ -98,10 +110,21 @@ function toGuestQuestion(source: UpstreamQuestion): GuestDraftQuestion | null {
 }
 
 /**
+ * The questions a guest may play, in the API's order. The filter is per question and the
+ * API only appends (RIN-1617), so the questions of an earlier poll are a prefix of these.
+ */
+function guestQuestions(draft: UpstreamGuestDraft): GuestDraftQuestion[] {
+  return (draft.questions ?? [])
+    .map(toGuestQuestion)
+    .filter((question): question is GuestDraftQuestion => question !== null);
+}
+
+/**
  * Guest quiz drafts (RIN-1446). The API extracts; this service keeps the result in its
  * own collection and never hands the API draft id or the token hash to the browser.
+ * A draft is playable with the API's first batch while the rest is extracted (RIN-1619).
  */
-export class GuestDraftService implements IGuestDraftService {
+export class GuestDraftService implements IGuestDraftService, GuestDraftRefresher {
   constructor(
     private readonly repository: IGuestQuizDraftRepository,
     private readonly limiter: GuestDraftLimiter,
@@ -155,50 +178,142 @@ export class GuestDraftService implements IGuestDraftService {
     return { ok: true, draft: viewOf(record, created.draft.progress.percent ?? 0) };
   }
 
-  async status(token: string, ip: string | null): Promise<GuestDraftResult> {
-    const tokenHash = hashGuestClaimToken(token);
+  status(token: string, ip: string | null): Promise<GuestDraftResult> {
+    return this.statusByHash(hashGuestClaimToken(token), ip);
+  }
+
+  async refreshHashed(tokenHash: string): Promise<void> {
+    await this.statusByHash(tokenHash, null);
+  }
+
+  releaseUpstream(apiDraftId: string): Promise<void> {
+    return this.upstream.remove(apiDraftId);
+  }
+
+  /**
+   * One poll. A processing draft becomes playable with its first batch and keeps asking
+   * the API until the rest is appended; a complete or failed draft never asks again.
+   */
+  private async statusByHash(tokenHash: string, ip: string | null): Promise<GuestDraftResult> {
     const record = await this.repository.findByTokenHash(tokenHash);
     if (!record) return { ok: false, error: 'not_found' };
-    if (record.status !== 'processing') return { ok: true, draft: viewOf(record) };
+    if (record.status === 'failed' || record.complete) return { ok: true, draft: viewOf(record) };
 
     const upstream = await this.upstream.get(record.apiDraftId);
     if (!upstream.ok) {
       // A draft the API no longer has will never finish.
-      if (upstream.status === 404) return this.fail(tokenHash, record, 'expired', ip);
+      if (upstream.status === 404) return this.upstreamEnded(tokenHash, record, 'expired', ip);
+      // A playable first batch stays playable: the next poll asks again.
+      if (record.status === 'ready') return { ok: true, draft: viewOf(record) };
       return upstreamError(upstream);
     }
     const { draft } = upstream;
-    if (draft.status === 'completed') return this.ready(tokenHash, record, draft, ip);
-    if (FAILED_UPSTREAM_STATUSES.has(draft.status)) {
-      return this.fail(tokenHash, record, draft.failure_reason ?? draft.status, ip);
+    if (draft.status === 'completed') {
+      return record.status === 'ready'
+        ? this.appendRest(tokenHash, record, draft)
+        : this.ready(tokenHash, record, draft, ip);
     }
-    return { ok: true, draft: viewOf(record, draft.progress.percent ?? 0) };
+    if (FAILED_UPSTREAM_STATUSES.has(draft.status)) {
+      return this.upstreamEnded(tokenHash, record, draft.failure_reason ?? draft.status, ip);
+    }
+    const progress = draft.progress.percent ?? 0;
+    if (record.status === 'processing' && (draft.questions_ready ?? 0) > 0) {
+      return this.firstBatch(tokenHash, record, draft, progress);
+    }
+    return { ok: true, draft: viewOf(record, progress) };
   }
 
+  /** After a first batch the learner keeps it: no failed draft, refund or failed event. */
+  private upstreamEnded(
+    tokenHash: string,
+    record: GuestDraftRecord,
+    reason: string,
+    ip: string | null,
+  ): Promise<GuestDraftResult> {
+    if (record.status !== 'ready') return this.fail(tokenHash, record, reason, ip);
+    return this.complete(tokenHash, record, {
+      storedCount: record.questionCount,
+      questions: [],
+      completion: 'first_batch_only',
+    });
+  }
+
+  private async firstBatch(
+    tokenHash: string,
+    record: GuestDraftRecord,
+    draft: UpstreamGuestDraft,
+    progress: number,
+  ): Promise<GuestDraftResult> {
+    const questions = guestQuestions(draft);
+    if (questions.length === 0) return { ok: true, draft: viewOf(record, progress) };
+    // The API names the topic only on completion: the dated fallback until then.
+    const title = this.titleOf(record, draft);
+    if (!(await this.repository.storeFirstBatch(record.id, { title, questions }))) {
+      return this.storedView(tokenHash);
+    }
+    await this.events.firstBatchReady(this.context(record), this.msSinceSubmit(record));
+    const stored = { title, questionCount: questions.length, complete: false, completion: null };
+    return { ok: true, draft: viewOf({ ...record, ...stored, status: 'ready' }, progress) };
+  }
+
+  /** Appends only what lies beyond the stored questions: those are never reordered or replaced. */
+  private appendRest(
+    tokenHash: string,
+    record: GuestDraftRecord,
+    draft: UpstreamGuestDraft,
+  ): Promise<GuestDraftResult> {
+    const update: GuestDraftCompleteUpdate = {
+      storedCount: record.questionCount,
+      questions: guestQuestions(draft).slice(record.questionCount),
+      title: this.titleOf(record, draft),
+      completion: upstreamCompletion(draft),
+    };
+    return this.complete(tokenHash, record, update, true);
+  }
+
+  private async complete(
+    tokenHash: string,
+    record: GuestDraftRecord,
+    update: GuestDraftCompleteUpdate,
+    upstreamCompleted = false,
+  ): Promise<GuestDraftResult> {
+    const won = await this.repository.completeDraft(record.id, update);
+    await this.upstream.remove(record.apiDraftId);
+    if (!won) return this.storedView(tokenHash);
+    if (upstreamCompleted) await this.events.ready(this.context(record));
+    const completed = {
+      title: update.title ?? record.title,
+      questionCount: update.storedCount + update.questions.length,
+      complete: true,
+      completion: update.completion,
+    };
+    return { ok: true, draft: viewOf({ ...record, ...completed }) };
+  }
+
+  /** The API completed with no partial step: one `ready`, as before RIN-1619. */
   private async ready(
     tokenHash: string,
     record: GuestDraftRecord,
     draft: UpstreamGuestDraft,
     ip: string | null,
   ): Promise<GuestDraftResult> {
-    const questions = (draft.questions ?? [])
-      .map(toGuestQuestion)
-      .filter((question): question is GuestDraftQuestion => question !== null);
+    const questions = guestQuestions(draft);
     if (questions.length === 0) return this.fail(tokenHash, record, 'no_questions', ip);
 
-    const title = guestDraftTitle(
-      draft.title,
-      record.locale,
-      parsedDate(draft.created_at, this.now()),
-    );
-    const won = await this.repository.markReady(record.id, { title, questions });
+    const title = this.titleOf(record, draft);
+    const completion = upstreamCompletion(draft);
+    const won = await this.repository.markReady(record.id, {
+      title,
+      questions,
+      ...(completion === 'full' ? {} : { completion }),
+    });
     await this.upstream.remove(record.apiDraftId);
     if (!won) return this.storedView(tokenHash);
+    // first_batch_ready means "playable" for every draft, so it is sent here too.
+    await this.events.firstBatchReady(this.context(record), this.msSinceSubmit(record));
     await this.events.ready(this.context(record));
-    return {
-      ok: true,
-      draft: viewOf({ ...record, status: 'ready', title, questionCount: questions.length }),
-    };
+    const stored = { title, questionCount: questions.length, complete: true, completion };
+    return { ok: true, draft: viewOf({ ...record, ...stored, status: 'ready' }) };
   }
 
   private async fail(
@@ -223,6 +338,14 @@ export class GuestDraftService implements IGuestDraftService {
   private async storedView(tokenHash: string): Promise<GuestDraftResult> {
     const stored = await this.repository.findByTokenHash(tokenHash);
     return stored ? { ok: true, draft: viewOf(stored) } : { ok: false, error: 'not_found' };
+  }
+
+  private titleOf(record: GuestDraftRecord, draft: UpstreamGuestDraft): string {
+    return guestDraftTitle(draft.title, record.locale, parsedDate(draft.created_at, this.now()));
+  }
+
+  private msSinceSubmit(record: GuestDraftRecord): number {
+    return Math.max(0, this.now().getTime() - record.createdAt.getTime());
   }
 
   private context(record: GuestDraftRecord): GuestDraftEventContext {

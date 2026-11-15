@@ -1,5 +1,6 @@
 import type { QuizQuestion } from '@/entities/Quiz';
 import type {
+  GuestDraftCompletion,
   GuestDraftEntry,
   GuestDraftSource,
   GuestDraftStatus,
@@ -28,10 +29,18 @@ export interface GuestDraftRecord {
   status: GuestDraftStatus;
   title: string | null;
   questionCount: number;
+  /**
+   * False while a ready draft is playable with its first batch and the API still extracts
+   * the rest (RIN-1619); true for a complete ready draft. False for processing and failed.
+   */
+  complete: boolean;
+  /** How a complete ready draft ended; null until then. */
+  completion: GuestDraftCompletion | null;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
   failureReason: string | null;
+  createdAt: Date;
 }
 
 export interface NewGuestDraft {
@@ -46,14 +55,38 @@ export interface NewGuestDraft {
 export interface GuestDraftReadyUpdate {
   title: string;
   questions: GuestDraftQuestion[];
+  /** Omitted: `full`. */
+  completion?: GuestDraftCompletion;
+}
+
+/** Completes a ready draft that held only its first batch (RIN-1619). */
+export interface GuestDraftCompleteUpdate {
+  /** How many questions the poll saw stored: the append is guarded on it. */
+  storedCount: number;
+  /** Appended after the stored ones, in order; empty when the rest never came. */
+  questions: GuestDraftQuestion[];
+  /** Omitted: the stored (fallback) title stays. */
+  title?: string;
+  completion: GuestDraftCompletion;
 }
 
 /** Guest drafts live in their own collection, never in `Quiz` (RIN-1446). */
 export interface IGuestQuizDraftRepository {
   create(draft: NewGuestDraft): Promise<GuestDraftRecord>;
   findByTokenHash(tokenHash: string): Promise<GuestDraftRecord | null>;
-  /** Moves a processing draft to ready; false when another poll got there first. */
+  /** Moves a processing draft to ready and complete; false when another poll got there first. */
   markReady(id: string, update: GuestDraftReadyUpdate): Promise<boolean>;
+  /**
+   * Moves a processing draft to ready but incomplete with its first batch (RIN-1619); false
+   * when another poll got there first.
+   */
+  storeFirstBatch(id: string, update: GuestDraftReadyUpdate): Promise<boolean>;
+  /**
+   * Appends the rest to an incomplete draft that still holds exactly `storedCount`
+   * questions and marks it complete; false when another poll got there first, so two
+   * concurrent polls never append twice.
+   */
+  completeDraft(id: string, update: GuestDraftCompleteUpdate): Promise<boolean>;
   /** Moves a processing draft to failed; false when it was no longer processing. */
   markFailed(id: string, failureReason: string): Promise<boolean>;
 }
@@ -67,6 +100,8 @@ export interface ClaimableGuestDraft {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** False while the API still extracts the rest (RIN-1619). */
+  complete: boolean;
 }
 
 /** The claim side of the guest draft store; never logs or returns a hash. */
@@ -81,10 +116,17 @@ export interface GuestDraftQuiz {
   id: string;
   title: string;
   questions: QuizQuestion[];
+  /** False while only the first batch is stored (RIN-1619). */
+  complete: boolean;
+  /** How a complete draft ended; null while incomplete. */
+  completion: GuestDraftCompletion | null;
 }
 
 /** Read side of a ready guest draft, for play and the server-side scored attempt. */
 export interface IGuestDraftQuizSource {
-  /** Only a `ready` draft; null for an unknown, processing, failed or expired one. */
+  /**
+   * Only a `ready` draft, complete or holding its first batch (RIN-1619); null for an
+   * unknown, processing, failed or expired one.
+   */
   findReadyByTokenHash(tokenHash: string): Promise<GuestDraftQuiz | null>;
 }

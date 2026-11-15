@@ -1666,6 +1666,77 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('offers the rest on the results of a first-batch round and plays only the new questions @critical-quiz-guest-draft-partial', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1620 state 5: Finish on the first batch, the results card follows the draft, and
+    // "Keep going" plays the questions that arrived after it as a second round.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const draft = await seedReadyGuestDraft(fixture.db, undefined, false);
+      try {
+        await storeGuestDraftToken(page, draft.token);
+        await page.goto('/en/try/pdf/play');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+        await chooseOption(page, 'Mitochondria');
+        const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await desktopSubmit.isVisible()) {
+          await desktopSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /finish \(1\/1\+? answered\)/i }).click();
+        }
+        await page.waitForURL(/\/en\/quiz\/guest-draft-play\/result\?attemptId=/);
+
+        const card = page.getByTestId('guest-draft-more');
+        await expect(card).toContainText('More questions are on the way');
+        await expect(page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle })).toBeVisible();
+
+        await fixture.db
+          .collection<{ questions: object[]; complete: boolean; completion: string }>(
+            'guestquizdrafts',
+          )
+          .updateOne(
+            { _id: draft.id },
+            {
+              $set: { complete: true, completion: 'full' },
+              $push: {
+                questions: {
+                  _id: new ObjectId(),
+                  question: 'Which organelle holds the genome in this fake guest draft?',
+                  options: ['Nucleus', 'Golgi'],
+                  type: 'single',
+                  correctIndex: 0,
+                },
+              },
+            },
+          );
+
+        await expect(card).toContainText('1 more question is ready', { timeout: 20_000 });
+        await card.getByRole('link', { name: 'Keep going' }).click();
+        await page.waitForURL(/\/en\/try\/pdf\/play\?from=1$/);
+
+        // Only the new question: the first is not offered again.
+        await expect(
+          page.getByText('Which organelle holds the genome in this fake guest draft?'),
+        ).toBeVisible();
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toHaveCount(0);
+        await chooseOption(page, 'Nucleus');
+        const secondSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await secondSubmit.isVisible()) {
+          await secondSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /finish \(1\/1\+? answered\)/i }).click();
+        }
+        await page.waitForURL(/\/en\/quiz\/guest-draft-play\/result\?attemptId=/);
+        await expect(page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle })).toBeVisible();
+        // Every stored question is played: no card.
+        await expect(page.getByTestId('guest-draft-more')).toHaveCount(0);
+      } finally {
+        await cleanupGuestDraft(fixture.db, draft);
+      }
+    });
+  });
+
   for (const locale of ['en', 'vi'] as const) {
     test(`opens the quiz the verification claimed from Retake in the verifying browser (${locale}) @critical-quiz-guest-draft-claim`, async ({
       page,

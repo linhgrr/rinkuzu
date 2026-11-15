@@ -23,19 +23,19 @@ export function GuestDraftMoreCard({ attemptId }: { attemptId: string | null }) 
       variant="bordered"
       role="status"
       data-testid="guest-draft-more"
-      className="mb-6 flex min-h-28 flex-col justify-center p-5"
+      className="mb-6 flex min-h-32 flex-col justify-center p-5"
     >
       {more.kind === 'pending' ? (
-        <div className="flex items-start gap-3">
-          <HiOutlineRefresh
-            className="mt-0.5 size-5 flex-shrink-0 text-neutral-500 motion-safe:animate-spin"
-            aria-hidden="true"
-          />
-          <div>
-            <h2 className="font-semibold text-neutral-950">{t('moreTitle')}</h2>
-            <p className="mt-1 text-sm text-neutral-600">{t('moreBody')}</p>
-          </div>
-        </div>
+        <>
+          <h2 className="flex items-center gap-2 font-semibold text-neutral-950">
+            <HiOutlineRefresh
+              className="size-5 flex-shrink-0 text-neutral-500 motion-safe:animate-spin"
+              aria-hidden="true"
+            />
+            {t('moreTitle')}
+          </h2>
+          <p className="mt-1 text-sm text-neutral-600">{t('moreBody')}</p>
+        </>
       ) : null}
       {more.kind === 'arrived' ? (
         <>

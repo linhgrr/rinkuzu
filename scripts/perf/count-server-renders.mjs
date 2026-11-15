@@ -3,7 +3,8 @@
 //
 //   node scripts/perf/count-server-renders.mjs --base http://localhost:3000 \
 //     --topic <seeded-topic-slug> --slug <seeded-quiz-slug> [--storage-state file.json] [--json]
-//   node scripts/perf/count-server-renders.mjs --base http://localhost:3000 //     --storage-state learner.json --pages /vi/dashboard,/vi/create,/vi/quizzes
+//   node scripts/perf/count-server-renders.mjs --base http://localhost:3000 \
+//     --storage-state learner.json --pages /vi/dashboard,/vi/create,/vi/quizzes
 //
 // `--pages` replaces the built-in list with the given comma-separated paths (a signed-in run
 // has no default beyond /explore). Paths are used as written, so include the locale prefix.

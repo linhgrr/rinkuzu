@@ -40,6 +40,7 @@
     "hint": "Usually about a minute. Keep this page open.",
     "cancel": "Cancel",
     "ready": "Quiz ready • {count, plural, one {# question} other {# questions}}",
+    "readyFirstBatch": "First {count, plural, one {question} other {# questions}} ready • more on the way",
     "playNow": "Play now",
     "pollError": "We can't check progress. Retrying…"
   },
@@ -57,7 +58,8 @@
     "expiredBodyText": "Trial quizzes are kept for 24 hours. Make it again from your text.",
     "makeAgain": "Make it again",
     "goToLibrary": "Go to my library",
-    "loading": "Loading your quiz…"
+    "loading": "Loading your quiz…",
+    "pendingMore": "More questions are being made."
   },
   "textMeta": {
     "title": "Free Text to Quiz Generator, No Account | RinKuzu",

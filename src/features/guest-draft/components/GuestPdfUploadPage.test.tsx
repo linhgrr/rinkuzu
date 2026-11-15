@@ -178,6 +178,34 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
     expect(push).toHaveBeenCalledWith('/try/pdf/play');
   });
 
+  it.each([
+    ['en', 'First 5 questions ready • more on the way', 'Play now'],
+    ['vi', '5 câu đầu tiên đã sẵn sàng • còn nữa đang được tạo', 'Làm quiz ngay'],
+  ] as const)(
+    'hands a first batch to the player without a total or a bar (%s, RIN-1620)',
+    async (locale, status, playNow) => {
+      createGuestDraft.mockResolvedValue(processing);
+      fetchGuestDraftProgress.mockResolvedValue({
+        status: 'ready',
+        percent: 100,
+        questionCount: 5,
+        title: 'Notes',
+        complete: false,
+      });
+      renderPage(locale);
+      await choose(pdf());
+      fireEvent.click(await screen.findByRole('button', { name: /Create quiz|Tạo quiz/ }));
+      await screen.findByTestId('guest-draft-progress-fill');
+
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+      expect(await screen.findByText(status)).toBeInTheDocument();
+      expect(screen.queryByTestId('guest-draft-progress-fill')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: playNow })).toHaveFocus();
+      await act(() => vi.advanceTimersByTimeAsync(800));
+      expect(push).toHaveBeenCalledWith('/try/pdf/play');
+    },
+  );
+
   it('uploads with entry=seo when there is no ?entry= and the referrer is a search engine', async () => {
     createGuestDraft.mockResolvedValue(processing);
     vi.spyOn(document, 'referrer', 'get').mockReturnValue('https://www.google.com/');

@@ -17,6 +17,31 @@ function uploading(): GuestUploadState {
 }
 
 describe('guestUploadReducer (RIN-1448)', () => {
+  it('hands a first batch over to the player while the rest is still coming (RIN-1620)', () => {
+    const started = uploading();
+    const processed = guestUploadReducer(started, {
+      type: 'progressed',
+      run: started.run,
+      progress: processing,
+      now: 1,
+    });
+    const firstBatch = {
+      status: 'ready',
+      percent: 100,
+      questionCount: 5,
+      title: 'Cell biology',
+      complete: false,
+    } as const;
+    const next = guestUploadReducer(processed, {
+      type: 'progressed',
+      run: started.run,
+      progress: firstBatch,
+      now: 2,
+    });
+    expect(next.phase).toBe('ready');
+    expect(next.progress).toEqual(firstBatch);
+  });
+
   it('ignores the answer of a cancelled upload', () => {
     const started = uploading();
     const cancelled = guestUploadReducer(started, { type: 'cancelled' });

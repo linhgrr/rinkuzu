@@ -491,6 +491,39 @@ describe('UserService', () => {
       });
     });
 
+    it('opens a 6 day old claim-token guest attempt (no age check, RIN-1710)', async () => {
+      const { service, attemptRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          id: 'attempt-1',
+          score: 50,
+          takenAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [
+              {
+                id: 'question-1',
+                question: 'Q1',
+                options: ['A', 'B'],
+                type: 'single',
+                correctIndex: 0,
+              },
+            ],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', {
+        guestClaimToken: 'x'.repeat(43),
+      });
+
+      assertOk(result);
+    });
+
     it('locks Premium questions for a claim-token guest', async () => {
       const canAccessAttempt = vi.fn().mockResolvedValue(true);
       const { service, attemptRepository } = createService({

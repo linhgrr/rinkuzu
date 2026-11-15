@@ -41,6 +41,10 @@ export type AnalyticsEventName =
   | 'guest_draft_claimed'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed'
+  /** Guest resume banner (RIN-1710); props only `page` and `claim_age_hours`. */
+  | 'guest_resume_banner_shown'
+  | 'guest_resume_banner_clicked'
+  | 'guest_resume_banner_dismissed'
   /** Homepage CTA click (RIN-1178); props only `cta`, `position` and `locale`. */
   | 'landing_cta_clicked'
   /** Paywall funnel (RIN-1269); props only `locale`, `plan` (plan id or null) and `source`. */

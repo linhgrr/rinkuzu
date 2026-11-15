@@ -62,7 +62,7 @@ describe('GuestAttemptClaimer (RIN-921)', () => {
 
   it('posts the fresh tokens once after sign-in, clears storage and reports the count only', async () => {
     storeClaim('attempt-1', TOKEN_A);
-    storeClaim('attempt-old', TOKEN_B, Date.now() - 25 * HOUR);
+    storeClaim('attempt-old', TOKEN_B, Date.now() - 8 * 24 * HOUR);
     signIn();
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { success: true, data: { claimedAttemptIds: ['attempt-1'] } }),

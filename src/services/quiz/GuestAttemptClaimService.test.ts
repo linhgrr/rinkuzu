@@ -13,7 +13,7 @@ function service() {
 }
 
 describe('GuestAttemptClaimService', () => {
-  it('passes only deduplicated hashes and a 24 h window to the repository', async () => {
+  it('passes only deduplicated hashes and a 7 day window to the repository', async () => {
     const { repository, claims } = service();
 
     await expect(claims.claim('user-1', [TOKEN, OTHER, TOKEN])).resolves.toEqual(['attempt-1']);
@@ -22,9 +22,18 @@ describe('GuestAttemptClaimService', () => {
       'user-1',
       [hashGuestClaimToken(TOKEN), hashGuestClaimToken(OTHER)],
       NOW,
-      new Date('2026-11-04T12:00:00.000Z'),
+      new Date('2026-10-29T12:00:00.000Z'),
     );
     expect(JSON.stringify(repository.claimGuestAttempts.mock.calls)).not.toContain(TOKEN);
+  });
+
+  it('window includes a 6 day old attempt and excludes an 8 day old one', async () => {
+    const { repository, claims } = service();
+    await claims.claim('user-1', [TOKEN]);
+    const since = (repository.claimGuestAttempts.mock.calls[0]?.[3] as Date).getTime();
+    const day = 24 * 60 * 60 * 1000;
+    expect(NOW.getTime() - 6 * day).toBeGreaterThanOrEqual(since);
+    expect(NOW.getTime() - 8 * day).toBeLessThan(since);
   });
 
   it('does not touch the repository for an empty list', async () => {

@@ -2,8 +2,11 @@ import type { IGuestAttemptClaimRepository } from '@/interfaces/repositories/IQu
 import type { IGuestAttemptClaimService } from '@/interfaces/services/IGuestAttemptClaimService';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 
-/** A guest attempt can be claimed for 24 hours after it was taken (RIN-912 AC4). */
-const GUEST_ATTEMPT_CLAIM_WINDOW_MS = 24 * 60 * 60 * 1000;
+/**
+ * A guest attempt can be claimed for 7 days after it was taken (RIN-1710 AC4; 24 h under
+ * RIN-912). A guest draft's attempt is claimed with its draft, which keeps its own 24 h.
+ */
+const GUEST_ATTEMPT_CLAIM_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 type Clock = () => Date;
 

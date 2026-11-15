@@ -30,7 +30,7 @@ const topic = opt('topic');
 const slug = opt('slug');
 const storageState = opt('storage-state');
 const locale = opt('locale', 'vi');
-const AGENT_TAG = 'rinkuzu-agent/frontend';
+const AGENT_TAG = process.env['RINKUZU_AGENT_TAG'] || 'rinkuzu-agent/frontend';
 
 const host = new URL(base).hostname;
 if (!['localhost', '127.0.0.1', '[::1]'].includes(host)) {

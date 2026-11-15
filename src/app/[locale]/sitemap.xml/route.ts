@@ -31,6 +31,9 @@ function buildHreflangXml(entry: MetadataRoute.Sitemap[number]): string {
     .join('');
 }
 
+// Rendered on request, never at build: the image build has no database (RIN-1704).
+export const dynamic = 'force-dynamic';
+
 export async function GET(): Promise<Response> {
   const entries = await buildPublicSitemapEntries('locale sitemap: quiz generation failed');
 

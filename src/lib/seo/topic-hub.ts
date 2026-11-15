@@ -1,3 +1,4 @@
+import { isProductionBuildPhase } from '@/lib/build-phase';
 import type { QuizTopicHubDto, QuizTopicHubSummaryDto } from '@/dtos/quiz-topic-hub';
 import { getQuizTopicHubService } from '@/lib/quiz-topic-hub-factory';
 import { logger } from '@/lib/logger';
@@ -87,6 +88,7 @@ export function buildTopicHubJsonLd(
 export async function loadIndexableTopicHubs(
   failureMessage: string,
 ): Promise<QuizTopicHubSummaryDto[]> {
+  if (isProductionBuildPhase()) return [];
   try {
     return await getQuizTopicHubService().listIndexableTopics();
   } catch (error) {

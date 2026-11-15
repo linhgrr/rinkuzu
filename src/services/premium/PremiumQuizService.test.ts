@@ -9,7 +9,7 @@ import type {
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
 import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
-import { PREMIUM_PREVIEW_QUESTION_LIMIT } from '@/dtos/premium-quiz';
+import { PREMIUM_PREVIEW_QUESTION_LIMIT } from '@/shared/constants/premium-preview';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
 import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
 

@@ -1,5 +1,5 @@
 import type { PremiumPlaySession } from '@/entities/PremiumQuiz';
-import { PREMIUM_PREVIEW_QUESTION_LIMIT } from '@/dtos/premium-quiz';
+import { PREMIUM_PREVIEW_QUESTION_LIMIT } from '@/shared/constants/premium-preview';
 import { PremiumQuizError } from '@/entities/PremiumQuizError';
 
 /** RIN-1722: how many questions a session may play: all of them, or the preview slice. */

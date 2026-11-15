@@ -2,12 +2,6 @@ import { z } from 'zod';
 import { objectIdRouteParamSchema } from '@/lib/validation/common';
 import { quizProgressAnswerSchema } from '@/dtos/quiz';
 
-/**
- * RIN-1722: a signed-in learner without access plays this many questions of a Premium quiz
- * before the unlock prompt. Server and client read the same value.
- */
-export const PREMIUM_PREVIEW_QUESTION_LIMIT = 5;
-
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
 
 export const premiumSubmissionIdParamsSchema = z.strictObject({

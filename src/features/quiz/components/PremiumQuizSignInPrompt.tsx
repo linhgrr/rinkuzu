@@ -3,6 +3,7 @@ import { Link } from '@/i18n/navigation';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
 import { ROUTES } from '@/shared/constants/routes';
+import { PREMIUM_PREVIEW_QUESTION_LIMIT } from '@/shared/constants/premium-preview';
 import { TRACKED_QUIZ_ENTRIES } from '@/shared/constants/starter-quiz';
 
 interface PremiumQuizSignInPromptProps {
@@ -45,9 +46,14 @@ export function PremiumQuizSignInPrompt({
           {t('premiumQuestionCount', { count: questionCount })}
         </p>
         {description ? <p className="mt-4 text-sm text-ink">{description}</p> : null}
-        <p className="mt-5 rounded-xl bg-brand-trust/5 p-4 text-sm text-ink">
-          {t('premiumSignInDescription')}
-        </p>
+        <div className="mt-5 rounded-xl bg-brand-trust/5 p-4 text-sm">
+          <p className="font-semibold text-ink">
+            {t('premiumSignInTitle', {
+              count: Math.min(PREMIUM_PREVIEW_QUESTION_LIMIT, Math.max(questionCount, 1)),
+            })}
+          </p>
+          <p className="mt-1 text-ink-muted">{t('premiumSignInHint')}</p>
+        </div>
         <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
           <Link href={withAuthCallback(ROUTES.LOGIN, quizPath)} className="btn btn-primary">
             {t('premiumSignInButton')}

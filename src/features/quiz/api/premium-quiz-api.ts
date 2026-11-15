@@ -11,6 +11,11 @@ interface PremiumBatchQuestionViewModel {
 
 export type PremiumAnswerViewModel = number | number[];
 
+/** RIN-1722: facts of a preview session; the full quiz is longer than the playable part. */
+interface PremiumPreviewViewModel {
+  fullQuestionCount: number;
+}
+
 export interface PremiumBatchViewModel {
   sessionId: string;
   quizId: string;
@@ -28,6 +33,8 @@ export interface PremiumBatchViewModel {
   absoluteExpiresAt: string;
   currentQuestionIndex: number;
   answers: Array<PremiumAnswerViewModel | null>;
+  /** RIN-1722: a preview session; `totalQuestions` is then the playable count. */
+  preview?: PremiumPreviewViewModel;
 }
 
 export interface PremiumSubmitResultViewModel {
@@ -36,6 +43,7 @@ export interface PremiumSubmitResultViewModel {
   correctAnswers: number;
   totalQuestions: number;
   sessionId: string;
+  preview?: true;
 }
 
 export interface PremiumProgressSaveViewModel {

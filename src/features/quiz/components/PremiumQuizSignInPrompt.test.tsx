@@ -66,4 +66,15 @@ describe('PremiumQuizSignInPrompt', () => {
     render(<PremiumQuizSignInPrompt slug="q" title="Quiz" questionCount={1} />);
     expect(screen.queryByText('Trắc nghiệm LMS')).not.toBeInTheDocument();
   });
+
+  it('offers the free preview, sized by the shared limit and never above the quiz length (RIN-1722)', () => {
+    const { rerender } = render(
+      <PremiumQuizSignInPrompt slug="nhap-mon-ai" title="Quiz" questionCount={40} />,
+    );
+    expect(screen.getByText('premiumSignInTitle:{"count":5}')).toBeInTheDocument();
+    expect(screen.getByText('premiumSignInHint')).toBeInTheDocument();
+
+    rerender(<PremiumQuizSignInPrompt slug="nhap-mon-ai" title="Quiz" questionCount={3} />);
+    expect(screen.getByText('premiumSignInTitle:{"count":3}')).toBeInTheDocument();
+  });
 });

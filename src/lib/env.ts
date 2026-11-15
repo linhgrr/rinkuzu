@@ -70,6 +70,18 @@ const subscriptionCronSecretSchema = z
   )
   .optional();
 
+// Shared with the Cloudflare edge Worker; gates the trusted client-IP header
+// (src/lib/client-ip.ts). Optional: unset means the trusted path is off.
+const edgeSharedSecretSchema = z
+  .string()
+  .trim()
+  .min(32, 'EDGE_SHARED_SECRET must be at least 32 chars')
+  .refine(
+    (value) => !isObviousSecretPlaceholder(value),
+    'EDGE_SHARED_SECRET must not use a placeholder or default value',
+  )
+  .optional();
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -126,6 +138,7 @@ const envSchema = z
     AUTH_GOOGLE_ID: z.string().optional(),
     AUTH_GOOGLE_SECRET: z.string().optional(),
     SUBSCRIPTION_CRON_SECRET: subscriptionCronSecretSchema,
+    EDGE_SHARED_SECRET: edgeSharedSecretSchema,
     // Public R2 bucket for user images, served on IMAGE_PUBLIC_BASE_URL (no trailing slash).
     IMAGE_STORAGE_BUCKET: z.string().min(1).optional(),
     IMAGE_PUBLIC_BASE_URL: z

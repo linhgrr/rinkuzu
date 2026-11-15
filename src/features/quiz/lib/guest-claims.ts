@@ -9,7 +9,11 @@ import { GUEST_CLAIM_PENDING_COOKIE } from '@/shared/constants/starter-quiz';
 /** @public Tests and the e2e read the raw entry. */
 export const GUEST_CLAIMS_STORAGE_KEY = 'rinkuzu.guestClaims.v1';
 
-const GUEST_CLAIM_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+/** A quiz attempt stays claimable for 7 days (RIN-1710); the server window matches. */
+const GUEST_CLAIM_MAX_AGE_MS = 7 * 24 * HOUR_MS;
+/** A guest draft is deleted after 24 h (RIN-1448), so its attempt cannot be claimed later. */
+const GUEST_DRAFT_CLAIM_MAX_AGE_MS = 24 * HOUR_MS;
 const GUEST_CLAIM_MAX_AGE_SECONDS = GUEST_CLAIM_MAX_AGE_MS / 1000;
 const GUEST_CLAIMS_MAX_ENTRIES = 10;
 const TOKEN_BYTES = 32;
@@ -21,6 +25,28 @@ export interface GuestClaim {
   quizSlug: string;
   /** Epoch milliseconds of the submit. */
   takenAt: number;
+  /** An attempt on a guest draft: claimed with the draft, so it keeps the draft's 24 h. */
+  kind?: 'draft';
+  /** Rounded percent 0–100, for the resume banner (RIN-1710). */
+  score?: number;
+  /** Trimmed, at most 120 chars. */
+  quizTitle?: string;
+}
+
+const QUIZ_TITLE_MAX = 120;
+
+/** The optional `score` and `quizTitle` of a claim, ready to spread; empty when unusable. */
+export function guestClaimDisplay(
+  score: unknown,
+  title: unknown,
+): Pick<GuestClaim, 'score' | 'quizTitle'> {
+  const out: Pick<GuestClaim, 'score' | 'quizTitle'> = {};
+  if (typeof score === 'number' && Number.isFinite(score)) {
+    out.score = Math.min(100, Math.max(0, Math.round(score)));
+  }
+  const trimmed = typeof title === 'string' ? title.trim().slice(0, QUIZ_TITLE_MAX).trim() : '';
+  if (trimmed) out.quizTitle = trimmed;
+  return out;
 }
 
 /** 32 random bytes, base64url without padding (43 chars), as the server's schema expects. */
@@ -43,7 +69,10 @@ function isGuestClaim(value: unknown): value is GuestClaim {
     typeof entry.attemptId === 'string' &&
     typeof entry.token === 'string' &&
     typeof entry.quizSlug === 'string' &&
-    typeof entry.takenAt === 'number'
+    typeof entry.takenAt === 'number' &&
+    (entry.kind === undefined || entry.kind === 'draft') &&
+    (entry.score === undefined || typeof entry.score === 'number') &&
+    (entry.quizTitle === undefined || typeof entry.quizTitle === 'string')
   );
 }
 
@@ -57,10 +86,11 @@ function getStorage(): Storage | null {
 }
 
 function isFresh(claim: GuestClaim, now: number): boolean {
-  return now - claim.takenAt <= GUEST_CLAIM_MAX_AGE_MS;
+  const maxAge = claim.kind === 'draft' ? GUEST_DRAFT_CLAIM_MAX_AGE_MS : GUEST_CLAIM_MAX_AGE_MS;
+  return now - claim.takenAt <= maxAge;
 }
 
-/** Claims younger than 24 h; anything unreadable counts as no claims. */
+/** Claims within their window (7 days, 24 h for a draft attempt); anything unreadable counts as no claims. */
 export function readGuestClaims(now: number = Date.now()): GuestClaim[] {
   const storage = getStorage();
   if (!storage) return [];
@@ -112,4 +142,67 @@ export function clearGuestClaims(): void {
     // Disabled storage: nothing was stored.
   }
   setPendingClaimCookie(0);
+}
+
+/** @public Banner dismissals (RIN-1710): attempt id and when it was dismissed. */
+export const GUEST_RESUME_DISMISSED_STORAGE_KEY = 'rinkuzu.guestResumeDismissed.v1';
+const DISMISS_MAX_AGE_MS = 7 * 24 * HOUR_MS;
+const DISMISS_MAX_ENTRIES = 10;
+
+interface ResumeDismissal {
+  attemptId: string;
+  at: number;
+}
+
+function readDismissals(now: number): ResumeDismissal[] {
+  const storage = getStorage();
+  if (!storage) return [];
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(GUEST_RESUME_DISMISSED_STORAGE_KEY) ?? '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is ResumeDismissal =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as ResumeDismissal).attemptId === 'string' &&
+        typeof (item as ResumeDismissal).at === 'number' &&
+        now - (item as ResumeDismissal).at <= DISMISS_MAX_AGE_MS,
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * @public Rendered by the resume banner (RIN-1714).
+ * The newest claim that is not dismissed, how many others wait, and its age in hours. */
+export function readResumeBannerClaim(
+  now: number = Date.now(),
+): { latest: GuestClaim; others: number; ageHours: number } | null {
+  const dismissed = new Set(readDismissals(now).map((item) => item.attemptId));
+  const open = readGuestClaims(now)
+    .filter((claim) => !dismissed.has(claim.attemptId))
+    .sort((a, b) => b.takenAt - a.takenAt);
+  const latest = open[0];
+  if (!latest) return null;
+  return {
+    latest,
+    others: open.length - 1,
+    ageHours: Math.max(0, Math.floor((now - latest.takenAt) / HOUR_MS)),
+  };
+}
+
+/** @public Used by the resume banner (RIN-1714). Hide the banner for this attempt for 7 days. Storage errors mean "not dismissed". */
+export function dismissResumeBanner(attemptId: string, now: number = Date.now()): void {
+  const storage = getStorage();
+  if (!storage) return;
+  const entries = [
+    { attemptId, at: now },
+    ...readDismissals(now).filter((item) => item.attemptId !== attemptId),
+  ].slice(0, DISMISS_MAX_ENTRIES);
+  try {
+    storage.setItem(GUEST_RESUME_DISMISSED_STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    // Quota or disabled storage.
+  }
 }

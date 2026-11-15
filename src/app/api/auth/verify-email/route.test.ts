@@ -47,7 +47,7 @@ describe('POST /api/auth/verify-email', () => {
     expect(options.rateLimitAction).toBe('verify_email_ip');
     expect(options.successMessage).toBe('Email verified. You can now sign in.');
     expect(options.rateLimitKey({ token: 't' }, { ip: '192.0.2.10' })).toBe('192.0.2.10');
-    expect(options.rateLimitKey({ token: 't' }, { ip: null })).toBe('unknown');
+    expect(options.rateLimitKey({ token: 't' }, { ip: null })).toMatch(/^unattributed:/);
 
     const context = { ip: '192.0.2.10', userAgent: 'vitest' };
     await options.execute({ token: 'b'.repeat(32) }, context);

@@ -54,7 +54,9 @@ describe('POST /api/auth/reset-password', () => {
     expect(options.rateLimitKey({ token: 't', password: 'p' }, { ip: '198.51.100.4' })).toBe(
       '198.51.100.4',
     );
-    expect(options.rateLimitKey({ token: 't', password: 'p' }, { ip: null })).toBe('unknown');
+    expect(options.rateLimitKey({ token: 't', password: 'p' }, { ip: null })).toMatch(
+      /^unattributed:/,
+    );
 
     const context = { ip: '198.51.100.4', userAgent: 'vitest' };
     await options.execute({ token: 'a'.repeat(32), password: 'password1' }, context);

@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
 
 /** The visitor address the edge Worker read from Cloudflare's `CF-Connecting-IP`. */
@@ -35,4 +35,64 @@ export function trustedEdgeClientIp(headers: Headers): string | null {
   if (!received || !secretsMatch(received, expected)) return null;
   const address = headers.get(EDGE_CLIENT_IP_HEADER)?.trim();
   return address && isIP(address) !== 0 ? address : null;
+}
+
+const CLOUDFLARE_IP_HEADER = 'cf-connecting-ip';
+const FORWARDED_FOR_HEADER = 'x-forwarded-for';
+
+function validAddress(value: string | null | undefined): string | null {
+  const address = value?.trim();
+  return address && isIP(address) !== 0 ? address : null;
+}
+
+/**
+ * `x-real-ip` is a client-controllable header behind cloudflared (it passes
+ * through unchanged), so it is read only when the platform is declared to set
+ * it: `CLIENT_IP_HEADER=x-real-ip` (Vercel, until the move off it is done).
+ */
+function platformDeclaredIp(headers: Headers): string | null {
+  if (process.env['CLIENT_IP_HEADER']?.trim().toLowerCase() !== 'x-real-ip') return null;
+  return validAddress(headers.get('x-real-ip'));
+}
+
+/**
+ * The one place that decides the caller's address, in trust order: the edge
+ * Worker's secret-authenticated header, Cloudflare's `cf-connecting-ip`
+ * (cloudflared overwrites it, so a caller cannot forge it), the platform
+ * `x-real-ip` only when `CLIENT_IP_HEADER=x-real-ip`, then the first
+ * `x-forwarded-for` hop. Null when none holds a valid address.
+ */
+export function resolveClientIp(headers: Headers): string | null {
+  return (
+    trustedPlatformIp(headers) ?? validAddress(headers.get(FORWARDED_FOR_HEADER)?.split(',')[0])
+  );
+}
+
+/** Like `resolveClientIp` but never `x-forwarded-for`: for allow-lists, which need an unforgeable address. */
+export function trustedPlatformIp(headers: Headers): string | null {
+  return (
+    trustedEdgeClientIp(headers) ??
+    validAddress(headers.get(CLOUDFLARE_IP_HEADER)) ??
+    platformDeclaredIp(headers)
+  );
+}
+
+/**
+ * A limiter key for an address. A request with no trusted address gets a key of
+ * its own, so it never lands in a bucket shared by every unattributed caller
+ * (one heavy user would exhaust it for all); global caps still apply to it.
+ */
+export function ipBucketKey(ip: string | null | undefined): string {
+  return ip?.trim() || `unattributed:${randomUUID()}`;
+}
+
+const NO_COUNTRY_CODES = new Set(['XX', 'T1']);
+
+/** The visitor country from Vercel's or Cloudflare's header: alpha-2, else null (`XX`/`T1` = unknown). */
+export function resolveClientCountry(headers: Headers): string | null {
+  for (const name of ['x-vercel-ip-country', 'cf-ipcountry']) {
+    const value = headers.get(name)?.trim();
+    if (value && /^[A-Z]{2}$/.test(value) && !NO_COUNTRY_CODES.has(value)) return value;
+  }
+  return null;
 }

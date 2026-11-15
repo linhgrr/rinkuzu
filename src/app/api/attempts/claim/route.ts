@@ -7,6 +7,7 @@ import { extractRequestContext } from '@/lib/audit';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 import { getGuestAttemptClaimService } from '@/lib/guest-attempt-claim-factory';
 import { claimGuestAttemptsRequestSchema, type ClaimGuestAttemptsResponseDto } from '@/dtos/quiz';
+import { ipBucketKey } from '@/lib/client-ip';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
   const userRate = await checkAuthRateLimit('attempt_claim_user', userId);
   if (!userRate.allowed) return rateLimitResponse(userRate);
   const { ip } = extractRequestContext(request);
-  const ipRate = await checkAuthRateLimit('attempt_claim_ip', ip ?? 'unknown');
+  const ipRate = await checkAuthRateLimit('attempt_claim_ip', ipBucketKey(ip));
   if (!ipRate.allowed) return rateLimitResponse(ipRate);
 
   try {

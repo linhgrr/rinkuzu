@@ -76,11 +76,11 @@ describe('createGuestDraftLimiter', () => {
     const registry = fakeRegistry();
     const limiter = createGuestDraftLimiter(registry, now);
 
-    await limiter.refundIp(null);
+    await limiter.refundIp('203.0.113.9');
     await limiter.refundDaily();
 
     expect(registry.refund.mock.calls).toEqual([
-      ['guest_draft_ip', 'unknown'],
+      ['guest_draft_ip', '203.0.113.9'],
       ['guest_draft_daily', 'utc:2026-11-10'],
     ]);
   });

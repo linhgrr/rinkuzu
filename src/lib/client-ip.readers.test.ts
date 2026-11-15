@@ -6,6 +6,10 @@ vi.mock('@/models/AuditLog', () => ({ default: { create: vi.fn() } }));
 import { extractRequestContext } from '@/lib/audit';
 import { hashReporterAddress } from '@/lib/quiz-report-rate-limit';
 
+beforeEach(() => {
+  vi.stubEnv('CLIENT_IP_HEADER', 'x-real-ip');
+});
+
 const EDGE_CLIENT_IP_HEADER = 'x-rinkuzu-client-ip';
 const EDGE_SECRET_HEADER = 'x-rinkuzu-edge';
 const EDGE_SECRET = 'edge-shared-secret-fixture-0123456789abcdef';

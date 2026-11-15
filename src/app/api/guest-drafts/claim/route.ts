@@ -10,6 +10,7 @@ import {
   claimGuestDraftsRequestSchema,
   type ClaimGuestDraftsResponseDto,
 } from '@/dtos/guest-draft';
+import { ipBucketKey } from '@/lib/client-ip';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
   const userRate = await checkAuthRateLimit('guest_draft_claim_user', userId);
   if (!userRate.allowed) return rateLimitResponse(userRate);
   const { ip } = extractRequestContext(request);
-  const ipRate = await checkAuthRateLimit('guest_draft_claim_ip', ip ?? 'unknown');
+  const ipRate = await checkAuthRateLimit('guest_draft_claim_ip', ipBucketKey(ip));
   if (!ipRate.allowed) return rateLimitResponse(ipRate);
 
   try {

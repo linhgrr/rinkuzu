@@ -2,9 +2,8 @@ import 'server-only';
 
 import { after, type NextRequest } from 'next/server';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
+import { resolveClientCountry } from '@/lib/client-ip';
 import { captureAnonymousServerEvent } from './server';
-
-const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 
 function knownLocale(value: string | undefined): Locale | undefined {
   return locales.find((locale) => locale === value);
@@ -30,8 +29,7 @@ function requestLocale(request: NextRequest): Locale {
 }
 
 function requestCountry(request: NextRequest): string | null {
-  const header = request.headers.get('x-vercel-ip-country');
-  return header !== null && COUNTRY_CODE_PATTERN.test(header) ? header : null;
+  return resolveClientCountry(request.headers);
 }
 
 /**

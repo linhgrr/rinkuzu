@@ -2,7 +2,7 @@ import 'server-only';
 
 import crypto from 'node:crypto';
 
-import { trustedEdgeClientIp } from '@/lib/client-ip';
+import { ipBucketKey, resolveClientIp } from '@/lib/client-ip';
 import {
   createRateLimiterRegistry,
   type RateLimitOutcome,
@@ -41,10 +41,7 @@ export async function consumeQuizReportRateLimit(
 
 /** The first proxy-reported address, as the audit helper reads it. */
 function requestAddress(headers: Headers): string {
-  const edgeIp = trustedEdgeClientIp(headers);
-  if (edgeIp) return edgeIp;
-  const forwarded = headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return headers.get('x-real-ip')?.trim() || forwarded || 'unknown';
+  return ipBucketKey(resolveClientIp(headers));
 }
 
 /**

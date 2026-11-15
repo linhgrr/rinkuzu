@@ -1,9 +1,6 @@
 import { defaultLocale, type Locale } from '@/i18n/config';
 import type { SignupOrigin } from '@/interfaces/repositories/IAuthAccountRepository';
 
-/** Vercel's edge sets the visitor's country here (ISO-3166 alpha-2). */
-export const SIGNUP_COUNTRY_HEADER = 'x-vercel-ip-country';
-
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 /** Vercel's "unknown" and "Tor" pseudo-countries. */
 const NO_COUNTRY_CODES = new Set(['XX', 'T1']);

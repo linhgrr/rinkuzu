@@ -7,6 +7,10 @@ import {
   webhookAbuseBucket,
 } from './billing-security';
 
+beforeEach(() => {
+  vi.stubEnv('CLIENT_IP_HEADER', 'x-real-ip');
+});
+
 const HMAC_SECRET = 'a-production-billing-hmac-secret-long-enough';
 const EDGE_CLIENT_IP_HEADER = 'x-rinkuzu-client-ip';
 const EDGE_SECRET_HEADER = 'x-rinkuzu-edge';

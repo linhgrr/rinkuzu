@@ -11,6 +11,7 @@ import {
   type UnsubscribeCampaign,
 } from '@/lib/communication/review-reminder-policy';
 import { logger } from '@/lib/logger';
+import { ipBucketKey } from '@/lib/client-ip';
 
 /**
  * One-click unsubscribe from the 2-day review email (RIN-915, RFC 8058).
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
   const link = linkOf(request);
   const pageLocale = await formLocale(request);
   const { ip } = extractRequestContext(request);
-  const rate = await checkAuthRateLimit('unsubscribe_ip', ip ?? 'unknown');
+  const rate = await checkAuthRateLimit('unsubscribe_ip', ipBucketKey(ip));
   if (!rate.allowed) return rateLimitResponse(rate);
 
   try {

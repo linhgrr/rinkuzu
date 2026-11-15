@@ -24,6 +24,10 @@ vi.mock('@/lib/billing-rate-limit', () => ({
 import { POST } from '@/app/api/billing/webhooks/[provider]/route';
 import { BillingDomainError } from '@/services/billing/billing-domain';
 
+beforeEach(() => {
+  vi.stubEnv('CLIENT_IP_HEADER', 'x-real-ip');
+});
+
 const CHECKSUM_KEY = 'test-checksum-key-with-at-least-32-characters';
 const ABUSE_SECRET = 'an-abuse-signal-secret-of-at-least-32-chars';
 

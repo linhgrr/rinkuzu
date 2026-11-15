@@ -65,8 +65,8 @@ export function publicPathname(pathname: string): string {
 }
 
 /** Edge cache lifetime for public HTML (RIN-1679). */
-export const CDN_PUBLIC_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=600';
-export const CDN_NO_STORE = 'no-store';
+const CDN_PUBLIC_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=600';
+const CDN_NO_STORE = 'no-store';
 
 // Pages every visitor sees alike when signed out. `/quiz/<slug>` joins once
 // RIN-1647 makes it a signed-out twin.

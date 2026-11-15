@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CDN_NO_STORE,
-  CDN_PUBLIC_CACHE_CONTROL,
   cdnCacheControlFor,
   publicPathForInternalTwin,
   publicPathname,
   signedOutTwinPath,
   signedOutTwinQuizPath,
 } from './public-cache';
+
+const CDN_PUBLIC_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=600';
+const CDN_NO_STORE = 'no-store';
 
 describe('signedOutTwinPath', () => {
   const noCookies: string[] = [];

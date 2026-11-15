@@ -8,6 +8,7 @@ import {
   IQuizRepository,
   type CreateQuizData,
   type PublicQuizSitemapQuery,
+  type QuizAccessRecord,
   type PublicQuizSitemapRecord,
   type QuizCreatorStatRecord,
   type QuizMetadataRecord,
@@ -357,17 +358,18 @@ export class QuizRepository implements IQuizRepository, IDashboardQuizRepository
     return record ? mapQuizWithOwnerPlacement(record) : null;
   }
 
-  async findAccessById(id: string): Promise<Pick<Quiz, 'id' | 'author' | 'visibility'> | null> {
+  async findAccessById(id: string): Promise<QuizAccessRecord | null> {
     await connectDB();
     const record = await QuizModel.findById(id)
-      .select('_id author visibility')
-      .lean<Pick<QuizPersistenceRecord, '_id' | 'author' | 'visibility'>>();
+      .select('_id author visibility slug')
+      .lean<Pick<QuizPersistenceRecord, '_id' | 'author' | 'visibility' | 'slug'>>();
 
     return record
       ? {
           id: serializeId(record._id, 'quiz._id'),
           author: serializeId(record.author, 'quiz.author'),
           visibility: record.visibility,
+          slug: record.slug,
         }
       : null;
   }

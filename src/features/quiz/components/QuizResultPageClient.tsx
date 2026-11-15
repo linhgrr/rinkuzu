@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Link } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import { Suspense, useEffect, useReducer, useState, type ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -250,12 +250,12 @@ function QuizResultActions({
 }) {
   return (
     <div className="mb-8 flex flex-wrap justify-center gap-3">
-      <Link href={`/quiz/${encodedSlug}`}>
+      <IntentPrefetchLink href={`/quiz/${encodedSlug}`}>
         <Button variant="outline">{redoLabel}</Button>
-      </Link>
-      <Link href="/">
+      </IntentPrefetchLink>
+      <IntentPrefetchLink href="/">
         <Button>{backHomeLabel}</Button>
-      </Link>
+      </IntentPrefetchLink>
     </div>
   );
 }

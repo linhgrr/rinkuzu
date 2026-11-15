@@ -73,7 +73,7 @@ describe('guest attempt claim', () => {
     };
     const good = guestAttempt(tokens.good, new Date(now.getTime() - HOUR));
     const second = guestAttempt(tokens.second, new Date(now.getTime() - 2 * HOUR));
-    const old = guestAttempt(tokens.old, new Date(now.getTime() - DAY - HOUR));
+    const old = guestAttempt(tokens.old, new Date(now.getTime() - 7 * DAY - HOUR));
     // Never valid documents; inserted raw to prove the filter itself refuses them.
     const owned = guestAttempt(tokens.owned, now, { user: new Types.ObjectId() });
     const email = guestAttempt(tokens.email, now, { guestEmail: `${runId}@guest.fixture` });

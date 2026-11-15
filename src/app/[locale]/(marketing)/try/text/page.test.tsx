@@ -24,10 +24,7 @@ const params = Promise.resolve({ locale: 'vi' });
 
 describe('/try/text page (RIN-1539, RIN-1540)', () => {
   it.each(['vi', 'en'])('is indexable in %s with a self canonical and hreflang', async (locale) => {
-    const metadata = await generateMetadata({
-      params: Promise.resolve({ locale }),
-      searchParams: Promise.resolve({}),
-    });
+    const metadata = await generateMetadata({ params: Promise.resolve({ locale }) });
     expect(metadata.robots).toEqual({ index: true, follow: true });
     expect(metadata.title).toBe(`${locale}:guestDraft.textMeta.title`);
     expect(String(metadata.alternates?.canonical)).toMatch(new RegExp(`/${locale}/try/text$`));
@@ -49,16 +46,12 @@ describe('/try/text page (RIN-1539, RIN-1540)', () => {
   });
 
   it('renders the SEO section under the widget', async () => {
-    const page = await TryTextPage({ params, searchParams: Promise.resolve({}) });
+    const page = await TryTextPage({ params });
     expect(page.props.children.props.locale).toBe('vi');
   });
 
-  it('passes a known entry through and reports try_text otherwise', async () => {
-    const hub = await TryTextPage({ params, searchParams: Promise.resolve({ entry: 'create' }) });
-    expect(hub.props.entry).toBe('create');
-    const direct = await TryTextPage({ params, searchParams: Promise.resolve({}) });
-    expect(direct.props.entry).toBe('try_text');
-    const unknown = await TryTextPage({ params, searchParams: Promise.resolve({ entry: 'x' }) });
-    expect(unknown.props.entry).toBe('try_text');
+  it('takes no entry prop: the browser reads ?entry= so the page stays static (RIN-1645)', async () => {
+    const page = await TryTextPage({ params });
+    expect(page.props).not.toHaveProperty('entry');
   });
 });

@@ -19,7 +19,6 @@ import { quizTextLimitState } from '@/features/guest-draft/lib/quiz-text-limit';
 import type { GuestUploadState } from '@/features/guest-draft/lib/guest-upload-state';
 import { Link } from '@/i18n/navigation';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
-import type { GuestDraftEntry } from '@/shared/constants/guest-draft';
 import { QUIZ_TEXT_MAX_CHARS, QUIZ_TEXT_MIN_CHARS } from '@/shared/constants/quiz-text-source';
 import { ROUTES } from '@/shared/constants/routes';
 
@@ -110,7 +109,6 @@ function FlowBody({ flow, text, onTextChange }: TextFormProps) {
 }
 
 interface GuestTextInputPageProps {
-  entry: GuestDraftEntry;
   /** Server-rendered copy under the widget (RIN-1540); the widget stays first on screen. */
   children?: ReactNode;
 }
@@ -120,9 +118,9 @@ interface GuestTextInputPageProps {
  * plays them. The text lives in this component's state only (kept for "Try again" and
  * "Edit text"); it is never shown back outside the textarea, stored or sent to analytics.
  */
-export function GuestTextInputPage({ entry, children }: GuestTextInputPageProps) {
+export function GuestTextInputPage({ children }: GuestTextInputPageProps) {
   const t = useTranslations('guestDraft.text');
-  const flow = useGuestTextDraft(entry);
+  const flow = useGuestTextDraft();
   const [text, setText] = useState('');
 
   return (

@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { createGuestDraftFieldsSchema } from '@/dtos/guest-draft';
-import { knownGuestDraftEntry, resolveGuestDraftEntry } from './resolve-guest-entry';
+import { guestDraftEntryFromSearch, resolveGuestDraftEntry } from './resolve-guest-entry';
 
 describe('guest draft entry (RIN-1497)', () => {
   it('keeps a known ?entry= param and drops an unknown one', () => {
-    expect(knownGuestDraftEntry('blog')).toBe('blog');
-    expect(knownGuestDraftEntry('seo')).toBe('seo');
-    expect(knownGuestDraftEntry('x')).toBeUndefined();
-    expect(knownGuestDraftEntry(['blog'])).toBeUndefined();
-    expect(knownGuestDraftEntry(undefined)).toBeUndefined();
+    expect(guestDraftEntryFromSearch('?entry=blog')).toBe('blog');
+    expect(guestDraftEntryFromSearch('?entry=seo')).toBe('seo');
+    expect(guestDraftEntryFromSearch('?entry=x')).toBeUndefined();
+  });
+
+  it('reads a single known ?entry= from the page URL (RIN-1645)', () => {
+    expect(guestDraftEntryFromSearch('?entry=create')).toBe('create');
+    expect(guestDraftEntryFromSearch('?utm_source=x&entry=blog')).toBe('blog');
+    expect(guestDraftEntryFromSearch('?entry=x')).toBeUndefined();
+    expect(guestDraftEntryFromSearch('?entry=blog&entry=seo')).toBeUndefined();
+    expect(guestDraftEntryFromSearch('')).toBeUndefined();
   });
 
   it('is accepted by the create DTO', () => {
@@ -16,7 +22,7 @@ describe('guest draft entry (RIN-1497)', () => {
   });
 
   it('knows try_text, the /try/text default (RIN-1539)', () => {
-    expect(knownGuestDraftEntry('try_text')).toBe('try_text');
+    expect(guestDraftEntryFromSearch('?entry=try_text')).toBe('try_text');
     expect(createGuestDraftFieldsSchema.shape.entry.safeParse('try_text').success).toBe(true);
   });
 

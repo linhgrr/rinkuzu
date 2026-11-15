@@ -43,9 +43,11 @@ function renderPage(
   locale: 'en' | 'vi' = 'en',
   { entry }: { entry?: 'create' } = { entry: 'create' },
 ) {
+  // The page is static (RIN-1645): the hook reads `?entry=` from the URL at upload time.
+  window.history.replaceState(null, '', `/${locale}/try/pdf${entry ? `?entry=${entry}` : ''}`);
   return render(
     <NextIntlClientProvider locale={locale} messages={messages[locale]}>
-      <GuestPdfUploadPage entry={entry} />
+      <GuestPdfUploadPage />
     </NextIntlClientProvider>,
   );
 }
@@ -94,7 +96,7 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
   it('renders the server copy after the widget, so the widget stays first (RIN-1498)', () => {
     render(
       <NextIntlClientProvider locale="en" messages={messages.en}>
-        <GuestPdfUploadPage entry="create">
+        <GuestPdfUploadPage>
           <section data-testid="seo-copy">How it works</section>
         </GuestPdfUploadPage>
       </NextIntlClientProvider>,

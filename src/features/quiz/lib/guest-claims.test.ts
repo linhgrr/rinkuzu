@@ -7,10 +7,12 @@ import {
   GUEST_CLAIMS_STORAGE_KEY,
   addGuestClaim,
   clearGuestClaims,
+  consumeResumeBannerSignIn,
   createGuestClaimToken,
   findGuestClaimToken,
   dismissResumeBanner,
   guestClaimDisplay,
+  markResumeBannerSignIn,
   readGuestClaims,
   readResumeBannerClaim,
 } from '@/features/quiz/lib/guest-claims';
@@ -175,5 +177,22 @@ describe('guest claims (RIN-912)', () => {
     expect(readResumeBannerClaim(NOW)).toBeNull();
     expect(() => dismissResumeBanner('a', NOW)).not.toThrow();
     spy.mockRestore();
+  });
+
+  it('reads the resume sign-in marker once, and tolerates disabled session storage', () => {
+    expect(consumeResumeBannerSignIn()).toBe(false);
+    markResumeBannerSignIn();
+    expect(consumeResumeBannerSignIn()).toBe(true);
+    expect(consumeResumeBannerSignIn()).toBe(false);
+
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    expect(() => markResumeBannerSignIn()).not.toThrow();
+    spy.mockRestore();
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    expect(consumeResumeBannerSignIn()).toBe(false);
   });
 });

@@ -196,5 +196,15 @@
         "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
       }
     }
+  },
+  "resumeBanner": {
+    "region": "Kết quả bài quiz đã lưu trên thiết bị này",
+    "leadScore": "Kết quả của bạn vẫn còn: {score}%",
+    "leadLegacy": "Kết quả bài quiz của bạn",
+    "leadDraft": "Quiz từ tài liệu của bạn sẽ bị xóa sau {hours} giờ",
+    "others": "+{count} kết quả khác",
+    "save": "Lưu với Google",
+    "see": "Xem lại",
+    "dismiss": "Đóng thông báo kết quả"
   }
 }

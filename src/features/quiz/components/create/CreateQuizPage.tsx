@@ -285,7 +285,8 @@ function UploadSection({
               size="sm"
               onClick={onRemoveFile}
               disabled={extracting}
-              className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+              aria-label={t('remove')}
+              className="min-h-11 min-w-11 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               <HiOutlineX className="size-4" />
             </Button>
@@ -405,7 +406,7 @@ function CreateQuizFormCard({
         </CardHeader>
 
         <CardContent className="pt-0">
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={onSubmit} noValidate className="space-y-6">
             <QuizMetaForm
               title={title}
               onTitleChange={onTitleChange}

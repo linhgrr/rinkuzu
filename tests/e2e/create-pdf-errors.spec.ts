@@ -58,6 +58,61 @@ test.describe('create from PDF error states (RIN-991)', () => {
     });
   });
 
+  // RIN-1732: one error place, an explained submit, a real Cancel link, 44px controls.
+  for (const width of [1440, 1280]) {
+    test(`at ${width}px the form has one error place, explains submit, and cancels to the hub (RIN-1732)`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width, height: 720 });
+      await withAccounts(testInfo, async ({ regular }) => {
+        await login(page, regular);
+        const input = await openReadyDropzone(page);
+        const form = page.locator('main form');
+
+        // Submit is not silently disabled: it says what is missing.
+        const submit = page.getByRole('button', { name: enCreate.createQuiz, exact: true });
+        await expect(submit).toBeEnabled();
+        await submit.click();
+        await expect(
+          page.getByRole('alert').filter({ hasText: enCreate.titleRequired }),
+        ).toBeVisible();
+
+        // A bad file reports inside the card, above the dropzone, and takes focus.
+        await input.setInputFiles({
+          name: 'notes.txt',
+          mimeType: 'text/plain',
+          buffer: Buffer.from('plain text notes'),
+        });
+        const fileAlert = form.getByRole('alert').filter({ hasText: enCreate.pdfWrongType });
+        await expect(fileAlert).toBeVisible();
+        await expect(fileAlert).toBeFocused();
+        await expect(fileAlert).toBeInViewport();
+
+        await input.setInputFiles({
+          name: 'chapter-1.pdf',
+          mimeType: 'application/pdf',
+          buffer: await singlePagePdf(),
+        });
+        await expect(page.getByRole('button', { name: enCreate.showPDFPreview })).toBeVisible();
+
+        expect(await page.locator('a button, button a').count()).toBe(0);
+        const controls = form.locator('button, a[href]');
+        const heights = await controls.evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => ({
+              label: (node.textContent ?? '').trim() || node.getAttribute('aria-label') || '?',
+              height: Math.round(node.getBoundingClientRect().height),
+            })),
+        );
+        expect(heights.filter((control) => control.height < 44)).toEqual([]);
+
+        await form.getByRole('link', { name: /^Cancel$/ }).click();
+        await expect(page).toHaveURL(/\/en\/create$/);
+      });
+    });
+  }
+
   test('at 375px a non-PDF file keeps its message under the dropzone, not in a toast (RIN-1082)', async ({
     page,
   }, testInfo) => {

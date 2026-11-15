@@ -1,6 +1,6 @@
 import type { AttemptAnswer } from '@/entities/Attempt';
 import type { QuizQuestion } from '@/entities/Quiz';
-import type { WrongQuizAttemptQuestion } from '@/entities/QuizAttempt';
+import type { ClaimedGuestAttemptRef, WrongQuizAttemptQuestion } from '@/entities/QuizAttempt';
 
 interface AttemptQuizSnapshotData {
   integrity: 'complete';
@@ -64,12 +64,6 @@ export interface RecordedQuizAttempt {
 
 export interface IQuizAttemptProgressRepository {
   recordSubmittedAttempt(data: RecordQuizAttemptProgressData): Promise<RecordedQuizAttempt>;
-}
-
-/** A claimed attempt with the hash of the token that claimed it (RIN-1711). Never log either. */
-export interface ClaimedGuestAttemptRef {
-  attemptId: string;
-  tokenHash: string;
 }
 
 export interface IGuestAttemptClaimRepository {

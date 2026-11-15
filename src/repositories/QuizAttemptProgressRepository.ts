@@ -7,8 +7,8 @@ import AttemptModel from '@/models/Attempt';
 import QuestionProgress from '@/models/QuestionProgress';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
+import type { ClaimedGuestAttemptRef } from '@/entities/QuizAttempt';
 import type {
-  ClaimedGuestAttemptRef,
   IGuestAttemptClaimRepository,
   IQuizAttemptProgressRepository,
   RecordedQuizAttempt,

@@ -1,4 +1,4 @@
-import type { ClaimedGuestAttemptRef } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type { ClaimedGuestAttemptRef } from '@/entities/QuizAttempt';
 
 export interface IGuestAttemptClaimService {
   /** Ids of the guest attempts now owned by `userId`; tokens that match nothing are dropped. */

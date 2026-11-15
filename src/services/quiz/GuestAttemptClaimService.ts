@@ -1,7 +1,5 @@
-import type {
-  ClaimedGuestAttemptRef,
-  IGuestAttemptClaimRepository,
-} from '@/interfaces/repositories/IQuizAttemptProgressRepository';
+import type { ClaimedGuestAttemptRef } from '@/entities/QuizAttempt';
+import type { IGuestAttemptClaimRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type { IGuestAttemptClaimService } from '@/interfaces/services/IGuestAttemptClaimService';
 import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 

@@ -2,7 +2,6 @@
   "note": "Files that fail tsconfig.hardening.json. This list may only shrink; see scripts/check-typecheck-hardening.mjs.",
   "files": [
     "src/app/[locale]/(app)/quiz/[slug]/PremiumQuizPlayerClient.tsx",
-    "src/app/[locale]/(marketing)/blog/page.tsx",
     "src/app/api/adaptive/session/[...path]/route.test.ts",
     "src/app/api/admin/ai-settings/proxy.ts",
     "src/app/api/admin/premium-submissions/route.ts",

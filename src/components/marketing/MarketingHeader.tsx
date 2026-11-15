@@ -146,7 +146,7 @@ export function MarketingHeader({ position }: { position: MarketingHeaderPositio
         onKeyDown={onKeyDown}
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-8 lg:px-8">
-          <Link href="/" aria-label={t('home')} className="flex shrink-0 items-center">
+          <Link href="/" aria-label={t('home')} className="flex min-h-11 shrink-0 items-center">
             <Image
               src="/images/auth_logo.webp"
               alt="RinKuzu"

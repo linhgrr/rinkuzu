@@ -203,3 +203,45 @@ for (const { timezoneId, label } of [
     });
   });
 }
+
+/**
+ * RIN-1579: when the drafts call fails, "Retry" sat 12 px under the message and was 36 px high.
+ * The gap must be at least 16 px and the button at least 44 px, on a phone and on desktop.
+ */
+test.describe('create hub drafts load error (RIN-1579)', () => {
+  test('keeps Retry 16 px under the message and 44 px high', async ({ page }, testInfo) => {
+    await withAccounts(testInfo, async ({ regular }) => {
+      await page.route('**/api/quiz-drafts', (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill({
+              status: 500,
+              contentType: 'application/json',
+              body: JSON.stringify({ success: false, error: 'internal_error' }),
+            })
+          : route.fallback(),
+      );
+      await login(page, regular);
+
+      for (const viewport of [
+        { width: 375, height: 800 },
+        { width: 1440, height: 900 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto('/en/create');
+
+        const message = page.getByText(enCreate.draftsLoadFailed, { exact: true });
+        const retry = page.getByRole('button', { name: enCommon.retry, exact: true });
+        await expect(message).toBeVisible({ timeout: 20_000 });
+        await expect(retry).toBeVisible();
+
+        const messageBox = await box(message);
+        const retryBox = await box(retry);
+        expect(
+          retryBox.y - (messageBox.y + messageBox.height),
+          `gap under the message at ${viewport.width}`,
+        ).toBeGreaterThanOrEqual(16);
+        expect(retryBox.height, `Retry height at ${viewport.width}`).toBeGreaterThanOrEqual(44);
+      }
+    });
+  });
+});

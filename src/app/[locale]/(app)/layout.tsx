@@ -1,26 +1,7 @@
-import { Inter, Montserrat } from 'next/font/google';
-import { NextIntlClientProvider } from 'next-intl';
-import Providers from '@/app/providers';
 import { getScopedMessages } from '@/i18n/messages';
 import { APP_MESSAGE_NAMESPACES } from '@/i18n/namespaces';
-import BottomNav from '@/components/BottomNav';
-import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
-import { ClientOnlyAppAddons } from '@/components/ClientOnlyAppAddons';
-import { AppChrome } from '@/components/app-chrome/AppChrome';
+import { AppShell } from '@/components/app-chrome/AppShell';
 import { getCurrentSession } from '@/lib/auth/session';
-
-const inter = Inter({
-  subsets: ['latin', 'vietnamese'],
-  display: 'swap',
-  variable: '--font-inter',
-});
-
-const montserrat = Montserrat({
-  subsets: ['latin', 'vietnamese'],
-  display: 'swap',
-  variable: '--font-montserrat',
-  weight: ['400', '600', '700'],
-});
 
 export default async function AppLayout({
   children,
@@ -36,16 +17,8 @@ export default async function AppLayout({
   ]);
 
   return (
-    <div className={`${inter.className} ${montserrat.variable}`}>
-      <NextIntlClientProvider messages={messages}>
-        <Providers session={session}>
-          <AppChrome>
-            <MainLayoutWrapper>{children}</MainLayoutWrapper>
-          </AppChrome>
-          <BottomNav />
-          <ClientOnlyAppAddons />
-        </Providers>
-      </NextIntlClientProvider>
-    </div>
+    <AppShell messages={messages} session={session}>
+      {children}
+    </AppShell>
   );
 }

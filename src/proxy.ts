@@ -10,6 +10,7 @@ import { routing } from './i18n/routing';
 import { isRscOrPrefetchRequest, usesSecureAuthCookie } from './lib/auth/session-cookie';
 import { getLocaleFromPath, toBrowserPath } from './lib/routing/pathname';
 import { getAuthRoutePolicy } from './lib/routing/auth-route-policy';
+import { publicPathForInternalTwin, signedOutTwinPath } from './lib/routing/public-cache';
 import { isStateChangingApiRequest } from './lib/security/csrf-policy';
 import { ROUTES } from './shared/constants/routes';
 
@@ -180,6 +181,25 @@ export default async function middleware(request: NextRequest, event: NextFetchE
   // Read-only API requests still need a request id but no CSRF check.
   if (request.nextUrl.pathname.startsWith('/api/')) {
     return applySecurityHeaders(NextResponse.next(), requestId);
+  }
+
+  // Signed-out twins (RIN-1646): the internal path is never served by itself,
+  // and a request with no session cookie reads the cached twin.
+  const publicPath = publicPathForInternalTwin(request.nextUrl.pathname);
+  if (publicPath !== null) {
+    const publicUrl = new URL(publicPath, request.url);
+    publicUrl.search = request.nextUrl.search;
+    return applySecurityHeaders(NextResponse.redirect(publicUrl), requestId);
+  }
+  const twinPath = signedOutTwinPath(
+    request.method,
+    request.nextUrl.pathname,
+    request.cookies.getAll().map((cookie) => cookie.name),
+  );
+  if (twinPath !== null) {
+    const twinUrl = new URL(twinPath, request.url);
+    twinUrl.search = request.nextUrl.search;
+    return applySecurityHeaders(NextResponse.rewrite(twinUrl), requestId);
   }
 
   const { pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);

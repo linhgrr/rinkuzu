@@ -43,15 +43,20 @@ async function postStoredGuestDrafts(): Promise<void> {
 }
 
 async function postStoredGuestClaims(): Promise<void> {
-  const tokens = readGuestClaims().map((claim) => claim.token);
+  const claims = readGuestClaims();
+  const tokens = claims.map((claim) => claim.token);
   if (tokens.length === 0) return;
+  // The tokens of the attempts whose result card asked for the 2-day review (RIN-1712).
+  const reviewOptInTokens = claims.filter((claim) => claim.reviewOptIn).map((claim) => claim.token);
   try {
     const { claimedAttemptIds } = await fetchApiData<ClaimGuestAttemptsResponseDto>(
       '/api/attempts/claim',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokens }),
+        body: JSON.stringify(
+          reviewOptInTokens.length > 0 ? { tokens, reviewOptInTokens } : { tokens },
+        ),
       },
     );
     // The server already dropped wrong, expired or used tokens: forget them all.

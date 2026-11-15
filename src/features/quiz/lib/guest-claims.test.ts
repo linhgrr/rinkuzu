@@ -12,6 +12,7 @@ import {
   findGuestClaimToken,
   dismissResumeBanner,
   guestClaimDisplay,
+  markGuestClaimReviewOptIn,
   markResumeBannerSignIn,
   readGuestClaims,
   readResumeBannerClaim,
@@ -118,6 +119,25 @@ describe('guest claims (RIN-912)', () => {
     );
 
     expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['attempt-ok']);
+  });
+
+  it('keeps the review opt-in mark, still reads entries without it and drops a bad value (RIN-1712)', () => {
+    addGuestClaim(claim('attempt-1'), NOW);
+    addGuestClaim(claim('attempt-2'), NOW);
+
+    markGuestClaimReviewOptIn('attempt-1', NOW);
+    markGuestClaimReviewOptIn('attempt-missing', NOW);
+
+    const byId = Object.fromEntries(readGuestClaims(NOW).map((entry) => [entry.attemptId, entry]));
+    expect(byId['attempt-1']?.reviewOptIn).toBe(true);
+    expect(byId['attempt-2']?.reviewOptIn).toBeUndefined();
+    expect(Object.keys(byId)).toHaveLength(2);
+
+    window.localStorage.setItem(
+      GUEST_CLAIMS_STORAGE_KEY,
+      JSON.stringify([claim('legacy'), { ...claim('bad'), reviewOptIn: 'yes' }]),
+    );
+    expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['legacy']);
   });
 
   it('keeps zod out of the app-layout client graph (RIN-1370)', () => {

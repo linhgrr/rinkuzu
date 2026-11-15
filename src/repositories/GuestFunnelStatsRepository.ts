@@ -29,7 +29,7 @@ interface OptInWeekRow {
  * the owner filter then runs on that window only. Attempts claimed into an
  * excluded account drop out; an unclaimed attempt has `user: null`.
  */
-export function guestAttemptWeeksPipeline(
+function guestAttemptWeeksPipeline(
   from: Date,
   to: Date,
   excludedUserIds: readonly unknown[],
@@ -65,7 +65,7 @@ export function guestAttemptWeeksPipeline(
   ];
 }
 
-export function guestOptInWeeksPipeline(
+function guestOptInWeeksPipeline(
   from: Date,
   to: Date,
   excludedUserIds: readonly unknown[],

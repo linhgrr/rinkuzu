@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  // Branded 503 page with a "tell me when you are back" form in front of
+  // rinkuzu.app (RIN-1651, spec RIN-1643). Healthy traffic passes through.
+  "name": "rinkuzu-outage-fallback",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-26",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    // Every request of the site goes through this Worker: sample the logs.
+    "head_sampling_rate": 0.05,
+  },
+  // Both hostnames must be proxied (orange cloud) in DNS for these routes to
+  // run; set the route failure mode to fail open (RIN-1655).
+  "routes": [
+    { "pattern": "rinkuzu.app/*", "zone_name": "rinkuzu.app" },
+    { "pattern": "www.rinkuzu.app/*", "zone_name": "rinkuzu.app" },
+  ],
+  "vars": {
+    "NOTIFY_API_URL": "https://api.rinkuzu.app/api/internal/outage-notify",
+  },
+  "secrets": {
+    // OUTAGE_NOTIFY_TOKEN must match the API's OUTAGE_NOTIFY_TOKEN.
+    // EDGE_SHARED_SECRET must match the Vercel EDGE_SHARED_SECRET (32+ chars).
+    "required": ["OUTAGE_NOTIFY_TOKEN", "EDGE_SHARED_SECRET"],
+  },
+}

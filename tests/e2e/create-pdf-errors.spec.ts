@@ -87,6 +87,8 @@ test.describe('create from PDF error states (RIN-991)', () => {
         await expect(fileAlert).toBeVisible();
         await expect(fileAlert).toBeFocused();
         await expect(fileAlert).toBeInViewport();
+        // The stale submit message is cleared: exactly one error place.
+        await expect(form.getByRole('alert')).toHaveCount(1);
 
         await input.setInputFiles({
           name: 'chapter-1.pdf',

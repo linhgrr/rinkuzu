@@ -574,7 +574,7 @@ export function CreateQuizPage() {
   const selectPdf = useCallback(
     async (file: File) => {
       if (!isPdfFile(file)) {
-        dispatch({ type: 'patch', value: { error: t('pdfWrongType') } });
+        dispatch({ type: 'patch', value: { error: t('pdfWrongType'), submitError: '' } });
         return;
       }
       try {
@@ -584,6 +584,7 @@ export function CreateQuizPage() {
             type: 'patch',
             value: {
               error: t('pdfTooManyPages', { pages: pageCount, maxPages: uploadPolicy.maxPages }),
+              submitError: '',
             },
           });
           return;
@@ -591,7 +592,7 @@ export function CreateQuizPage() {
         dispatch({ type: 'patch', value: { error: '', submitError: '' } });
         dispatch({ type: 'setPdfFile', file });
       } catch {
-        dispatch({ type: 'patch', value: { error: t('pdfUnreadable') } });
+        dispatch({ type: 'patch', value: { error: t('pdfUnreadable'), submitError: '' } });
       }
     },
     [t, uploadPolicy.maxPages],
@@ -622,7 +623,7 @@ export function CreateQuizPage() {
     onDropRejected: (rejections) => {
       dispatch({
         type: 'patch',
-        value: { error: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB) },
+        value: { error: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB), submitError: '' },
       });
     },
     accept: { 'application/pdf': ['.pdf'] },

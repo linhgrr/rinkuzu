@@ -1,5 +1,4 @@
 import { Link } from '@/i18n/navigation';
-import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { buildLocalizedMetadata, canonicalFor, siteUrl } from '@/lib/seo';
@@ -149,7 +148,7 @@ export default async function AuthorPage({ params }: Props) {
             </h2>
             <div className="space-y-6">
               {posts.map((post) => (
-                <IntentPrefetchLink
+                <Link
                   key={post.slug}
                   href={`/blog/${post.slug}`}
                   className="group flex gap-5 rounded-2xl border border-neutral-200 p-5 transition-[border-color,box-shadow] hover:border-green-200 hover:shadow-md"
@@ -170,7 +169,7 @@ export default async function AuthorPage({ params }: Props) {
                       {post.summary ?? post.description}
                     </p>
                   </div>
-                </IntentPrefetchLink>
+                </Link>
               ))}
             </div>
           </div>

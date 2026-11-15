@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
+import { Link } from '@/i18n/navigation';
 import {
   EXPLORE_HUB_LINK_LIMIT,
   loadIndexableTopicHubs,
@@ -26,12 +26,12 @@ function TopicHubLinks({ heading, hubs }: { heading: string; hubs: TopicHubLink[
       <ul className="mt-3 flex flex-wrap gap-2">
         {hubs.map((hub) => (
           <li key={hub.slug}>
-            <IntentPrefetchLink
+            <Link
               href={topicHubPath(hub.slug)}
               className="inline-flex min-h-11 items-center rounded-full border border-secondary-2 bg-surface-blue px-4 font-home text-sm font-medium text-ink hover:text-accent"
             >
               {hub.name}
-            </IntentPrefetchLink>
+            </Link>
           </li>
         ))}
       </ul>

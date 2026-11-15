@@ -1,5 +1,4 @@
 import { Link } from '@/i18n/navigation';
-import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
@@ -90,7 +89,7 @@ export default async function BlogIndexPage({ params }: Props) {
           locale={locale}
         />
         {posts.map((post, index) => (
-          <IntentPrefetchLink
+          <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
             className="group block rounded-3xl overflow-hidden border border-neutral-200 transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-xl"
@@ -131,7 +130,7 @@ export default async function BlogIndexPage({ params }: Props) {
                 {isVi ? 'Đọc bài viết →' : 'Read article →'}
               </span>
             </div>
-          </IntentPrefetchLink>
+          </Link>
         ))}
       </div>
     </article>

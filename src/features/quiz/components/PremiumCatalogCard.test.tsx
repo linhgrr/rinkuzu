@@ -9,7 +9,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { PremiumCatalogCard } from '@/features/quiz/components/PremiumCatalogCard';
 
 vi.mock('@/i18n/navigation', () => ({
-  useRouter: () => ({ prefetch: vi.fn() }),
   Link: ({
     href,
     children,

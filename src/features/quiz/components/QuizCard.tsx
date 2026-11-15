@@ -1,4 +1,4 @@
-import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { HiOutlineLockClosed, HiOutlineLockOpen } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -71,7 +71,7 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
         ) : null}
       </div>
 
-      <IntentPrefetchLink
+      <Link
         href={href ?? ROUTES.QUIZ.VIEW(encodeURIComponent(quiz.slug))}
         className="flex flex-1 flex-col gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
@@ -90,7 +90,7 @@ export function QuizCard({ quiz, quizId, onDelete, badge, href }: QuizCardProps)
             />
           ) : null}
         </div>
-      </IntentPrefetchLink>
+      </Link>
     </article>
   );
 }

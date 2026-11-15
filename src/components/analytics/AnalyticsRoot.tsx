@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useLocale } from 'next-intl';
 import { usePathname } from '@/i18n/navigation';
 import {
@@ -30,6 +30,34 @@ export function AnalyticsRoot() {
     trackAnalyticsPageView(window.location.href, document.title);
   }, [consent, pathname]);
 
+  // The card is fixed over the bottom of the viewport. On a short page (the
+  // register form on a 390 x 664 phone) it covered the last control and the
+  // page could not scroll it clear. An in-flow spacer at the end of <body>,
+  // as tall as the strip the card covers, gives every page that much scroll
+  // room while the card is up (RIN-1570). Hidden card (quiz player): 0.
+  const bannerRef = useRef<HTMLElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const banner = bannerRef.current;
+    const spacer = spacerRef.current;
+    if (!banner || !spacer) return;
+    const reserve = () => {
+      const covered =
+        banner.getClientRects().length === 0
+          ? 0
+          : Math.max(0, Math.ceil(window.innerHeight - banner.getBoundingClientRect().top));
+      spacer.style.height = `${covered}px`;
+    };
+    reserve();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reserve);
+    observer?.observe(banner);
+    window.addEventListener('resize', reserve);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', reserve);
+    };
+  }, [consent]);
+
   if (consent !== null) return null;
 
   const isVietnamese = locale === 'vi';
@@ -56,55 +84,59 @@ export function AnalyticsRoot() {
     'min-h-11 whitespace-nowrap rounded-full px-3 py-2 text-base font-semibold leading-6 sm:min-w-28 sm:px-4';
 
   return (
-    <aside
-      // Below md the app's bottom nav (`data-bottom-nav`) is fixed to the
-      // bottom edge, so the card sits above it (and its raised centre button)
-      // instead of covering its tap targets. From lg the app sidebar
-      // (`data-app-sidebar`) is fixed to the left edge, so the card's left
-      // inset starts after it and it centres on the content area instead.
-      // While a quiz player (`data-quiz-player`) is on screen the card hides,
-      // so it never covers a question, the navigator or the finish button,
-      // and it comes back on the result page (RIN-987/RIN-979).
-      className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-4 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 [html:has([data-quiz-player])_&]:hidden max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
-      aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
-    >
-      <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>
-      {/* The row wraps rather than squeezing the buttons: at 320 px in vi the
+    <>
+      <aside
+        ref={bannerRef}
+        // Below md the app's bottom nav (`data-bottom-nav`) is fixed to the
+        // bottom edge, so the card sits above it (and its raised centre button)
+        // instead of covering its tap targets. From lg the app sidebar
+        // (`data-app-sidebar`) is fixed to the left edge, so the card's left
+        // inset starts after it and it centres on the content area instead.
+        // While a quiz player (`data-quiz-player`) is on screen the card hides,
+        // so it never covers a question, the navigator or the finish button,
+        // and it comes back on the result page (RIN-987/RIN-979).
+        className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-neutral-200 bg-white p-4 font-system shadow-xl sm:inset-x-4 sm:bottom-4 sm:flex sm:items-center sm:gap-5 [html:has([data-quiz-player])_&]:hidden max-md:[html:has([data-bottom-nav])_&]:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] lg:[html:has([data-app-sidebar=expanded])_&]:left-[calc(var(--app-sidebar-expanded-width)+1rem)] lg:[html:has([data-app-sidebar=collapsed])_&]:left-[calc(var(--app-sidebar-collapsed-width)+1rem)]"
+        aria-label={isVietnamese ? 'Lựa chọn analytics' : 'Analytics preference'}
+      >
+        <p className="flex-1 text-sm leading-5 text-neutral-700 sm:leading-6">{copy.body}</p>
+        {/* The row wraps rather than squeezing the buttons: at 320 px in vi the
           privacy link takes its own row and the buttons stay on one line
           each, right-aligned (RIN-1570). */}
-      <div className="mt-4 flex shrink-0 flex-wrap items-center justify-between gap-2 sm:mt-0 sm:flex-nowrap sm:gap-3">
-        <a
-          href={`/${localePrefix}/privacy`}
-          className="inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
-        >
-          {copy.privacy}
-        </a>
-        <div className="ml-auto grid grid-cols-2 gap-2 sm:flex">
-          <button
-            type="button"
-            className={`${choiceClass} border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50`}
-            onClick={() => {
-              denyAnalyticsConsent();
-            }}
+        <div className="mt-4 flex shrink-0 flex-wrap items-center justify-between gap-2 sm:mt-0 sm:flex-nowrap sm:gap-3">
+          <a
+            href={`/${localePrefix}/privacy`}
+            className="inline-flex min-h-11 items-center whitespace-nowrap text-sm font-semibold text-ink underline underline-offset-2 hover:text-accent"
           >
-            {copy.decline}
-          </button>
-          <button
-            type="button"
-            // Not `bg-brand-action`. White on that token is 2.57:1 and its
-            // dark-theme value is lighter still, so the banner failed the
-            // accessibility budget over both the landing and login pages.
-            // `action-strong` is the same colour in both themes for exactly
-            // that reason, and so is its hover.
-            className={`${choiceClass} border border-transparent bg-brand-action-strong text-white hover:bg-brand-action-strong-hover`}
-            onClick={() => {
-              grantAnalyticsConsent();
-            }}
-          >
-            {copy.accept}
-          </button>
+            {copy.privacy}
+          </a>
+          <div className="ml-auto grid grid-cols-2 gap-2 sm:flex">
+            <button
+              type="button"
+              className={`${choiceClass} border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50`}
+              onClick={() => {
+                denyAnalyticsConsent();
+              }}
+            >
+              {copy.decline}
+            </button>
+            <button
+              type="button"
+              // Not `bg-brand-action`. White on that token is 2.57:1 and its
+              // dark-theme value is lighter still, so the banner failed the
+              // accessibility budget over both the landing and login pages.
+              // `action-strong` is the same colour in both themes for exactly
+              // that reason, and so is its hover.
+              className={`${choiceClass} border border-transparent bg-brand-action-strong text-white hover:bg-brand-action-strong-hover`}
+              onClick={() => {
+                grantAnalyticsConsent();
+              }}
+            >
+              {copy.accept}
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+      <div ref={spacerRef} aria-hidden="true" data-consent-spacer="" />
+    </>
   );
 }

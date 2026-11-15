@@ -106,7 +106,7 @@ export default function ResumeBannerStrip({
 
   return (
     <section
-      role="region"
+      // A labelled <section> is the `region` landmark already.
       aria-label={t('region')}
       data-testid="guest-resume-banner"
       className={cn(

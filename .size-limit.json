@@ -41,7 +41,9 @@
     {
       "name": "quiz-adaptive",
       "limit": "345 KiB",
-      "patterns": ["^/\\[locale\\]/(?:adaptive(?:/.*)?|quiz(?:/.*)?|try/(?:pdf|text)/play)$"]
+      "patterns": [
+        "^/\\[locale\\]/(?:adaptive(?:/.*)?|(?:signed-out/)?quiz(?:/.*)?|try/(?:pdf|text)/play)$"
+      ]
     }
   ],
   "regression": {

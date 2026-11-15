@@ -58,7 +58,6 @@ describe('signedOutTwinPath', () => {
     '/vi/explorer',
     '/vi/explore/a/b',
     '/vi/dashboard',
-    '/vi/quiz/abc',
     '/vi/signed-out/explore',
     '/api/explore',
   ])('leaves %s unchanged', (pathname) => {
@@ -90,6 +89,47 @@ describe('publicPathname', () => {
     ['/', '/'],
   ])('reports %s as %s', (pathname, expected) => {
     expect(publicPathname(pathname)).toBe(expected);
+  });
+});
+
+describe('signedOutTwinPath for a quiz page (RIN-1647)', () => {
+  it.each([
+    ['/vi/quiz/toan-12', ''],
+    ['/vi/quiz/toan-12/', '?'],
+    ['/en/quiz/toan-12', ''],
+  ])('rewrites %s only without a query', (pathname, search) => {
+    expect(signedOutTwinPath('GET', pathname, [], search)).toBe(
+      pathname.replace(/\/quiz\/([^/]+)\/?$/, '/signed-out/quiz/$1'),
+    );
+  });
+
+  it.each(['?mode=quick', '?entry=hub&topic=a', '?retryOf=x', '?view=play', '?a=1'])(
+    'keeps the dynamic route for the query %s',
+    (search) => {
+      expect(signedOutTwinPath('GET', '/vi/quiz/toan-12', [], search)).toBeNull();
+    },
+  );
+
+  it.each(['/vi/quiz/toan-12/flashcards', '/vi/quiz/toan-12/result', '/vi/quiz', '/de/quiz/a'])(
+    'leaves %s unchanged',
+    (pathname) => {
+      expect(signedOutTwinPath('GET', pathname, [], '')).toBeNull();
+    },
+  );
+
+  it('keeps the dynamic route when any session cookie is present', () => {
+    expect(
+      signedOutTwinPath('GET', '/vi/quiz/a', ['__Secure-authjs.session-token'], ''),
+    ).toBeNull();
+  });
+
+  it('still serves /explore whatever its query', () => {
+    expect(signedOutTwinPath('GET', '/vi/explore', [], '?q=a')).toBe('/vi/signed-out/explore');
+  });
+
+  it('maps the internal quiz twin path back to the public one', () => {
+    expect(publicPathForInternalTwin('/vi/signed-out/quiz/toan-12')).toBe('/vi/quiz/toan-12');
+    expect(publicPathname('/signed-out/quiz/toan-12')).toBe('/quiz/toan-12');
   });
 });
 

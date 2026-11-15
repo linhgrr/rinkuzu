@@ -498,7 +498,7 @@ export class PremiumQuizService {
   /** The slug is not at hand after a repository transaction: read it, never throw (RIN-1647). */
   private async revalidateQuizById(quizId: string): Promise<void> {
     try {
-      const quiz = await this.quizRepository.findById(quizId);
+      const quiz = await this.quizRepository.findAccessById(quizId);
       revalidateQuizPages([quiz?.slug]);
     } catch (error) {
       logger.warn({ error, quizId }, 'quiz page revalidation after a restore failed');

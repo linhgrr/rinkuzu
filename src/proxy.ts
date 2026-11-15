@@ -203,6 +203,7 @@ async function handleRequest(request: NextRequest, event: NextFetchEvent) {
     request.method,
     request.nextUrl.pathname,
     request.cookies.getAll().map((cookie) => cookie.name),
+    request.nextUrl.search,
   );
   if (twinPath !== null) {
     const twinUrl = request.nextUrl.clone();

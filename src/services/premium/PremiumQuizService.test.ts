@@ -659,6 +659,7 @@ describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
     const source = quiz();
     base.premiumRepository.isVerifiedUser.mockResolvedValue(true);
     base.quizRepository.findById.mockResolvedValue(source);
+    base.quizRepository.findAccessById.mockResolvedValue(source);
     base.premiumRepository.findDuplicateCandidates.mockResolvedValue([]);
     return { ...base, service, recovery, source };
   }

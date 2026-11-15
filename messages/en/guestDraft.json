@@ -196,5 +196,15 @@
         "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
       }
     }
+  },
+  "resumeBanner": {
+    "region": "Quiz result saved on this device",
+    "leadScore": "Your result is still here: {score}%",
+    "leadLegacy": "Your quiz result",
+    "leadDraft": "Your quiz from your document will be deleted in {hours} h",
+    "others": "+{count, plural, one {# other result} other {# other results}}",
+    "save": "Save with Google",
+    "see": "See it",
+    "dismiss": "Dismiss saved result notice"
   }
 }

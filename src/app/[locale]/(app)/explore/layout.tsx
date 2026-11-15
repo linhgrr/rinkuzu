@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { GuestResumeBannerForApp } from '@/features/quiz/components/guest-resume/GuestResumeBannerForApp';
 import { buildLocalizedMetadata } from '@/lib/seo';
 
 type Props = {
@@ -19,6 +20,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
+/** The returning-guest resume strip sits first in the page, under the fixed top bar (RIN-1714). */
 export default function ExploreLayout({ children }: Props) {
-  return children;
+  return (
+    <>
+      <GuestResumeBannerForApp page="explore" mainId="app-main-content" />
+      {children}
+    </>
+  );
 }

@@ -173,12 +173,14 @@ function readDismissals(now: number): ResumeDismissal[] {
   }
 }
 
-/**
- * @public Rendered by the resume banner (RIN-1714).
- * The newest claim that is not dismissed, how many others wait, and its age in hours. */
-export function readResumeBannerClaim(
-  now: number = Date.now(),
-): { latest: GuestClaim; others: number; ageHours: number } | null {
+export interface ResumeBannerClaim {
+  latest: GuestClaim;
+  others: number;
+  ageHours: number;
+}
+
+/** The newest claim that is not dismissed, how many others wait, and its age in hours (RIN-1714). */
+export function readResumeBannerClaim(now: number = Date.now()): ResumeBannerClaim | null {
   const dismissed = new Set(readDismissals(now).map((item) => item.attemptId));
   const open = readGuestClaims(now)
     .filter((claim) => !dismissed.has(claim.attemptId))
@@ -192,7 +194,7 @@ export function readResumeBannerClaim(
   };
 }
 
-/** @public Used by the resume banner (RIN-1714). Hide the banner for this attempt for 7 days. Storage errors mean "not dismissed". */
+/** Hide the banner for this attempt for 7 days. Storage errors mean "not dismissed". */
 export function dismissResumeBanner(attemptId: string, now: number = Date.now()): void {
   const storage = getStorage();
   if (!storage) return;
@@ -204,5 +206,30 @@ export function dismissResumeBanner(attemptId: string, now: number = Date.now())
     storage.setItem(GUEST_RESUME_DISMISSED_STORAGE_KEY, JSON.stringify(entries));
   } catch {
     // Quota or disabled storage.
+  }
+}
+
+const RESUME_SIGN_IN_MARKER_KEY = 'rinkuzu.resumeBannerSignIn.v1';
+
+/**
+ * Set when the resume banner starts Google sign-in, so the claim that follows in the same
+ * tab is reported with `source: 'resume_banner'` (RIN-1714). Session scoped, value-free.
+ */
+export function markResumeBannerSignIn(): void {
+  try {
+    window.sessionStorage.setItem(RESUME_SIGN_IN_MARKER_KEY, '1');
+  } catch {
+    // Storage disabled: the claim is reported without a source.
+  }
+}
+
+/** True once after `markResumeBannerSignIn`; the marker is removed as it is read. */
+export function consumeResumeBannerSignIn(): boolean {
+  try {
+    const marked = window.sessionStorage.getItem(RESUME_SIGN_IN_MARKER_KEY) === '1';
+    if (marked) window.sessionStorage.removeItem(RESUME_SIGN_IN_MARKER_KEY);
+    return marked;
+  } catch {
+    return false;
   }
 }

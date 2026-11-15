@@ -97,7 +97,7 @@ interface ExplorePageClientProps {
 }
 
 /** The URL state the page reads: `q`, `type` and `page`. */
-export type ExploreSearchParams = Pick<URLSearchParams, 'get' | 'toString'>;
+type ExploreSearchParams = Pick<URLSearchParams, 'get' | 'toString'>;
 
 interface ExplorePageViewProps extends ExplorePageClientProps {
   searchParams: ExploreSearchParams;
@@ -120,7 +120,7 @@ export function ExplorePageClient({ hubLinks = null }: ExplorePageClientProps = 
  * it with empty params as the server HTML, because a static page cannot read
  * the query on the server; the client then renders `ExplorePageClient`.
  */
-export function ExplorePageView({ hubLinks, searchParams }: ExplorePageViewProps) {
+function ExplorePageView({ hubLinks, searchParams }: ExplorePageViewProps) {
   const t = useTranslations('explore');
   const tAdaptive = useTranslations('adaptiveLearning');
   const tAdaptiveDashboard = useTranslations('adaptiveLearning.dashboard');

@@ -8,7 +8,7 @@
  * served from the cache. Any session cookie, valid or not, keeps the dynamic
  * route, so a signed-in learner sees exactly what they saw before.
  */
-export const SIGNED_OUT_TWIN_SEGMENT = 'signed-out';
+const SIGNED_OUT_TWIN_SEGMENT = 'signed-out';
 
 /**
  * Set on the rewritten request. Where the rewrite is proxied rather than served
@@ -25,7 +25,7 @@ const TWIN_PATH = /^\/(vi|en)\/explore(\/[^/]+)?\/?$/;
 const INTERNAL_TWIN_PATH = new RegExp(`^/(vi|en)/${SIGNED_OUT_TWIN_SEGMENT}(?=/|$)(.*)$`);
 
 /** Presence only: no decoding, no crypto, no I/O. */
-export function hasSessionCookie(cookieNames: Iterable<string>): boolean {
+function hasSessionCookie(cookieNames: Iterable<string>): boolean {
   for (const name of cookieNames) {
     if (SESSION_COOKIE.test(name)) return true;
   }

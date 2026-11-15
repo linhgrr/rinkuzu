@@ -1,5 +1,16 @@
-import ExploreLayout, { generateMetadata } from '@/app/[locale]/(app)/explore/layout';
+import type { Metadata } from 'next';
+import { generateMetadata as exploreMetadata } from '@/app/[locale]/(app)/explore/layout';
 
-// Same metadata as `/explore`: canonical and hreflang stay on the public URL.
-export { generateMetadata };
-export default ExploreLayout;
+type Props = {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+};
+
+/** Same metadata as `/explore`: canonical and hreflang stay on the public URL. */
+export function generateMetadata(props: Props): Promise<Metadata> {
+  return exploreMetadata(props);
+}
+
+export default function SignedOutExploreLayout({ children }: Props) {
+  return children;
+}

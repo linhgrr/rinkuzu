@@ -1,28 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  hasSessionCookie,
-  publicPathForInternalTwin,
-  publicPathname,
-  signedOutTwinPath,
-} from './public-cache';
-
-describe('hasSessionCookie', () => {
-  it.each([
-    'authjs.session-token',
-    '__Secure-authjs.session-token',
-    'authjs.session-token.0',
-    '__Secure-authjs.session-token.1',
-  ])('treats %s as a session, without decoding it', (name) => {
-    expect(hasSessionCookie(['NEXT_LOCALE', name])).toBe(true);
-  });
-
-  it.each([[[]], [['NEXT_LOCALE']], [['authjs.csrf-token', 'authjs.callback-url']]])(
-    'finds no session in %j',
-    (names) => {
-      expect(hasSessionCookie(names)).toBe(false);
-    },
-  );
-});
+import { publicPathForInternalTwin, publicPathname, signedOutTwinPath } from './public-cache';
 
 describe('signedOutTwinPath', () => {
   const noCookies: string[] = [];
@@ -37,6 +14,22 @@ describe('signedOutTwinPath', () => {
     expect(signedOutTwinPath('GET', pathname, noCookies)).toBe(twin);
     expect(signedOutTwinPath('HEAD', pathname, noCookies)).toBe(twin);
   });
+
+  it.each([
+    'authjs.session-token',
+    '__Secure-authjs.session-token',
+    'authjs.session-token.0',
+    '__Secure-authjs.session-token.1',
+  ])('treats %s as a session without decoding it', (name) => {
+    expect(signedOutTwinPath('GET', '/vi/explore', ['NEXT_LOCALE', name])).toBeNull();
+  });
+
+  it.each([[['NEXT_LOCALE']], [['authjs.csrf-token', 'authjs.callback-url']]])(
+    'finds no session in %j',
+    (names) => {
+      expect(signedOutTwinPath('GET', '/vi/explore', names)).toBe('/vi/signed-out/explore');
+    },
+  );
 
   it.each(['/vi/explore', '/vi/explore/toan-hoc'])(
     'keeps %s dynamic when any session cookie is present, valid or not',

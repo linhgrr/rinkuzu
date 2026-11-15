@@ -22,9 +22,10 @@ test.describe('signed-out explore from the cache (RIN-1646)', () => {
     baseURL,
   }, testInfo) => {
     test.setTimeout(90_000);
+    const origin = baseURL ?? 'http://localhost:3000';
 
     await withAccounts(testInfo, async ({ admin, regular }) => {
-      const guest = await playwright.request.newContext({ baseURL });
+      const guest = await playwright.request.newContext({ baseURL: origin });
       const signedOut = await html(guest, '/vi/explore');
       const topicMiss = await guest.get('/vi/explore/khong-co-chu-de-nay');
       const internal = await guest.get('/vi/signed-out/explore', { maxRedirects: 0 });
@@ -37,11 +38,11 @@ test.describe('signed-out explore from the cache (RIN-1646)', () => {
       expect(topicMiss.status()).toBe(404);
       // The internal twin path is never served by itself.
       expect(internal.status()).toBe(307);
-      expect(new URL(internal.headers()['location'] ?? '', baseURL).pathname).toBe('/vi/explore');
+      expect(new URL(internal.headers()['location'] ?? '', origin).pathname).toBe('/vi/explore');
 
       const sessions = [];
       for (const user of [admin, regular]) {
-        const context = await browser.newContext({ baseURL });
+        const context = await browser.newContext({ baseURL: origin });
         const page = await context.newPage();
         await login(page, user);
         sessions.push({ user, ...(await html(context.request, '/vi/explore')) });

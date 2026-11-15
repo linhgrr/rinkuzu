@@ -147,15 +147,17 @@ export function QuizQuestionCard({
           <Button variant="outline" onClick={onPrevious} disabled={questionIndex === 0}>
             {t('previous')}
           </Button>
-          <div className="whitespace-nowrap text-sm text-neutral-600">
+          <div className="whitespace-nowrap sm:min-w-16 text-center text-sm text-neutral-600">
             {questionIndex + 1} / <QuestionTotal count={questionCount} />
           </div>
           {questionIndex === questionCount - 1 ? (
-            <Button onClick={onSubmit} loading={submitting}>
+            <Button className="sm:min-w-32" onClick={onSubmit} loading={submitting}>
               {t('submitQuiz')}
             </Button>
           ) : (
-            <Button onClick={onNext}>{t('next')}</Button>
+            <Button className="sm:min-w-32" onClick={onNext}>
+              {t('next')}
+            </Button>
           )}
         </div>
       </CardContent>

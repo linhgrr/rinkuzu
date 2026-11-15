@@ -25,7 +25,7 @@ function noticeMore(load: { pending: boolean; openedPending: boolean }) {
  */
 export function GuestDraftPlayClient({ source = 'pdf' }: { source?: GuestDraftSource }) {
   const t = useTranslations('guestDraft.play');
-  const { load, retry } = useGuestDraftPlay();
+  const { load, retry } = useGuestDraftPlay(source);
 
   if (load.status === 'loading') return <CenteredCardPageSkeleton label={t('loading')} />;
   if (load.status === 'expired') return <GuestDraftExpiredCard source={source} />;

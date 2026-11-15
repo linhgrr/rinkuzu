@@ -61,6 +61,13 @@
     "loading": "Loading your quiz…",
     "pendingMore": "More questions are being made."
   },
+  "result": {
+    "moreTitle": "More questions are on the way",
+    "moreBody": "We're making the rest of your quiz.",
+    "arrivedTitle": "{count, plural, one {# more question is ready} other {# more questions are ready}}",
+    "keepGoing": "Keep going",
+    "failed": "We couldn't make more questions this time. Your quiz is kept for 24 hours."
+  },
   "textMeta": {
     "title": "Free Text to Quiz Generator, No Account | RinKuzu",
     "description": "Free text to quiz generator: paste your notes or a reading, Rin writes up to 10 personalized multiple-choice questions and you play them right away. No account needed."

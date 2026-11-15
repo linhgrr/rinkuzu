@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   fetchGuestDraftPlay,
   fetchGuestDraftProgress,
@@ -8,11 +8,16 @@ import {
   submitGuestDraftAttempt,
 } from '@/features/guest-draft/api/guest-draft-api';
 import {
+  parseRoundStart,
+  rememberGuestDraftRound,
+} from '@/features/guest-draft/lib/guest-draft-round';
+import {
   readClaimedGuestDraftQuiz,
   readGuestDraftClaims,
 } from '@/features/quiz/lib/guest-draft-claims';
 import { useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants/routes';
+import type { GuestDraftSource } from '@/shared/constants/guest-draft';
 import type { QuizAttemptSubmitter } from '@/features/quiz/hooks/useQuizSubmission';
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
@@ -22,6 +27,8 @@ interface GuestDraftPlayReady {
   status: 'ready';
   /** The questions the player opened on; never replaced, so the round never restarts. */
   quiz: QuizPlayViewModel;
+  /** Draft index of the round's first question: 0, or where "Keep going" resumes. */
+  from: number;
   submitAttempt: QuizAttemptSubmitter;
   /** Questions stored after the opening ones, appended to the running round (RIN-1620). */
   moreQuestions: PlayQuestion[];
@@ -65,7 +72,7 @@ async function checkRest(token: string, loaded: number): Promise<RestCheck | nul
 
 function withRest(load: GuestDraftPlayLoad, rest: RestCheck): GuestDraftPlayLoad {
   if (load.status !== 'ready') return load;
-  const extra = rest.questions?.slice(load.quiz.questions.length) ?? [];
+  const extra = rest.questions?.slice(load.from + load.quiz.questions.length) ?? [];
   return {
     ...load,
     moreQuestions: extra.length > load.moreQuestions.length ? extra : load.moreQuestions,
@@ -74,19 +81,54 @@ function withRest(load: GuestDraftPlayLoad, rest: RestCheck): GuestDraftPlayLoad
 }
 
 /**
+ * The round the player opens: the whole draft, or from "Keep going"'s start on. A start
+ * past the stored questions falls back to the whole draft.
+ */
+function roundOf(quiz: QuizPlayViewModel, start: number) {
+  if (start <= 0 || start >= quiz.questions.length) return { from: 0, quiz };
+  const questions = quiz.questions.slice(start);
+  return { from: start, quiz: { ...quiz, questions, questionCount: questions.length } };
+}
+
+/** Submits the round and remembers which draft questions it covered (RIN-1620). */
+async function submitRound(
+  token: string,
+  input: Parameters<QuizAttemptSubmitter>[0],
+  round: { from: number; source: GuestDraftSource; pending: () => boolean },
+) {
+  const count = input.answers.length;
+  const range = round.from > 0 ? { questionRange: { from: round.from, count } } : {};
+  const result = await submitGuestDraftAttempt(token, { ...input, ...range });
+  rememberGuestDraftRound(result.attemptId, {
+    from: round.from,
+    count,
+    pending: round.pending(),
+    source: round.source,
+  });
+  return result;
+}
+
+/**
  * The newest guest draft this browser holds (RIN-1448), loaded for the player. The token
  * comes from localStorage only, never the URL; no token or a 404 means the draft is gone.
  * A draft gone because sign-in claimed it opens the quiz the claim made (RIN-1485). A draft
  * with only its first batch keeps polling until the rest is stored or has failed (RIN-1620).
  */
-export function useGuestDraftPlay() {
+export function useGuestDraftPlay(source: GuestDraftSource = 'pdf') {
   const [load, setLoad] = useState<GuestDraftPlayLoad>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [polls, setPolls] = useState(0);
   const router = useRouter();
+  const pendingRef = useRef(false);
   const restToken = load.status === 'ready' && load.pending ? load.token : null;
   const loaded =
-    load.status === 'ready' ? load.quiz.questions.length + load.moreQuestions.length : 0;
+    load.status === 'ready'
+      ? load.from + load.quiz.questions.length + load.moreQuestions.length
+      : 0;
+
+  useEffect(() => {
+    pendingRef.current = load.status === 'ready' && load.pending;
+  }, [load]);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,10 +139,13 @@ export function useGuestDraftPlay() {
     request.then(
       ({ play, token: draftToken }) => {
         if (cancelled) return;
+        const { from, quiz } = roundOf(play.quiz, parseRoundStart(window.location.search));
         setLoad({
           status: 'ready',
-          quiz: play.quiz,
-          submitAttempt: (input) => submitGuestDraftAttempt(draftToken, input),
+          quiz,
+          from,
+          submitAttempt: (input) =>
+            submitRound(draftToken, input, { from, source, pending: () => pendingRef.current }),
           moreQuestions: [],
           pending: !play.complete,
           openedPending: !play.complete,
@@ -121,7 +166,7 @@ export function useGuestDraftPlay() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, router]);
+  }, [attempt, router, source]);
 
   useEffect(() => {
     if (!restToken) return;
@@ -135,7 +180,10 @@ export function useGuestDraftPlay() {
     };
     const timer = window.setTimeout(() => {
       // A failed check is not a failed draft (spec state 4): try again on the next tick.
-      checkRest(restToken, loaded).then(settle, () => settle(null));
+      checkRest(restToken, loaded).then(settle, (error: unknown) => {
+        // A 404 is a draft that is gone: the rest is not coming, so stop polling (RIN-1620).
+        settle(isGuestDraftGone(error) ? { questions: null, complete: true } : null);
+      });
     }, GUEST_DRAFT_REST_POLL_MS);
     return () => {
       cancelled = true;

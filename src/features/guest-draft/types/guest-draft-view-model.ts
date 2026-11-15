@@ -1,5 +1,5 @@
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
-import type { GuestDraftStatus } from '@/shared/constants/guest-draft';
+import type { GuestDraftCompletion, GuestDraftStatus } from '@/shared/constants/guest-draft';
 
 /** Progress of a guest draft as the upload page shows it (RIN-1448). */
 export interface GuestDraftProgress {
@@ -13,6 +13,8 @@ export interface GuestDraftProgress {
    * absent on answers that predate it.
    */
   complete?: boolean;
+  /** `first_batch_only` when the rest never came (RIN-1619); null or absent otherwise. */
+  completion?: GuestDraftCompletion | null;
 }
 
 /**
@@ -27,6 +29,8 @@ export interface GuestDraftAttemptInput {
   idempotencyKey: string;
   /** A fresh RIN-912 claim token for this attempt; only its hash is stored. */
   guestClaimToken: string;
+  /** The draft questions this round showed; omitted: the first `answers.length` (RIN-1619). */
+  questionRange?: { from: number; count: number };
 }
 
 export interface SubmittedGuestDraftAttempt {

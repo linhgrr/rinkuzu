@@ -8,6 +8,11 @@ export interface GuestDraftProgress {
   percent: number;
   questionCount: number;
   title: string | null;
+  /**
+   * False while a ready draft holds only its first batch and more may come (RIN-1619);
+   * absent on answers that predate it.
+   */
+  complete?: boolean;
 }
 
 /**

@@ -1,10 +1,10 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import enGuest from '../../../../../../../messages/en/guestDraft.json';
 import { ApiResponseError } from '@/lib/api/client';
 import {
@@ -12,15 +12,26 @@ import {
   rememberClaimedGuestDraftQuiz,
 } from '@/features/quiz/lib/guest-draft-claims';
 
-const { fetchGuestDraftPlay, submitGuestDraftAttempt, playerProps, replace, session } = vi.hoisted(
-  () => ({
+const {
+  fetchGuestDraftPlay,
+  fetchGuestDraftProgress,
+  submitGuestDraftAttempt,
+  playerProps,
+  replace,
+  router,
+  session,
+} = vi.hoisted(() => {
+  const replace = vi.fn();
+  return {
     fetchGuestDraftPlay: vi.fn(),
+    fetchGuestDraftProgress: vi.fn(),
     submitGuestDraftAttempt: vi.fn(),
     playerProps: { current: null as null | Record<string, unknown> },
-    replace: vi.fn(),
+    replace,
+    router: { replace },
     session: { status: 'unauthenticated' },
-  }),
-);
+  };
+});
 
 vi.mock('next-auth/react', () => ({ useSession: () => ({ data: null, status: session.status }) }));
 
@@ -30,19 +41,38 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
-  useRouter: () => ({ replace }),
+  // Stable identity, like the real router: the load effect depends on it.
+  useRouter: () => router,
 }));
 vi.mock('@/features/guest-draft/api/guest-draft-api', async (importActual) => ({
   ...(await importActual<typeof import('@/features/guest-draft/api/guest-draft-api')>()),
   fetchGuestDraftPlay,
+  fetchGuestDraftProgress,
   submitGuestDraftAttempt,
 }));
-vi.mock('../../../quiz/[slug]/QuizPlayerClient', () => ({
-  default: (props: Record<string, unknown> & { guestDraft: { notice: ReactNode } }) => {
-    playerProps.current = props;
-    return <div data-testid="player">{props.guestDraft.notice}</div>;
-  },
-}));
+vi.mock('../../../quiz/[slug]/QuizPlayerClient', async () => {
+  const { QuestionTotal } = await import('@/features/quiz/components/player/QuestionTotal');
+  return {
+    default: (
+      props: Record<string, unknown> & {
+        initialQuiz: { questions: unknown[] };
+        guestDraft: { notice: ReactNode; moreQuestions?: unknown[] };
+      },
+    ) => {
+      playerProps.current = props;
+      const total =
+        props.initialQuiz.questions.length + (props.guestDraft.moreQuestions?.length ?? 0);
+      return (
+        <div data-testid="player">
+          {props.guestDraft.notice}
+          <p data-testid="counter">
+            Question 1 of <QuestionTotal count={total} />
+          </p>
+        </div>
+      );
+    },
+  };
+});
 
 import { GuestDraftPlayClient } from './GuestDraftPlayClient';
 
@@ -127,7 +157,7 @@ describe('GuestDraftPlayClient (RIN-1448)', () => {
 
   it('plays the newest draft with the 24 h notice and submits with its token', async () => {
     addGuestDraftClaim({ token: 'fake-draft-token', createdAt: Date.now() });
-    fetchGuestDraftPlay.mockResolvedValue(quiz);
+    fetchGuestDraftPlay.mockResolvedValue({ quiz, complete: true });
     submitGuestDraftAttempt.mockResolvedValue({ attemptId: 'attempt-1', score: 50 });
     renderClient();
 
@@ -158,9 +188,106 @@ describe('GuestDraftPlayClient (RIN-1448)', () => {
 
   it('shows the text notice above question 1 of a text draft (RIN-1539)', async () => {
     addGuestDraftClaim({ token: 'fake-draft-token', createdAt: Date.now() });
-    fetchGuestDraftPlay.mockResolvedValue(quiz);
+    fetchGuestDraftPlay.mockResolvedValue({ quiz, complete: true });
     renderClient('text');
     await screen.findByTestId('player');
     expect(screen.getByText(/Quiz from your text/)).toBeVisible();
+  });
+
+  describe('a draft that opens on its first batch (RIN-1620)', () => {
+    const fakeQuestion = (id: string) => ({
+      id,
+      question: `Fake question ${id}?`,
+      options: ['A', 'B'],
+      type: 'single',
+    });
+    const firstBatch = { ...quiz, questions: ['q1', 'q2'].map(fakeQuestion) };
+    const fullDraft = { ...quiz, questions: ['q1', 'q2', 'q3', 'q4'].map(fakeQuestion) };
+    const status = (questionCount: number, complete: boolean) => ({
+      status: 'ready',
+      percent: 100,
+      questionCount,
+      title: 'Cell biology',
+      complete,
+    });
+
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      fetchGuestDraftPlay.mockReset();
+      fetchGuestDraftProgress.mockReset();
+      addGuestDraftClaim({ token: 'fake-draft-token', createdAt: Date.now() });
+      fetchGuestDraftPlay.mockResolvedValueOnce({ quiz: firstBatch, complete: false });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('shows "of 2+" and the pending line, then appends the rest and stops polling', async () => {
+      fetchGuestDraftProgress
+        .mockResolvedValueOnce(status(2, false))
+        .mockResolvedValueOnce(status(4, true));
+      fetchGuestDraftPlay.mockResolvedValueOnce({ quiz: fullDraft, complete: true });
+      renderClient();
+
+      await screen.findByTestId('player');
+      expect(screen.getByTestId('counter')).toHaveTextContent('Question 1 of 2+');
+      const pending = screen.getByTestId('guest-draft-pending');
+      expect(pending).toHaveTextContent('More questions are being made.');
+      expect(pending).not.toHaveClass('invisible');
+
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+      // Still processing: no refetch of the questions.
+      expect(fetchGuestDraftPlay).toHaveBeenCalledOnce();
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('counter')).toHaveTextContent('Question 1 of 4'),
+      );
+      expect(screen.getByTestId('counter')).not.toHaveTextContent('+');
+      // The line keeps its space, unseen and unread, so the question below never moves.
+      expect(screen.getByTestId('guest-draft-pending')).toHaveClass('invisible');
+      expect(screen.getByTestId('guest-draft-pending')).toHaveAttribute('aria-hidden', 'true');
+      expect(playerProps.current).toMatchObject({ initialQuiz: firstBatch });
+      const guestDraft = playerProps.current?.['guestDraft'] as { moreQuestions: { id: string }[] };
+      expect(guestDraft.moreQuestions.map((item) => item.id)).toEqual(['q3', 'q4']);
+
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      expect(fetchGuestDraftProgress).toHaveBeenCalledTimes(2);
+    });
+
+    it('drops the "+" silently when the rest fails, and keeps the round', async () => {
+      fetchGuestDraftProgress.mockResolvedValueOnce(status(2, true));
+      fetchGuestDraftPlay.mockResolvedValueOnce({ quiz: firstBatch, complete: true });
+      renderClient();
+
+      await screen.findByTestId('player');
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('counter')).toHaveTextContent('Question 1 of 2'),
+      );
+      expect(screen.getByTestId('counter')).not.toHaveTextContent('+');
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      const guestDraft = playerProps.current?.['guestDraft'] as { moreQuestions: unknown[] };
+      expect(guestDraft.moreQuestions).toEqual([]);
+    });
+
+    it('keeps polling through a failed check and stops on unmount', async () => {
+      fetchGuestDraftProgress
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+        .mockResolvedValue(status(2, false));
+      const view = renderClient();
+
+      await screen.findByTestId('player');
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+      await act(() => vi.advanceTimersByTimeAsync(2_000));
+      expect(fetchGuestDraftProgress).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('counter')).toHaveTextContent('Question 1 of 2+');
+
+      view.unmount();
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      expect(fetchGuestDraftProgress).toHaveBeenCalledTimes(2);
+    });
   });
 });

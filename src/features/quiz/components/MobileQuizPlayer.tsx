@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { use, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,10 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionContent } from '@/components/ui/QuestionContent';
 import { useHydrated } from '@/hooks/useHydrated';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import {
+  MoreQuestionsComingContext,
+  QuestionTotal,
+} from '@/features/quiz/components/player/QuestionTotal';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
 type MobileQuizAnswerMap = Record<string, number | number[]>;
@@ -105,7 +109,7 @@ function MobileQuizHeader({
               ) : null}
             </span>
             <span className="shrink-0 text-xs font-medium text-neutral-500">
-              {answeredCount}/{questions.length} {t('answered')}
+              {answeredCount}/<QuestionTotal count={questions.length} /> {t('answered')}
             </span>
           </div>
           <div
@@ -256,6 +260,8 @@ function MobileQuizFooter({
   submissionError,
   t,
 }: MobileQuizFooterProps) {
+  // "Finish (2/5+ answered)" while more questions may still come (RIN-1620).
+  const total = use(MoreQuestionsComingContext) ? `${questionsLength}+` : questionsLength;
   return (
     <footer className="flex-shrink-0 border-t border-neutral-100 bg-white p-4 safe-area-bottom">
       {submissionError ? (
@@ -279,7 +285,7 @@ function MobileQuizFooter({
             {t('submitting')}
           </>
         ) : (
-          t('finishProgress', { answered: answeredCount, total: questionsLength })
+          t('finishProgress', { answered: answeredCount, total })
         )}
       </button>
     </footer>

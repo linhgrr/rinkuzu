@@ -30,6 +30,7 @@ import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
+import { PremiumPreviewResultCard } from '@/features/quiz/components/PremiumPreviewResultCard';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
 import { GuestDraftMoreCard } from '@/features/guest-draft/components/GuestDraftMoreCard';
 import { isGuestDraftSlug } from '@/shared/constants/guest-draft';
@@ -597,12 +598,22 @@ function QuizResultReadyState({
           attemptId={result.id}
           slug={result.quiz.slug}
           missedCount={result.missedCount}
-          nextQuiz={result.nextQuiz}
+          nextQuiz={result.premiumPreview ? null : result.nextQuiz}
           viewer={viewer}
           contentLocked={contentLocked}
           quickRound={result.mode === 'quick'}
           share={shareTargetFor(result)}
         />
+
+        {result.premiumPreview ? (
+          <PremiumPreviewResultCard
+            slug={result.quiz.slug}
+            playedCount={result.totalQuestions}
+            fullQuestionCount={result.premiumPreview.fullQuestionCount}
+            quizId={result.premiumPreview.quizId}
+            freeQuiz={result.premiumPreview.freeQuiz}
+          />
+        ) : null}
 
         {!contentLocked ? (
           <>

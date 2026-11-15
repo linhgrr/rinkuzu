@@ -53,6 +53,13 @@ vi.mock('@/features/quiz/api/quiz-result-page-api', () => ({
   fetchQuizResultPageData: (...args: unknown[]) => fetchPageDataMock(...args),
 }));
 
+vi.mock('@/features/profile/api/credit-wallet-api', () => ({
+  CREDIT_WALLET_KEY: '/api/credits',
+  fetchCreditWallet: () => Promise.resolve({ wallet: { balance: 0 } }),
+}));
+
+vi.mock('@/features/quiz/api/premium-quiz-api', () => ({ unlockPremiumQuiz: vi.fn() }));
+
 vi.mock('@/features/quiz/api/guest-claim-api', () => ({
   claimStoredGuestAttempts: () => claimMock(),
 }));
@@ -318,6 +325,36 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
     expect(fetchPageDataMock).toHaveBeenCalledWith('attempt-1', 'en', undefined);
     expect(screen.queryByRole('region', { name: 'guestSaveTitle' })).not.toBeInTheDocument();
   });
+  it('puts the Premium preview card under the actions and drops the next-quiz primary (RIN-1722)', async () => {
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: {
+        ...guestResult,
+        totalQuestions: 5,
+        nextQuiz: { slug: 'next-quiz', title: 'Next quiz' },
+        premiumPreview: {
+          fullQuestionCount: 40,
+          quizId: 'quiz-1',
+          freeQuiz: { slug: 'discrete-math', title: 'Discrete math' },
+        },
+      },
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    render(<QuizResultPageClient />);
+
+    const cardTitle = await screen.findByRole('heading', { name: 'premiumPreviewResultTitle' });
+    const redo = screen.getByRole('link', { name: 'redo' });
+    expect(redo.compareDocumentPosition(cardTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      screen.queryByRole('link', { name: 'resultActions.tryAnother' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'premiumPreviewFreeQuiz' })).toHaveAttribute(
+      'href',
+      '/quiz/discrete-math',
+    );
+  });
+
   it('titles a quick round and offers Another 10 and the full quiz (RIN-933)', async () => {
     session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
     fetchPageDataMock.mockResolvedValueOnce({

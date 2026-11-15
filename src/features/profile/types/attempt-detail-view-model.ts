@@ -2,6 +2,13 @@ import type { QuizQuestionReview } from '@/shared/types/quiz-question';
 
 export type AttemptQuestionDetailViewModel = QuizQuestionReview;
 
+/** A Premium preview attempt (RIN-1722): the result offers the unlock and a free quiz. */
+interface AttemptPremiumPreviewViewModel {
+  fullQuestionCount: number;
+  quizId: string;
+  freeQuiz: { slug: string; title: string } | null;
+}
+
 export interface AttemptDetailViewModel {
   id: string;
   score: number;
@@ -23,6 +30,7 @@ export interface AttemptDetailViewModel {
   };
   missedCount: number;
   nextQuiz: { slug: string; title: string; quick?: boolean } | null;
+  premiumPreview?: AttemptPremiumPreviewViewModel;
   retryOfAttemptId?: string;
   /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
   questionIndices?: number[];

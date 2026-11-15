@@ -101,4 +101,38 @@ describe('toAttemptDetailViewModel', () => {
     expect(result).not.toHaveProperty('mode');
     expect(quick).toMatchObject({ mode: 'quick', questionIndices: [17] });
   });
+
+  it('carries the Premium preview facts only for a preview attempt (RIN-1722)', () => {
+    const dto: AttemptDetailDto = {
+      id: 'attempt-3',
+      score: 60,
+      totalQuestions: 5,
+      takenAt: '2026-07-02T00:00:00.000Z',
+      answers: [],
+      historyStatus: 'complete',
+      quiz: {
+        id: 'quiz-9',
+        title: 'Premium algebra',
+        shareable: false,
+        questionCount: 40,
+        slug: 'premium-algebra',
+        questions: [],
+      },
+      missedCount: 2,
+      nextQuiz: null,
+      premiumPreview: {
+        fullQuestionCount: 40,
+        quizId: 'quiz-9',
+        freeQuiz: { slug: 'algebra', title: 'Algebra' },
+      },
+    };
+    const { premiumPreview: _preview, ...plain } = dto;
+
+    expect(toAttemptDetailViewModel(dto, 'en').premiumPreview).toEqual({
+      fullQuestionCount: 40,
+      quizId: 'quiz-9',
+      freeQuiz: { slug: 'algebra', title: 'Algebra' },
+    });
+    expect(toAttemptDetailViewModel(plain, 'en')).not.toHaveProperty('premiumPreview');
+  });
 });

@@ -31,6 +31,7 @@ import { QuestionReviewList } from '@/features/quiz/components/result/QuestionRe
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
+import { GuestDraftMoreCard } from '@/features/guest-draft/components/GuestDraftMoreCard';
 import { isGuestDraftSlug } from '@/shared/constants/guest-draft';
 import type { QuizShareTarget } from '@/features/quiz/components/result/ShareResultButton';
 import { claimStoredGuestAttempts } from '@/features/quiz/api/guest-claim-api';
@@ -843,7 +844,13 @@ function QuizResultContent() {
       formatCorrectAnswer={formatCorrectAnswerText}
       guestSaveCard={
         reader === 'guest' ? (
-          <GuestSaveResultCard resultPath={resultPath} variant={draftResult ? 'draft' : 'review'} />
+          <>
+            {draftResult ? <GuestDraftMoreCard attemptId={attemptId} /> : null}
+            <GuestSaveResultCard
+              resultPath={resultPath}
+              variant={draftResult ? 'draft' : 'review'}
+            />
+          </>
         ) : null
       }
       onCancelRemove={() => dispatch({ type: 'setBookmarkToRemove', questionIndex: null })}

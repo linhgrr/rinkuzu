@@ -30,6 +30,7 @@ function toProgress(dto: GuestDraftStatusDto): GuestDraftProgress {
     questionCount: dto.questionCount,
     title: dto.title,
     complete: dto.complete,
+    completion: dto.completion,
   };
 }
 

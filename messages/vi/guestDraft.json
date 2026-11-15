@@ -61,6 +61,13 @@
     "loading": "Đang tải quiz…",
     "pendingMore": "Đang tạo thêm câu hỏi."
   },
+  "result": {
+    "moreTitle": "Còn câu hỏi nữa đang được tạo",
+    "moreBody": "Chúng tôi đang tạo phần còn lại của quiz.",
+    "arrivedTitle": "Có thêm {count} câu hỏi",
+    "keepGoing": "Làm tiếp",
+    "failed": "Lần này chúng tôi chưa tạo thêm được câu hỏi. Quiz của bạn được lưu 24 giờ."
+  },
   "textMeta": {
     "title": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí | RinKuzu",
     "description": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí: dán ghi chú hoặc bài đọc, Rin viết tối đa 10 câu hỏi cá nhân hóa và bạn làm ngay. Không cần tài khoản."

@@ -18,6 +18,7 @@ const shareButtons = read('src/components/blog/ShareButtons.tsx');
 const toc = read('src/components/blog/TableOfContents.tsx');
 const consent = read('src/components/analytics/AnalyticsRoot.tsx');
 const blogPost = read('src/app/[locale]/(marketing)/blog/[slug]/page.tsx');
+const marketingHeader = read('src/components/marketing/MarketingHeader.tsx');
 
 function functionBody(source: string, name: string): string {
   const start = source.indexOf(`function ${name}(`);
@@ -76,13 +77,29 @@ describe('shared chrome touch targets', () => {
   it('blog share buttons, breadcrumb links and TOC entries are at least 44 px', () => {
     expect(shareButtons).not.toMatch(/\bh-9\b|\bw-9\b|\bsize-9\b/);
     expect(shareButtons.match(/size-11 rounded-full/g)).toHaveLength(2);
+    // Text-width links (RIN-1570): `min-w-11` + `justify-center` padded "Home"
+    // with invisible width, so the gaps around the `/` separators were uneven.
     expect(
       blogPost.match(
-        /inline-flex min-h-11 min-w-11 items-center justify-center hover:text-\[var\(--text-primary\)\]/g,
+        /className="inline-flex min-h-11 items-center hover:text-\[var\(--text-primary\)\]/g,
       ),
     ).toHaveLength(2);
+    expect(blogPost).not.toMatch(/min-w-11 items-center justify-center hover:text-\[var/);
     expect(toc).toMatch(/flex min-h-11 w-full items-center border-l-2 pl-4 py-2 text-left text-sm/);
     expect(toc).toContain('<ul className="space-y-2">');
+  });
+
+  it('the active TOC entry is marked by colour and border only, never shifted (RIN-1570)', () => {
+    // A weight change can rewrap a long heading, so the active row keeps the
+    // same font weight as the rest.
+    expect(toc).not.toMatch(/\btranslate-x-|\bfont-medium\b/);
+    expect(toc).not.toContain('transition-all');
+  });
+
+  it('the marketing header logo link is at least 44 px tall (RIN-1570)', () => {
+    expect(marketingHeader).toContain(
+      `aria-label={t('home')} className="flex min-h-11 shrink-0 items-center"`,
+    );
   });
 
   it('the explore sign-in prompt, FAQ cross-links, footer form and consent banner keep targets and a 16 px text-to-control gap', () => {
@@ -91,7 +108,16 @@ describe('shared chrome touch targets', () => {
       faq.match(/inline-flex min-h-11 items-center font-medium text-brand-trust/g),
     ).toHaveLength(2);
     expect(footer).not.toMatch(/className="h-10 (flex-1|whitespace-nowrap)/);
-    expect(consent).toContain('mt-4 flex shrink-0 items-center justify-between gap-2 sm:mt-0');
+    expect(consent).toContain('mt-4 flex shrink-0 flex-wrap items-center justify-between gap-2');
     expect(consent).not.toContain('min-h-6');
+  });
+
+  it('the consent banner has 16 px padding and its buttons never wrap (RIN-1570)', () => {
+    // At 320 px in vi the privacy link takes its own row instead of squeezing
+    // "Từ chối" / "Đồng ý" onto two lines.
+    expect(consent).toMatch(/rounded-2xl border border-neutral-200 bg-white p-4 /);
+    expect(consent).not.toMatch(/\bp-3\b/);
+    expect(consent).toMatch(/const choiceClass =\s*'[^']*\bwhitespace-nowrap\b/);
+    expect(consent).toContain('ml-auto grid grid-cols-2 gap-2 sm:flex');
   });
 });

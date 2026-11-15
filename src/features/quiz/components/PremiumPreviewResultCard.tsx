@@ -185,7 +185,7 @@ function BalanceLine({
         <span>{t('premiumPreviewBalanceError')}</span>
         <Button
           variant="link"
-          className="min-h-11 px-1 text-sm font-medium text-brand-trust"
+          className="min-h-11 min-w-11 px-1 text-sm font-medium text-brand-trust"
           onClick={onRetry}
         >
           {t('premiumPreviewRetry')}

@@ -95,7 +95,7 @@ class OutageNotifyRun {
   ) {}
 
   /** Sends round after round until nothing new is pending, the budget ends or sends keep failing. */
-  async run(): Promise<{ sent: number; failed: number }> {
+  async run(): Promise<{ sent: number; failed: number; remaining: number }> {
     while (this.deps.now() < this.deadline && this.failedIds.size < MAX_FAILED_PER_RUN) {
       // Failed rows stay pending and come back first, so ask past them.
       const limit = Math.min(MAX_PAGE, BATCH_SIZE + this.failedIds.size);
@@ -107,7 +107,9 @@ class OutageNotifyRun {
       this.sent += accepted.length;
       if (accepted.length === 0) break;
     }
-    return { sent: this.sent, failed: this.failedIds.size };
+    // Counted after the sends on purpose: it reports what a re-run would still send.
+    const remaining = await this.deps.list.pendingCount(this.options.campaign);
+    return { sent: this.sent, failed: this.failedIds.size, remaining };
   }
 
   private async sendRound(rows: readonly OutageNotifyRow[]): Promise<string[]> {
@@ -189,8 +191,7 @@ export async function runOutageNotifySend(
     return { campaign, dryRun, sent: 0, failed: 0, remaining };
   }
   const run = new OutageNotifyRun(deps, options, deps.now() + options.budgetMs);
-  const { sent, failed } = await run.run();
-  const remaining = await deps.list.pendingCount(campaign);
+  const { sent, failed, remaining } = await run.run();
   logger.info({ campaign, dryRun, sent, failed, remaining }, 'Outage notify send finished');
   return { campaign, dryRun, sent, failed, remaining };
 }

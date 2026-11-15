@@ -15,6 +15,8 @@ COPY . .
 
 ARG NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app
 ARG NEXT_PUBLIC_API_URL=https://api.rinkuzu.app
+# The gate typechecks before it builds; do not pay for it twice (see next.config.js).
+ARG NEXT_SKIP_TYPECHECK=1
 
 # Build-time validation must not depend on production secrets. These values are
 # scoped to the builder stage; the runtime image still requires real injected
@@ -46,7 +48,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
   PAYOS_CHECKSUM_KEY=build-only-placeholder \
   NEXT_IMAGE_UNOPTIMIZED=false
 
-RUN npm rebuild argon2 --build-from-source
+# argon2 ships prebuilt binaries for linux (musl and glibc); verify it loads
+# instead of compiling it, so the builder needs no toolchain.
+RUN npm rebuild argon2 sharp && node -e "require('argon2');require('sharp')"
 
 RUN npm run build
 

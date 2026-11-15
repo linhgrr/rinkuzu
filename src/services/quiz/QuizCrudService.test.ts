@@ -3,7 +3,10 @@ import type { Quiz } from '@/entities/Quiz';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { QuizCreationError } from '@/lib/quiz/errors';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { QuizCrudService } from '@/services/quiz/QuizCrudService';
+
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 
 vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn() },
@@ -816,7 +819,7 @@ describe('QuizCrudService', () => {
 
   describe('deleteQuiz', () => {
     it('authorizes, deletes, and maps not-found / unexpected failures', async () => {
-      const access = { id: quizId, author: authorId, visibility: 'public' };
+      const access = { id: quizId, author: authorId, visibility: 'public', slug: 'algebra-basics' };
       const quizRepository = createQuizRepository({
         findAccessById: vi
           .fn()
@@ -904,6 +907,57 @@ describe('QuizCrudService.updateQuiz IndexNow (RIN-1500)', () => {
     await expect(
       service.updateQuiz(quizId, { submitToPremium: true }, authorId),
     ).resolves.toMatchObject({ success: true });
+  });
+});
+
+describe('QuizCrudService cached signed-out pages (RIN-1647)', () => {
+  const access = { id: quizId, author: authorId, visibility: 'public', slug: 'algebra-basics' };
+  const stored = createQuizEntity({ questionCount: 8 });
+
+  beforeEach(() => vi.mocked(revalidateQuizPages).mockClear());
+
+  it('revalidates the quiz page after an edit and after a visibility change', async () => {
+    const quizRepository = createQuizRepository({
+      findAccessById: vi.fn().mockResolvedValue(access),
+      findById: vi.fn().mockResolvedValue(stored),
+      update: vi.fn().mockResolvedValue({ ...stored, title: 'Algebra, revised' }),
+    });
+    const service = new QuizCrudService(quizRepository);
+
+    await service.updateQuiz(quizId, { title: 'Algebra, revised' }, authorId);
+    expect(revalidateQuizPages).toHaveBeenCalledWith(['algebra-basics', stored.slug]);
+
+    vi.mocked(revalidateQuizPages).mockClear();
+    await service.updateQuiz(quizId, { submitToPremium: true }, authorId);
+    expect(revalidateQuizPages).toHaveBeenCalledTimes(1);
+  });
+
+  it('revalidates nothing when the edit is refused or finds no quiz', async () => {
+    const quizRepository = createQuizRepository({
+      findAccessById: vi.fn().mockResolvedValue(access),
+      update: vi.fn().mockResolvedValue(null),
+    });
+    const service = new QuizCrudService(quizRepository);
+
+    await service.updateQuiz(quizId, { pdfUrl: 'https://example.com/fake.pdf' }, authorId);
+    await service.updateQuiz(quizId, { pdfUrl: 'https://example.com/fake.pdf' }, otherUserId);
+
+    expect(revalidateQuizPages).not.toHaveBeenCalled();
+  });
+
+  it('revalidates the quiz page after a delete, and a created quiz clears a cached miss', async () => {
+    const quizRepository = createQuizRepository({
+      findAccessById: vi.fn().mockResolvedValue(access),
+      delete: vi.fn().mockResolvedValue(true),
+      create: vi.fn().mockResolvedValue(stored),
+    });
+    const service = new QuizCrudService(quizRepository);
+
+    await service.deleteQuiz(quizId, authorId);
+    expect(revalidateQuizPages).toHaveBeenLastCalledWith(['algebra-basics']);
+
+    await service.createQuiz(authorId, createRequest);
+    expect(revalidateQuizPages).toHaveBeenLastCalledWith([stored.slug]);
   });
 });
 

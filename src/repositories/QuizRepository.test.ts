@@ -71,6 +71,7 @@ describe('QuizRepository.findUserQuizzes', () => {
       _id: new Types.ObjectId('507f191e810c19729de860ea'),
       author: '507f191e810c19729de860eb',
       visibility: 'personal',
+      slug: 'quiz-slug',
     });
     const repository = new QuizRepository();
 
@@ -78,9 +79,10 @@ describe('QuizRepository.findUserQuizzes', () => {
       id: '507f191e810c19729de860ea',
       author: '507f191e810c19729de860eb',
       visibility: 'personal',
+      slug: 'quiz-slug',
     });
     expect(quizModelMocks.findById).toHaveBeenCalledWith('507f191e810c19729de860ea');
-    expect(quizModelMocks.select).toHaveBeenCalledWith('_id author visibility');
+    expect(quizModelMocks.select).toHaveBeenCalledWith('_id author visibility slug');
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
 

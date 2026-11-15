@@ -93,3 +93,8 @@ export function cdnCacheControlFor(input: CdnCacheInput): string {
   if (!PUBLIC_PAGE_PATH.test(pathname) || hasSessionCookie(cookieNames)) return CDN_NO_STORE;
   return CDN_PUBLIC_CACHE_CONTROL;
 }
+
+/** The internal twin path of a quiz page; `slug` is already URL-encoded. */
+export function signedOutTwinQuizPath(locale: string, slug: string): string {
+  return `/${locale}/${SIGNED_OUT_TWIN_SEGMENT}/quiz/${slug}`;
+}

@@ -6,6 +6,7 @@ import {
   publicPathForInternalTwin,
   publicPathname,
   signedOutTwinPath,
+  signedOutTwinQuizPath,
 } from './public-cache';
 
 describe('signedOutTwinPath', () => {
@@ -152,5 +153,14 @@ describe('cdnCacheControlFor (RIN-1679)', () => {
   it('is no-store for a redirect or a response that sets a cookie', () => {
     expect(decide({ pathname: '/vi/about', status: 307 })).toBe(CDN_NO_STORE);
     expect(decide({ pathname: '/vi/about', setsCookie: true })).toBe(CDN_NO_STORE);
+  });
+});
+
+describe('signedOutTwinQuizPath', () => {
+  it('builds the internal twin path of a quiz page', () => {
+    expect(signedOutTwinQuizPath('vi', 'toan-12')).toBe('/vi/signed-out/quiz/toan-12');
+    expect(publicPathForInternalTwin(signedOutTwinQuizPath('en', 'toan-12'))).toBe(
+      '/en/quiz/toan-12',
+    );
   });
 });

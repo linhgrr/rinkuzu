@@ -56,4 +56,24 @@ describe('createGuestDraftEvents', () => {
       Array.from({ length: 4 }, () => expect.objectContaining({ source: 'text' })),
     );
   });
+
+  it('sends first_batch_ready with ms_since_submit and no content (RIN-1619)', async () => {
+    const capture = vi.fn(async () => true);
+    const events = createGuestDraftEvents(capture);
+
+    await events.firstBatchReady({ ...context, source: 'text' }, 8250);
+
+    expect(capture).toHaveBeenCalledExactlyOnceWith(
+      'guest_draft_first_batch_ready',
+      'guest_draft:6730a0000000000000000001',
+      {
+        locale: 'vi',
+        entry: 'blog',
+        source: 'text',
+        ms_since_submit: 8250,
+        $process_person_profile: false,
+        $geoip_disable: true,
+      },
+    );
+  });
 });

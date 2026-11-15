@@ -30,6 +30,11 @@ export type AnalyticsEventName =
   | 'activation_email_clicked'
   /** Server side, guest quiz from the visitor's own PDF (RIN-1446); props `locale`, `entry` (+ `reason`). */
   | 'guest_draft_started'
+  /**
+   * Server side, the guest draft became playable (RIN-1619): first batch, or the whole set
+   * when no partial step; props `locale`, `entry`, `source`, `ms_since_submit`.
+   */
+  | 'guest_draft_first_batch_ready'
   | 'guest_draft_ready'
   | 'guest_draft_failed'
   /** Server side, a guest draft became a quiz in the new account (RIN-1447); props `locale`, `entry`. */

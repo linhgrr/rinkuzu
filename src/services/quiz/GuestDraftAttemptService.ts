@@ -1,4 +1,5 @@
 import { QuizAttemptIdempotencyConflictError } from '@/errors/quiz-attempt';
+import type { QuizQuestion } from '@/entities/Quiz';
 import type { IGuestDraftQuizSource } from '@/interfaces/repositories/IGuestQuizDraftRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import type {
@@ -25,6 +26,27 @@ const DRAFT_NOT_READY: ServiceFailure = {
   error: 'Guest draft not found',
   statusCode: 404,
 };
+
+const RANGE_INVALID: ServiceFailure = {
+  success: false,
+  error: 'Invalid question range',
+  statusCode: 400,
+};
+
+/**
+ * The stored questions this round showed (RIN-1619): the given range, or the first
+ * `answers.length` (the first batch, even when the rest arrived during the round). Null
+ * for a range outside the stored questions.
+ */
+function shownQuestions(
+  questions: QuizQuestion[],
+  { questionRange, answers }: GuestDraftAttemptInput,
+): QuizQuestion[] | null {
+  if (!questionRange) return questions.slice(0, answers.length);
+  const { from, count } = questionRange;
+  const valid = Number.isInteger(from) && Number.isInteger(count) && from >= 0 && count >= 1;
+  return valid && from + count <= questions.length ? questions.slice(from, from + count) : null;
+}
 
 /** Same statuses as the RIN-912 submit: bad answers 400, a reused key 409. */
 function submitFailure(error: unknown): ServiceFailure {
@@ -64,9 +86,11 @@ export class GuestDraftAttemptService implements IGuestDraftAttemptService {
   async submit(input: GuestDraftAttemptInput): Promise<ServiceResult<QuizAttemptResultDto>> {
     const draft = await this.drafts.findReadyByTokenHash(hashGuestClaimToken(input.token));
     if (!draft) return DRAFT_NOT_READY;
+    const questions = shownQuestions(draft.questions, input);
+    if (!questions) return RANGE_INVALID;
     try {
       const { answers, score, correctAnswers, totalQuestions, wrongQuestions } =
-        evaluateQuizAttempt(draft.questions, input.answers);
+        evaluateQuizAttempt(questions, input.answers);
       const slug = guestDraftSnapshotSlug(draft.id);
       const attempt = await this.attempts.recordSubmittedAttempt({
         guestClaimTokenHash: hashGuestClaimToken(input.guestClaimToken),
@@ -77,7 +101,7 @@ export class GuestDraftAttemptService implements IGuestDraftAttemptService {
           integrity: 'complete',
           title: draft.title,
           slug,
-          questions: draft.questions,
+          questions,
         },
         answers,
         score,

@@ -12,15 +12,15 @@ type Capture = typeof captureServerEvent;
 /**
  * guest_draft_* events (spec AC7), sent from the server so consent gating cannot lose
  * them. The distinct id is the guest draft's own id, which links started → ready/failed
- * without a person profile. Properties are locale, entry, source (`pdf` or
- * `text`, RIN-1538) and the failure reason code: never a file name, content (file or pasted
- * text), IP or token.
+ * without a person profile. Properties are locale, entry, source (`pdf` or `text`,
+ * RIN-1538), the failure reason code and, on first_batch_ready, `ms_since_submit`
+ * (RIN-1619): never a file name, content (file or pasted text), IP or token.
  */
 export function createGuestDraftEvents(capture: Capture = captureServerEvent): GuestDraftEvents {
   const send = async (
     event: AnalyticsEventName,
     { draftId, locale, entry, source }: GuestDraftEventContext,
-    extra: Record<string, string> = {},
+    extra: Record<string, string | number> = {},
   ) => {
     await capture(event, `guest_draft:${draftId}`, {
       locale,
@@ -33,6 +33,8 @@ export function createGuestDraftEvents(capture: Capture = captureServerEvent): G
   };
   return {
     started: (context) => send('guest_draft_started', context),
+    firstBatchReady: (context, msSinceSubmit) =>
+      send('guest_draft_first_batch_ready', context, { ms_since_submit: msSinceSubmit }),
     ready: (context) => send('guest_draft_ready', context),
     failed: (context, reason) => send('guest_draft_failed', context, { reason }),
     claimed: (context) => send('guest_draft_claimed', context),

@@ -65,3 +65,10 @@ export const GUEST_DRAFT_MAX_QUESTIONS = 10;
 /** What a guest draft was made from (RIN-1538); carried on every guest_draft_* event. */
 export const GUEST_DRAFT_SOURCES = ['pdf', 'text'] as const;
 export type GuestDraftSource = (typeof GUEST_DRAFT_SOURCES)[number];
+
+/**
+ * How a ready guest draft ended (RIN-1619): `first_batch_only` when the rest of the
+ * questions never came (the API failed after the first batch), `full` otherwise.
+ */
+export const GUEST_DRAFT_COMPLETIONS = ['full', 'first_batch_only'] as const;
+export type GuestDraftCompletion = (typeof GUEST_DRAFT_COMPLETIONS)[number];

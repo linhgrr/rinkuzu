@@ -1,7 +1,21 @@
 import type { components } from '@/generated/adaptive-api';
-import type { GuestDraftEntry, GuestDraftSource } from '@/shared/constants/guest-draft';
+import type {
+  GuestDraftCompletion,
+  GuestDraftEntry,
+  GuestDraftSource,
+} from '@/shared/constants/guest-draft';
 
-export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'];
+/**
+ * The API's guest draft. `questions_ready` and `completion` come from RIN-1617 (API #71),
+ * whose committed `openapi.json` predates them: drop the intersection once a re-vendored
+ * contract carries them.
+ */
+export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'] & {
+  /** Questions readable now: the first batch while `processing`, all once `completed`. */
+  questions_ready?: number;
+  /** `first_batch_only` when the full extraction failed and the first batch was kept. */
+  completion?: 'first_batch_only' | null;
+};
 
 export type GuestDraftReservation =
   | { ok: true }
@@ -41,6 +55,11 @@ export interface GuestDraftEventContext {
  */
 export interface GuestDraftEvents {
   started(context: GuestDraftEventContext): Promise<void>;
+  /**
+   * The draft became playable (RIN-1619): its first batch, or the whole set when the API
+   * completed with no partial step. Once per draft, always before `ready`.
+   */
+  firstBatchReady(context: GuestDraftEventContext, msSinceSubmit: number): Promise<void>;
   ready(context: GuestDraftEventContext): Promise<void>;
   failed(context: GuestDraftEventContext, reason: string): Promise<void>;
   claimed(context: GuestDraftEventContext): Promise<void>;
@@ -67,6 +86,13 @@ export interface GuestDraftView {
   progressPercent: number;
   title: string | null;
   questionCount: number;
+  /**
+   * True once a ready draft has every question it will get; false while it is playable
+   * with its first batch only and the client should keep polling (RIN-1619).
+   */
+  complete: boolean;
+  /** How a complete draft ended: `first_batch_only` when the rest failed; null until then. */
+  completion: GuestDraftCompletion | null;
   failureReason: string | null;
 }
 
@@ -88,4 +114,12 @@ export interface IGuestDraftService {
   createFromText(input: GuestTextDraftCreateInput): Promise<GuestDraftResult>;
   /** `ip` is the polling request's: a failed draft gives its per-IP slot back (AC8). */
   status(token: string, ip: string | null): Promise<GuestDraftResult>;
+}
+
+/** What the sign-up claim needs from the draft service (RIN-1619). */
+export interface GuestDraftRefresher {
+  /** One status poll by token hash, so a claim takes every question the API has now. */
+  refreshHashed(tokenHash: string): Promise<void>;
+  /** Deletes the API draft of an incomplete draft that is being claimed as it is. */
+  releaseUpstream(apiDraftId: string): Promise<void>;
 }

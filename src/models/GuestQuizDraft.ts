@@ -2,9 +2,11 @@ import mongoose, { Schema } from 'mongoose';
 
 import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/QuizQuestionSchema';
 import {
+  GUEST_DRAFT_COMPLETIONS,
   GUEST_DRAFT_ENTRIES,
   GUEST_DRAFT_SOURCES,
   GUEST_DRAFT_STATUSES,
+  type GuestDraftCompletion,
   type GuestDraftEntry,
   type GuestDraftSource,
   type GuestDraftStatus,
@@ -22,6 +24,13 @@ export interface GuestQuizDraftDocument {
   status: GuestDraftStatus;
   title?: string;
   questions: QuizQuestionDocument[];
+  /**
+   * False while a ready draft holds only the first batch and the API extracts the rest
+   * (RIN-1619). Absent on drafts made before RIN-1619, which were all complete.
+   */
+  complete?: boolean;
+  /** Set when a ready draft is complete; absent on drafts made before RIN-1619 (full). */
+  completion?: GuestDraftCompletion;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   /** Absent on drafts made before RIN-1538, which were all PDF drafts. */
@@ -39,6 +48,8 @@ const GuestQuizDraftSchema = new Schema<GuestQuizDraftDocument>(
     status: { type: String, enum: GUEST_DRAFT_STATUSES, required: true },
     title: { type: String, trim: true, maxlength: 200 },
     questions: { type: [QuizQuestionSchema], default: [] },
+    complete: { type: Boolean },
+    completion: { type: String, enum: GUEST_DRAFT_COMPLETIONS },
     locale: { type: String, enum: ['vi', 'en'], required: true },
     entry: { type: String, enum: GUEST_DRAFT_ENTRIES, required: true },
     source: { type: String, enum: GUEST_DRAFT_SOURCES, default: 'pdf', immutable: true },

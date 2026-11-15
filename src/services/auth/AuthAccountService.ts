@@ -33,7 +33,7 @@ export class AuthAccountService implements IAuthAccountService {
     private readonly notifier: IAuthNotifier,
     private readonly audit: IAuthAudit,
     private readonly scheduler: IDeferredTaskScheduler,
-    private readonly guestAttempts: IGuestAttemptClaimService,
+    private readonly guestAttempts: Pick<IGuestAttemptClaimService, 'claimHashed'>,
     private readonly guestDrafts?: Pick<IGuestDraftClaimService, 'claimHashed'>,
   ) {}
 

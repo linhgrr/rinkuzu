@@ -12,6 +12,10 @@ import type {
   ActivationSegmentBy,
   IActivationSegmentStatsRepository,
 } from '@/interfaces/repositories/IActivationSegmentStatsRepository';
+import type {
+  GuestFunnelWeekRecord,
+  IGuestFunnelStatsRepository,
+} from '@/interfaces/repositories/IGuestFunnelStatsRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type {
   AdminActivationAggregates,
@@ -98,6 +102,12 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
     'One-time activation nudge emails (RIN-999), bucketed by the UTC ISO week they were sent in (the worker slot of the delivery the provider accepted), not by signup week. sent: delivered nudges of non-excluded learners. clicked: sends whose CTA click was recorded (0 until click tracking ships). activatedWithin7d: sends followed by a completed quiz attempt or adaptive completion in [send, send + 7 days); final 7 days after the week ends. byTrigger splits each count by what enqueued the email: 24h (the sweep 24 h after signup) or backfill; the totals are their sums.',
   activatedByEntry:
     'Split of activated by the entry point of the first qualifying attempt (the earliest completed quiz attempt within 7 days of signup), as the quiz link carried it (?entry=, stored on the attempt since RIN-1256): blog, landing (homepage play-first), post_signin_starter, activation_email, hub (a topic hub card, since RIN-1417; the topic slug of the hub is stored on the attempt as topic). none: no tracked entry, which covers attempts before RIN-1256, untracked links, and learners activated by an adaptive completion only. The six add up to activated. A claimed guest attempt keeps its entry.',
+  guestCompleted:
+    'guestFunnel.weeks[]: guest attempts taken (submitted) in the UTC ISO week, still-unclaimed ones with a claim token plus claimed ones, excluding attempts claimed into an excluded account. Counted per attempt, not per learner.',
+  guestClaimed7d:
+    'guestFunnel.weeks[]: of guestCompleted, the attempts claimed into an account within 7 days of being taken. Claims land in the week the attempt was taken, so the recent weeks are partial.',
+  reviewOptInFromGuest:
+    'guestFunnel.weeks[]: 2-day review opt-in consent events with source guest_result_review (recorded when a guest claims an attempt whose result card ticked it), by event week, excluding excluded accounts. A learner already opted in records no new event.',
   blogPosts:
     'Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only.',
 };
@@ -118,6 +128,7 @@ export interface ActivationStatsServiceDeps {
   stats: Pick<IAdminStatsRepository, 'getActivationAggregates'>;
   segments: IActivationSegmentStatsRepository;
   activationEmail: IActivationEmailStatsRepository;
+  guestFunnel: IGuestFunnelStatsRepository;
   audit: IAdminAuditRepository;
   adaptiveEvents: AdaptiveActivationEventsReader;
   now?: () => Date;
@@ -260,9 +271,10 @@ export class ActivationStatsService {
       new Date(to.getTime() + ADAPTIVE_EVENTS_TAIL_MS),
       actorId,
     );
-    const [aggregates, emailSends] = await Promise.all([
+    const [aggregates, emailSends, guestWeeks] = await Promise.all([
       this.deps.stats.getActivationAggregates(from, to, adaptive.events),
       this.deps.activationEmail.getWeeklySends(from, to, adaptive.events),
+      this.deps.guestFunnel.getWeeklyGuestFunnel(from, to),
     ]);
     const rows = buildActivationWeeks(windows, aggregates, now);
     // Parse, not cast: the strict schema is what guarantees nothing but
@@ -274,6 +286,7 @@ export class ActivationStatsService {
       sources: { adaptive: adaptive.status },
       weeks: rows,
       activationEmail: { weeks: buildActivationEmailWeeks(windows, emailSends) },
+      guestFunnel: { weeks: buildGuestFunnelWeeks(windows, guestWeeks) },
     });
   }
 }
@@ -315,6 +328,23 @@ function buildActivationWeeks(
       complete: final,
       activatedByEntry: entries.get(key)?.activatedByEntry ?? NO_ENTRY,
       blogPosts: entries.get(key)?.blogPosts ?? [],
+    };
+  });
+}
+
+/** One row per window, zeros where no guest attempt or opt-in happened (RIN-1711). */
+function buildGuestFunnelWeeks(
+  windows: ReturnType<typeof trailingIsoWeeks>,
+  records: readonly GuestFunnelWeekRecord[],
+): AdminActivationStatsDto['guestFunnel']['weeks'] {
+  const byWeek = new Map(records.map((row) => [row.weekStart.getTime(), row]));
+  return windows.map((window) => {
+    const row = byWeek.get(window.start.getTime());
+    return {
+      isoWeek: window.isoWeek,
+      guestCompleted: row?.guestCompleted ?? 0,
+      guestClaimed7d: row?.guestClaimed7d ?? 0,
+      reviewOptInFromGuest: row?.reviewOptInFromGuest ?? 0,
     };
   });
 }

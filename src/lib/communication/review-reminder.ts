@@ -63,7 +63,7 @@ function ipHash(ip: string | null): string | null {
 
 /** Where the opt-in came from and what the rows anchor on. */
 interface ReviewPairSource {
-  consentSource: 'result_page_review' | 'adaptive_end_review';
+  consentSource: 'result_page_review' | 'adaptive_end_review' | 'guest_result_review';
   /** The attempt's `takenAt` or the adaptive completion's `completed_at`. */
   anchoredAt: Date;
   entityType: 'attempt' | 'adaptive_completion';
@@ -185,7 +185,11 @@ async function scheduleReviewReminderPair(
  * both pending rows at the newer attempt.
  */
 export async function optInReviewReminder(
-  input: ReviewOptInInput & { attemptId: string },
+  input: ReviewOptInInput & {
+    attemptId: string;
+    /** `guest_result_review` for an opt-in made on the guest card and recorded at claim (RIN-1711). */
+    consentSource?: 'result_page_review' | 'guest_result_review';
+  },
 ): Promise<ReviewReminderOptInResult> {
   const context = optInContext(input);
   const attempt = await repository.findAttempt(requiredObjectId(input.attemptId, 'attempt id'));
@@ -194,7 +198,7 @@ export async function optInReviewReminder(
     throw new CommunicationError('not_found', 'Attempt not found', 404);
   }
   return scheduleReviewReminderPair(context, {
-    consentSource: 'result_page_review',
+    consentSource: input.consentSource ?? 'result_page_review',
     anchoredAt: attempt.takenAt,
     entityType: 'attempt',
     entityId: attempt.id,

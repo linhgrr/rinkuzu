@@ -1627,36 +1627,38 @@ test.describe('production critical paths', () => {
         await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
         await expect(page.getByText('More questions are being made.')).toBeVisible();
         await page.evaluate(() => {
-          (window as unknown as Record<string, unknown>)['__noReload'] = true;
+          document.documentElement.dataset['noReload'] = '1';
         });
         await chooseOption(page, 'Mitochondria');
 
-        await fixture.db.collection('guestquizdrafts').updateOne(
-          { _id: draft.id },
-          {
-            $set: { complete: true, completion: 'full' },
-            $push: {
-              questions: {
-                _id: new ObjectId(),
-                question: 'Which organelle holds the genome in this fake guest draft?',
-                options: ['Nucleus', 'Golgi'],
-                type: 'single',
-                correctIndex: 0,
+        await fixture.db
+          .collection<{
+            questions: object[];
+            complete: boolean;
+            completion: string;
+          }>('guestquizdrafts')
+          .updateOne(
+            { _id: draft.id },
+            {
+              $set: { complete: true, completion: 'full' },
+              $push: {
+                questions: {
+                  _id: new ObjectId(),
+                  question: 'Which organelle holds the genome in this fake guest draft?',
+                  options: ['Nucleus', 'Golgi'],
+                  type: 'single',
+                  correctIndex: 0,
+                },
               },
             },
-          },
-        );
+          );
 
         // The next 2 s check finds the rest: the pending line goes, the page is not reloaded
         // and the question the learner is on, with its answer, stays.
         await expect(page.getByText('More questions are being made.')).toBeHidden({
           timeout: 20_000,
         });
-        expect(
-          await page.evaluate(
-            () => (window as unknown as Record<string, unknown>)['__noReload'] === true,
-          ),
-        ).toBe(true);
+        await expect(page.locator('html')).toHaveAttribute('data-no-reload', '1');
         await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
       } finally {
         await cleanupGuestDraft(fixture.db, draft);

@@ -53,6 +53,7 @@ const SELF_AUTHENTICATING_GUARDS = [
   'assertInternalBillingRequest',
   'withInternalBillingTick',
   'verifyAndClassifyPayOSWebhook',
+  'hasCronSecretBearer',
 ];
 
 describe('self-authenticating API routes and the proxy same-origin guard', () => {
@@ -71,6 +72,7 @@ describe('self-authenticating API routes and the proxy same-origin guard', () =>
     expect(selfAuthenticating).toContain('/api/internal/billing/process');
     expect(selfAuthenticating).toContain('/api/internal/billing/reconcile');
     expect(selfAuthenticating).toContain('/api/billing/webhooks/[provider]');
+    expect(selfAuthenticating).toContain('/api/internal/outage-notify/send');
   });
 
   it('names only guards that still exist', () => {

@@ -344,7 +344,7 @@ function UploadSection({
                   <p className="text-sm text-neutral-500">
                     {t('pdfLimitHint', { pages: maxPages })}
                   </p>
-                  <p className="text-xs text-neutral-500 mt-1">
+                  <p className="mt-1 text-pretty text-xs leading-5 text-neutral-500">
                     {t('pdfTechnicalLimit', {
                       size: MAX_QUIZ_PDF_MB,
                       officeSize: OFFICE_MAX_FILE_MB,

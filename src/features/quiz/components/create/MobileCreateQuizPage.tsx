@@ -318,7 +318,7 @@ export function MobileCreateQuizPage() {
             <p className="text-sm text-neutral-500">
               {t('pdfLimitHint', { pages: uploadPolicy.maxPages })}
             </p>
-            <p className="mt-1 text-xs text-neutral-400">
+            <p className="mt-1 text-pretty text-xs leading-5 text-neutral-600">
               {t('pdfTechnicalLimit', { size: MAX_QUIZ_PDF_MB, officeSize: OFFICE_MAX_FILE_MB })}
             </p>
           </div>

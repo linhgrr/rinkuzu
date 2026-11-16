@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,6 +40,15 @@ vi.mock('@/lib/analytics/client', () => ({
   captureAnalyticsEvent: vi.fn(),
   fileSizeBucket: () => 'lt_1mb',
 }));
+const { reportUploadRejectionMock, reportDropzoneRejectionMock } = vi.hoisted(() => ({
+  reportUploadRejectionMock: vi.fn(),
+  reportDropzoneRejectionMock: vi.fn(),
+}));
+// RIN-1785: refusals are counted with the surface they happened on.
+vi.mock('@/lib/upload-rejection-client', () => ({
+  reportUploadRejection: reportUploadRejectionMock,
+  reportDropzoneRejection: reportDropzoneRejectionMock,
+}));
 vi.mock('@/lib/pdf', () => ({ getPdfPageCount: vi.fn().mockResolvedValue(3) }));
 vi.mock('@/hooks/usePdfUploadPolicy', () => ({
   usePdfUploadPolicy: () => ({ isLoading: false, maxBytes: 10 * 1024 * 1024, maxPages: 30 }),
@@ -70,6 +79,29 @@ async function submitUpload() {
 }
 
 describe('AdaptiveLearningUpload error states', () => {
+  it('counts a refused file on the adaptive_upload surface (RIN-1785)', async () => {
+    const { container } = render(
+      <NextIntlClientProvider
+        locale="vi"
+        messages={{ adaptiveLearning: viAdaptive, common: viCommon, errors: viErrors }}
+      >
+        <AdaptiveLearningUpload />
+      </NextIntlClientProvider>,
+    );
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.change(input, {
+      target: { files: [new File(['x'], 'notes.docx', { type: 'application/msword' })] },
+    });
+
+    await waitFor(() =>
+      expect(reportDropzoneRejectionMock).toHaveBeenCalledWith(
+        expect.any(Array),
+        'adaptive_upload',
+      ),
+    );
+  });
+
   beforeEach(() => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     checkApiReadinessMock.mockResolvedValue({ ok: true });

@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'sonner';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { reportDropzoneRejection, reportUploadRejection } from '@/lib/upload-rejection-client';
 import { CreateQuizPage } from './CreateQuizPage';
 import { MobileCreateQuizPage } from './MobileCreateQuizPage';
 
@@ -60,6 +61,11 @@ vi.mock('@/lib/pdf', () => ({
   uploadPdfViaPresignedUrl: vi.fn(),
   deletePendingPdfUpload: vi.fn(async () => undefined),
   shouldCleanupPendingPdfUpload: () => false,
+}));
+// RIN-1785: every refusal is counted with the surface it happened on.
+vi.mock('@/lib/upload-rejection-client', () => ({
+  reportUploadRejection: vi.fn(),
+  reportDropzoneRejection: vi.fn(),
 }));
 vi.mock('@/lib/quiz/draftApi', () => ({ createQuizDraft: vi.fn() }));
 vi.mock('swr', () => ({ default: () => ({ data: undefined, error: null, isLoading: false }) }));
@@ -122,6 +128,19 @@ const serviceDown = () =>
   Object.assign(new Error('Adaptive service request timed out'), { status: 502 });
 
 describe('CreateQuizPage (desktop) file and submit errors', () => {
+  it('counts a refused file on the create_pdf surface (RIN-1785)', async () => {
+    const { container } = render(<CreateQuizPage />);
+
+    pick(container, textFile());
+
+    await screen.findByRole('alert');
+    const counted = [
+      ...vi.mocked(reportUploadRejection).mock.calls.map(([arg]) => arg.surface),
+      ...vi.mocked(reportDropzoneRejection).mock.calls.map(([, surface]) => surface),
+    ];
+    expect(counted).toEqual(['create_pdf']);
+  });
+
   it('shows the wrong-type message for a non-PDF file', async () => {
     const { container } = render(<CreateQuizPage />);
 
@@ -226,6 +245,19 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
 });
 
 describe('MobileCreateQuizPage file and submit errors', () => {
+  it('counts a refused file on the create_pdf_mobile surface (RIN-1785)', async () => {
+    const { container } = render(<MobileCreateQuizPage />);
+
+    pick(container, textFile());
+
+    await screen.findByRole('alert');
+    const counted = [
+      ...vi.mocked(reportUploadRejection).mock.calls.map(([arg]) => arg.surface),
+      ...vi.mocked(reportDropzoneRejection).mock.calls.map(([, surface]) => surface),
+    ];
+    expect(counted).toEqual(['create_pdf_mobile']);
+  });
+
   // RIN-1082: file-level errors were toasts on mobile and vanished after a
   // few seconds, while desktop kept them in a persistent alert.
   it('keeps the wrong-type message under the dropzone until the file changes', async () => {

@@ -7,6 +7,7 @@ import { AdminAuditRepository } from '@/repositories/AdminAuditRepository';
 import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 import { ActivationEmailStatsRepository } from '@/repositories/ActivationEmailStatsRepository';
 import { GuestFunnelStatsRepository } from '@/repositories/GuestFunnelStatsRepository';
+import { UploadCounterRepository } from '@/repositories/UploadCounterRepository';
 import { ActivationSegmentStatsRepository } from '@/repositories/ActivationSegmentStatsRepository';
 import { ActivationStatsService } from '@/services/admin/ActivationStatsService';
 import { integrationDatabaseUri } from '../../setup/integration-db';
@@ -395,6 +396,7 @@ describe('activation stats integration', () => {
       segments: new ActivationSegmentStatsRepository(),
       activationEmail: new ActivationEmailStatsRepository(),
       guestFunnel: new GuestFunnelStatsRepository(),
+      uploads: new UploadCounterRepository(),
       audit: new AdminAuditRepository(),
       adaptiveEvents: adaptiveReader,
       // Monday of W05: exactly 14 days after W02 ended.

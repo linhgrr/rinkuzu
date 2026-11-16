@@ -122,6 +122,51 @@ function setup(now = NOW) {
       },
     ]),
   };
+  const uploads = {
+    listDaily: vi.fn().mockResolvedValue([
+      {
+        day: '2026-10-27',
+        kind: 'file_rejected',
+        surface: 'create_pdf',
+        ext: 'docx',
+        reason: 'wrong_type',
+        count: 3,
+      },
+      {
+        day: '2026-10-28',
+        kind: 'file_rejected',
+        surface: 'try_pdf',
+        ext: 'docx',
+        reason: 'wrong_type',
+        count: 2,
+      },
+      {
+        day: '2026-10-28',
+        kind: 'file_rejected',
+        surface: 'try_pdf',
+        ext: 'pptx',
+        reason: 'wrong_type',
+        count: 4,
+      },
+      {
+        day: '2026-10-29',
+        kind: 'office_draft_created',
+        surface: 'create_pdf',
+        ext: 'docx',
+        reason: '',
+        count: 1,
+      },
+      // Outside the window: dropped.
+      {
+        day: '2026-09-01',
+        kind: 'file_rejected',
+        surface: 'try_pdf',
+        ext: 'zip',
+        reason: 'wrong_type',
+        count: 9,
+      },
+    ]),
+  };
   const audit = { record: vi.fn().mockResolvedValue(undefined) };
   const adaptiveEvents = vi.fn().mockResolvedValue(ADAPTIVE_EVENTS);
   const segments = { getActivationSegments: vi.fn().mockResolvedValue([]) };
@@ -130,6 +175,7 @@ function setup(now = NOW) {
     segments,
     activationEmail,
     guestFunnel,
+    uploads,
     audit,
     adaptiveEvents,
     now: () => new Date(clock),
@@ -139,6 +185,7 @@ function setup(now = NOW) {
     stats,
     activationEmail,
     guestFunnel,
+    uploads,
     audit,
     adaptiveEvents,
     advance: (ms: number) => (clock += ms),
@@ -279,6 +326,46 @@ describe('ActivationStatsService', () => {
     expect(result.data.definitions.guestCompleted).toMatch(/excluded account/);
     expect(result.data.definitions.guestClaimed7d).toMatch(/7 days/);
     expect(result.data.definitions.reviewOptInFromGuest).toMatch(/guest_result_review/);
+  });
+
+  it('adds upload rejections (top 10 + other) and office drafts per week (RIN-1785)', async () => {
+    const { service, uploads } = setup();
+    const result = await service.getWeeklyActivation(4, { kind: 'service' });
+    if (!result.success) throw new Error(result.error);
+
+    expect(uploads.listDaily).toHaveBeenCalledWith('2026-10-12', '2026-11-08');
+    const week = result.data.uploads.weeks.find((row) => row.isoWeek === '2026-W44');
+    expect(week).toEqual({
+      isoWeek: '2026-W44',
+      uploadRejections: [
+        { ext: 'docx', reason: 'wrong_type', count: 5 },
+        { ext: 'pptx', reason: 'wrong_type', count: 4 },
+      ],
+      officeDrafts: [{ surface: 'create_pdf', ext: 'docx', count: 1 }],
+    });
+    expect(result.data.uploads.weeks[0]).toMatchObject({ uploadRejections: [], officeDrafts: [] });
+    expect(result.data.definitions.uploadRejections).toMatch(/no file name/);
+  });
+
+  it('folds upload rejections beyond the top 10 into one other row', async () => {
+    const { service, uploads } = setup();
+    uploads.listDaily.mockResolvedValueOnce(
+      Array.from({ length: 12 }, (_, index) => ({
+        day: '2026-10-27',
+        kind: 'file_rejected',
+        surface: 'try_pdf',
+        ext: `e${String(index).padStart(2, '0')}`,
+        reason: 'wrong_type',
+        count: 12 - index,
+      })),
+    );
+    const result = await service.getWeeklyActivation(4, { kind: 'service' });
+    if (!result.success) throw new Error(result.error);
+    const rows = result.data.uploads.weeks.find(
+      (row) => row.isoWeek === '2026-W44',
+    )?.uploadRejections;
+    expect(rows).toHaveLength(11);
+    expect(rows?.[10]).toEqual({ ext: 'other', reason: 'other', count: 3 });
   });
 
   it('counts activation-email sends quiz-only when the adaptive API fails', async () => {

@@ -16,6 +16,10 @@ import type {
   GuestFunnelWeekRecord,
   IGuestFunnelStatsRepository,
 } from '@/interfaces/repositories/IGuestFunnelStatsRepository';
+import type {
+  IUploadCounterRepository,
+  UploadCounterTotal,
+} from '@/interfaces/repositories/IUploadCounterRepository';
 import type { IAdminAuditRepository } from '@/interfaces/repositories/IAdminAuditRepository';
 import type {
   AdminActivationAggregates,
@@ -107,6 +111,10 @@ const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
     'guestFunnel.weeks[]: of guestCompleted, the attempts claimed into an account within 7 days of being taken. Claims land in the week the attempt was taken, so the recent weeks are partial.',
   reviewOptInFromGuest:
     'guestFunnel.weeks[]: 2-day review opt-in consent events with source guest_result_review (recorded when a guest claims an attempt whose result card ticked it), by event week, excluding excluded accounts. A learner already opted in records no new event.',
+  uploadRejections:
+    'uploads.weeks[]: files an upload surface refused, by the UTC ISO week of the refusal, as ext x reason counts: the top 10 pairs, most first (ties by ext, reason), then one other x other row for the rest. ext is the lower-case file extension (1-8 letters or digits, else other); reason is wrong_type, too_large, legacy_format, encrypted, corrupt, too_little_text, too_many_pages or unreadable. Counted per file dropped, not per learner; no file name, content, IP or user is stored. Refusals before RIN-1785 shipped are not counted.',
+  officeDrafts:
+    'uploads.weeks[]: text drafts made from an office file (source_file_type set), by UTC ISO week, as surface x ext counts. Counted per draft, not per learner; nothing about the learner is stored.',
   blogPosts:
     'Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only.',
 };
@@ -128,6 +136,7 @@ export interface ActivationStatsServiceDeps {
   segments: IActivationSegmentStatsRepository;
   activationEmail: IActivationEmailStatsRepository;
   guestFunnel: IGuestFunnelStatsRepository;
+  uploads: Pick<IUploadCounterRepository, 'listDaily'>;
   audit: IAdminAuditRepository;
   adaptiveEvents: AdaptiveActivationEventsReader;
   now?: () => Date;
@@ -270,10 +279,11 @@ export class ActivationStatsService {
       new Date(to.getTime() + ADAPTIVE_EVENTS_TAIL_MS),
       actorId,
     );
-    const [aggregates, emailSends, guestWeeks] = await Promise.all([
+    const [aggregates, emailSends, guestWeeks, uploadCounters] = await Promise.all([
       this.deps.stats.getActivationAggregates(from, to, adaptive.events),
       this.deps.activationEmail.getWeeklySends(from, to, adaptive.events),
       this.deps.guestFunnel.getWeeklyGuestFunnel(from, to),
+      this.deps.uploads.listDaily(utcDay(from), utcDay(new Date(to.getTime() - 1))),
     ]);
     const rows = buildActivationWeeks(windows, aggregates, now);
     // Parse, not cast: the strict schema is what guarantees nothing but
@@ -286,6 +296,7 @@ export class ActivationStatsService {
       weeks: rows,
       activationEmail: { weeks: buildActivationEmailWeeks(windows, emailSends) },
       guestFunnel: { weeks: buildGuestFunnelWeeks(windows, guestWeeks) },
+      uploads: { weeks: buildUploadWeeks(windows, uploadCounters) },
     });
   }
 }
@@ -345,6 +356,50 @@ function buildGuestFunnelWeeks(
       guestClaimed7d: row?.guestClaimed7d ?? 0,
       reviewOptInFromGuest: row?.reviewOptInFromGuest ?? 0,
     };
+  });
+}
+
+const TOP_UPLOAD_REJECTIONS = 10;
+
+function utcDay(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function addCount(map: Map<string, number>, key: string, count: number): void {
+  map.set(key, (map.get(key) ?? 0) + count);
+}
+
+function byCountThenKey(a: [string, number], b: [string, number]): number {
+  return b[1] - a[1] || a[0].localeCompare(b[0]);
+}
+
+/** One row per window: refusals as top 10 ext x reason + other, office drafts by surface x ext (RIN-1785). */
+function buildUploadWeeks(
+  windows: ReturnType<typeof trailingIsoWeeks>,
+  rows: readonly UploadCounterTotal[],
+): AdminActivationStatsDto['uploads']['weeks'] {
+  return windows.map((window) => {
+    const fromDay = utcDay(window.start);
+    const toDay = utcDay(new Date(window.endExclusive.getTime() - 1));
+    const rejected = new Map<string, number>();
+    const drafts = new Map<string, number>();
+    for (const row of rows) {
+      if (row.day < fromDay || row.day > toDay) continue;
+      if (row.kind === 'file_rejected') addCount(rejected, `${row.ext} ${row.reason}`, row.count);
+      else addCount(drafts, `${row.surface} ${row.ext}`, row.count);
+    }
+    const ranked = [...rejected].sort(byCountThenKey);
+    const uploadRejections = ranked.slice(0, TOP_UPLOAD_REJECTIONS).map(([key, count]) => {
+      const [ext = 'other', reason = 'other'] = key.split(' ');
+      return { ext, reason, count };
+    });
+    const rest = ranked.slice(TOP_UPLOAD_REJECTIONS).reduce((sum, [, count]) => sum + count, 0);
+    if (rest > 0) uploadRejections.push({ ext: 'other', reason: 'other', count: rest });
+    const officeDrafts = [...drafts].sort(byCountThenKey).map(([key, count]) => {
+      const [surface = 'other', ext = 'other'] = key.split(' ');
+      return { surface, ext, count };
+    });
+    return { isoWeek: window.isoWeek, uploadRejections, officeDrafts };
   });
 }
 

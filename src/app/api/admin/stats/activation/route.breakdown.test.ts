@@ -107,6 +107,7 @@ function makeService() {
     },
     activationEmail: { getWeeklySends: vi.fn().mockResolvedValue([]) },
     guestFunnel: { getWeeklyGuestFunnel: vi.fn().mockResolvedValue([]) },
+    uploads: { listDaily: vi.fn().mockResolvedValue([]) },
     audit: { record: vi.fn().mockResolvedValue(undefined) },
     adaptiveEvents: vi.fn().mockResolvedValue([]),
     now: () => NOW,

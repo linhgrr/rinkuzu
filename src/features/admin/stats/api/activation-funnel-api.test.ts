@@ -58,6 +58,16 @@ describe('fetchActivationFunnelViewModel', () => {
           },
         ],
       },
+      uploads: {
+        weeks: [
+          {
+            isoWeek: '2026-W44',
+            uploadRejections: [{ ext: 'docx', reason: 'wrong_type', count: 5 }],
+            officeDrafts: [{ surface: 'create_pdf', ext: 'docx', count: 1 }],
+          },
+          { isoWeek: '2026-W45', uploadRejections: [], officeDrafts: [] },
+        ],
+      },
     });
 
     const result = await fetchActivationFunnelViewModel();
@@ -88,6 +98,22 @@ describe('fetchActivationFunnelViewModel', () => {
         sentBackfill: 1,
         clicked: 1,
         activatedWithin7d: 2,
+        inProgress: false,
+      },
+    ]);
+    expect(result.uploadWeeks).toEqual([
+      {
+        isoWeek: '2026-W45',
+        monday: '2026-11-02',
+        rejections: [],
+        officeDrafts: [],
+        inProgress: true,
+      },
+      {
+        isoWeek: '2026-W44',
+        monday: '2026-10-26',
+        rejections: [{ ext: 'docx', reason: 'wrong_type', count: 5 }],
+        officeDrafts: [{ surface: 'create_pdf', ext: 'docx', count: 1 }],
         inProgress: false,
       },
     ]);

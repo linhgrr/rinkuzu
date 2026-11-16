@@ -38,6 +38,7 @@ import {
   getPdfRejectionMessage,
   isPdfFile,
 } from '@/features/quiz/components/create/pdf-file-error';
+import { reportDropzoneRejection, reportUploadRejection } from '@/lib/upload-rejection-client';
 import {
   HiOutlineArrowRight,
   HiOutlineDocumentText,
@@ -573,12 +574,14 @@ export function CreateQuizPage() {
   const selectPdf = useCallback(
     async (file: File) => {
       if (!isPdfFile(file)) {
+        reportUploadRejection({ file, reason: 'wrong_type', surface: 'create_pdf' });
         dispatch({ type: 'patch', value: { error: t('pdfWrongType'), submitError: '' } });
         return;
       }
       try {
         const pageCount = await getPdfPageCount(file);
         if (pageCount > uploadPolicy.maxPages) {
+          reportUploadRejection({ file, reason: 'too_many_pages', surface: 'create_pdf' });
           dispatch({
             type: 'patch',
             value: {
@@ -591,6 +594,7 @@ export function CreateQuizPage() {
         dispatch({ type: 'patch', value: { error: '', submitError: '' } });
         dispatch({ type: 'setPdfFile', file });
       } catch {
+        reportUploadRejection({ file, reason: 'unreadable', surface: 'create_pdf' });
         dispatch({ type: 'patch', value: { error: t('pdfUnreadable'), submitError: '' } });
       }
     },
@@ -620,6 +624,7 @@ export function CreateQuizPage() {
       }
     },
     onDropRejected: (rejections) => {
+      reportDropzoneRejection(rejections, 'create_pdf');
       dispatch({
         type: 'patch',
         value: { error: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB), submitError: '' },

@@ -443,6 +443,16 @@ export const INDEX_CONTRACT = Object.freeze([
     { expireAfterSeconds: 3 * 24 * 60 * 60 },
   ),
 
+  // Daily upload counters (RIN-1785): one document per day and key, `$inc` upsert.
+  // `day` leads, so the admin readout's week range is an index scan. No TTL: a few
+  // hundred small rows a year, and no personal field is stored.
+  required(
+    'upload-daily-counters.key',
+    'uploaddailycounters',
+    { day: 1, kind: 1, surface: 1, ext: 1, reason: 1, sizeBucket: 1 },
+    { unique: true },
+  ),
+
   // Admin-curated topic hubs (RIN-1248): tens of topics, a quiz in at most one topic.
   required('quiz-topics.slug', 'quiztopics', { slug: 1 }, { unique: true }),
   required('quiz-topics.order', 'quiztopics', { order: 1 }),

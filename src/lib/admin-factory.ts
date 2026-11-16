@@ -3,6 +3,7 @@ import { AdminStatsRepository } from '@/repositories/AdminStatsRepository';
 import { ActivationSegmentStatsRepository } from '@/repositories/ActivationSegmentStatsRepository';
 import { ActivationEmailStatsRepository } from '@/repositories/ActivationEmailStatsRepository';
 import { GuestFunnelStatsRepository } from '@/repositories/GuestFunnelStatsRepository';
+import { UploadCounterRepository } from '@/repositories/UploadCounterRepository';
 import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
@@ -54,6 +55,7 @@ export function getActivationStatsService(): ActivationStatsService {
     segments: new ActivationSegmentStatsRepository(),
     activationEmail: new ActivationEmailStatsRepository(),
     guestFunnel: new GuestFunnelStatsRepository(),
+    uploads: new UploadCounterRepository(),
     audit: new AdminAuditRepository(),
     adaptiveEvents: fetchAdaptiveActivationEvents,
   });

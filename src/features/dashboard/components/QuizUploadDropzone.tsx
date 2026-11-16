@@ -10,6 +10,7 @@ import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { getPdfPageCount } from '@/lib/pdf';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
+import { reportUploadRejection } from '@/lib/upload-rejection-client';
 import { cn } from '@/lib/utils';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
 
@@ -35,16 +36,19 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
+      reportUploadRejection({ file, reason: 'wrong_type', surface: 'dashboard_upload' });
       showError(t('upload.errors.onlyPdf'));
       return;
     }
     if (file.size > uploadPolicy.maxBytes) {
+      reportUploadRejection({ file, reason: 'too_large', surface: 'dashboard_upload' });
       showError(t('upload.errors.fileTooLarge', { size: MAX_QUIZ_PDF_MB }));
       return;
     }
     try {
       const pageCount = await getPdfPageCount(file);
       if (pageCount > uploadPolicy.maxPages) {
+        reportUploadRejection({ file, reason: 'too_many_pages', surface: 'dashboard_upload' });
         showError(
           t('upload.errors.tooManyPages', {
             pages: pageCount,
@@ -54,6 +58,7 @@ export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
         return;
       }
     } catch {
+      reportUploadRejection({ file, reason: 'unreadable', surface: 'dashboard_upload' });
       showError(t('upload.errors.unreadablePdf'));
       return;
     }

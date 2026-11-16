@@ -22,7 +22,8 @@ export type AuthRateLimitAction =
   | 'attempt_claim_user'
   | 'attempt_claim_ip'
   | 'guest_draft_claim_user'
-  | 'guest_draft_claim_ip';
+  | 'guest_draft_claim_ip'
+  | 'upload_rejection_ip';
 
 const DEFAULTS: Record<AuthRateLimitAction, RateLimitWindow> = {
   credentials_ip: { points: 20, durationSec: 60 * 15 },
@@ -38,6 +39,7 @@ const DEFAULTS: Record<AuthRateLimitAction, RateLimitWindow> = {
   attempt_claim_ip: { points: 30, durationSec: 60 }, // 30 guest-attempt claims / min / IP
   guest_draft_claim_user: { points: 10, durationSec: 60 }, // 10 guest-draft claims / min / user
   guest_draft_claim_ip: { points: 30, durationSec: 60 }, // 30 guest-draft claims / min / IP
+  upload_rejection_ip: { points: 30, durationSec: 60 * 10 }, // 30 refused-upload counts / 10min / IP (RIN-1785)
 };
 
 const registry = createRateLimiterRegistry<AuthRateLimitAction>(

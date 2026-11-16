@@ -1,11 +1,18 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, proxyMock } = vi.hoisted(() => ({ authMock: vi.fn(), proxyMock: vi.fn() }));
+const { authMock, proxyMock, recordOfficeDraftMock } = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  proxyMock: vi.fn(),
+  recordOfficeDraftMock: vi.fn(),
+}));
 const jobLink = vi.hoisted(() => vi.fn());
 
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/adaptive/proxy', () => ({ proxyAdaptiveRequest: proxyMock }));
+vi.mock('@/lib/upload-counter-factory', () => ({
+  getUploadCounterService: () => ({ recordOfficeDraft: recordOfficeDraftMock }),
+}));
 vi.mock('@/lib/quiz/draft-usage', () => ({ quizDraftJobLinkFromEnvelope: jobLink }));
 
 import { POST } from '@/app/api/quiz-drafts/text/route';
@@ -56,6 +63,60 @@ describe('POST /api/quiz-drafts/text (RIN-1538)', () => {
         llmJobLink: jobLink,
       },
     );
+  });
+
+  describe('a text read from a Word or PowerPoint file (RIN-1787)', () => {
+    it('forwards source_file_type, keeps upload_surface off the API call and counts the draft', async () => {
+      const req = request({
+        title: 'Slides',
+        text: NOTES,
+        source_file_type: 'pptx',
+        upload_surface: 'create_pdf_mobile',
+      });
+
+      const response = await POST(req, routeContext);
+
+      expect(response.status).toBe(201);
+      const forwarded = JSON.parse(proxyMock.mock.calls[0]?.[3].body as string);
+      expect(forwarded).toEqual({
+        title: 'Slides',
+        text: NOTES.trim(),
+        source_file_type: 'pptx',
+      });
+      expect(recordOfficeDraftMock).toHaveBeenCalledWith('create_pdf_mobile', 'pptx');
+    });
+
+    it('counts on create_pdf when the surface is missing', async () => {
+      await POST(request({ title: 'Doc', text: NOTES, source_file_type: 'docx' }), routeContext);
+      expect(recordOfficeDraftMock).toHaveBeenCalledWith('create_pdf', 'docx');
+    });
+
+    it('does not count a draft the API refused', async () => {
+      proxyMock.mockResolvedValue(new Response(null, { status: 429 }));
+      const response = await POST(
+        request({ title: 'Doc', text: NOTES, source_file_type: 'docx' }),
+        routeContext,
+      );
+      expect(response.status).toBe(429);
+      expect(recordOfficeDraftMock).not.toHaveBeenCalled();
+    });
+
+    it('does not count a plain pasted text', async () => {
+      await POST(request({ title: 'T', text: NOTES }), routeContext);
+      expect(recordOfficeDraftMock).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['a file type the text route does not take', { source_file_type: 'image' }],
+      [
+        'an upload surface that is not a create page',
+        { source_file_type: 'docx', upload_surface: 'try_pdf' },
+      ],
+    ])('400s %s', async (_label, extra) => {
+      const response = await POST(request({ title: 'T', text: NOTES, ...extra }), routeContext);
+      expect(response.status).toBe(400);
+      expect(proxyMock).not.toHaveBeenCalled();
+    });
   });
 
   it('422s a text under 200 characters without calling the API', async () => {

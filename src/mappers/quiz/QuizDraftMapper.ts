@@ -11,6 +11,7 @@ export class QuizDraftMapper {
       folderId: draft.category_id,
       prompt: draft.prompt,
       sourceType: draft.source_type,
+      sourceFileType: draft.source_file_type ?? null,
       submitToPremium: draft.submit_to_premium,
       revision: draft.revision,
       questionCount: draft.question_count,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toCreateQuizDraftInput } from './create-quiz-draft-input';
+import { toCreateQuizDraftInput, toOfficeTextDraftInput } from './create-quiz-draft-input';
 
 describe('toCreateQuizDraftInput', () => {
   it.each([true, false])('preserves submitToPremium=%s in the draft request', (submitToPremium) => {
@@ -48,5 +48,51 @@ describe('toCreateQuizDraftInput', () => {
       folderId: null,
       submitToPremium: true,
     });
+  });
+});
+
+describe('toOfficeTextDraftInput (RIN-1787)', () => {
+  const source = { text: 'Fake slide text', fileType: 'pptx', truncated: false } as const;
+
+  it('sends the extracted text with the file type and surface, no storage fields', () => {
+    expect(
+      toOfficeTextDraftInput(
+        {
+          aiPrompt: ' focus on dates ',
+          description: ' Week 3 ',
+          submitToPremium: true,
+          selectedFolderId: 'folder-1',
+          title: ' Week 3 slides ',
+        },
+        source,
+        'create_pdf',
+      ),
+    ).toEqual({
+      title: 'Week 3 slides',
+      text: 'Fake slide text',
+      folderId: 'folder-1',
+      submitToPremium: true,
+      office: { fileType: 'pptx', surface: 'create_pdf' },
+      description: 'Week 3',
+      prompt: 'focus on dates',
+    });
+  });
+
+  it('omits blank optional text fields', () => {
+    const input = toOfficeTextDraftInput(
+      {
+        aiPrompt: ' ',
+        description: '',
+        submitToPremium: false,
+        selectedFolderId: null,
+        title: 'Doc',
+      },
+      source,
+      'create_pdf_mobile',
+    );
+
+    expect(input).not.toHaveProperty('description');
+    expect(input).not.toHaveProperty('prompt');
+    expect(input.office).toEqual({ fileType: 'pptx', surface: 'create_pdf_mobile' });
   });
 });

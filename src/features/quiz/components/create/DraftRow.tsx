@@ -28,6 +28,17 @@ export function isDraftActive(status: DraftStatus): boolean {
   return status === 'queued' || status === 'processing';
 }
 
+/**
+ * Where "start again" goes for a failed draft: the page the source was picked on. A Word or
+ * PowerPoint draft is a text draft, but its file was picked on /create/pdf (RIN-1787).
+ */
+function retryHref(draft: QuizDraft): string {
+  if (draft.sourceFileType === 'docx' || draft.sourceFileType === 'pptx') {
+    return ROUTES.CREATE_QUIZ_PDF;
+  }
+  return draft.sourceType === 'text' ? ROUTES.CREATE_QUIZ_TEXT : ROUTES.CREATE_QUIZ_PDF;
+}
+
 interface BadgeStyle {
   icon: ComponentType<{ className?: string; 'aria-hidden'?: 'true' }> | null;
   className: string;
@@ -179,10 +190,7 @@ export function DraftRow({ draft, dateFormatter, onDelete }: DraftRowProps) {
             </Button>
           ) : null}
           {status === 'failed' ? (
-            <Link
-              href={draft.sourceType === 'text' ? ROUTES.CREATE_QUIZ_TEXT : ROUTES.CREATE_QUIZ_PDF}
-              className="btn btn-secondary"
-            >
+            <Link href={retryHref(draft)} className="btn btn-secondary">
               {t('draftTryAgain')}
             </Link>
           ) : null}

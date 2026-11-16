@@ -67,6 +67,7 @@ function draftSnapshot(overrides: Partial<QuizDraft>): QuizDraft {
     folderId: 'folder-1',
     prompt: null,
     sourceType: 'pdf',
+    sourceFileType: null,
     submitToPremium: false,
     revision: 1,
     questionCount: 0,

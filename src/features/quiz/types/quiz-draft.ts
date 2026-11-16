@@ -24,7 +24,7 @@ export interface QuizDraft {
   description: QuizDraftTransportContract['description'];
   folderId: QuizDraftTransportContract['category_id'];
   prompt: QuizDraftTransportContract['prompt'];
-  sourceType: 'pdf' | 'manual';
+  sourceType: 'pdf' | 'text' | 'manual';
   submitToPremium: boolean;
   revision: number;
   questionCount: number;

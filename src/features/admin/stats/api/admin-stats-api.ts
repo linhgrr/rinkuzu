@@ -109,31 +109,11 @@ function sourceRank(key: string): number {
   return index === -1 ? 0 : index + 1;
 }
 
-/**
- * The breakdown counts per source. The startedQuiz count rides next to the locale and
- * country counts on the same response shape (RIN-1763).
- */
-type BreakdownWeekDto = AdminActivationBreakdownDto['weeks'][number];
-
-interface SourceSegmentCountsDto {
-  signups: number;
-  startedQuiz: number;
-  activated: number;
-}
-
-interface SourceBreakdownWeekDto extends Omit<BreakdownWeekDto, 'segments'> {
-  segments: Record<string, SourceSegmentCountsDto>;
-}
-
-interface SourceBreakdownDto extends Omit<AdminActivationBreakdownDto, 'weeks'> {
-  weeks: SourceBreakdownWeekDto[];
-}
-
 /** Signups by source for the same 8 weeks, newest week first (RIN-1761). */
 export async function fetchActivationSourceRows(
   signal?: AbortSignal,
 ): Promise<ActivationSourceRowViewModel[]> {
-  const dto = await fetchApiData<SourceBreakdownDto>(
+  const dto = await fetchApiData<AdminActivationBreakdownDto>(
     '/api/admin/stats/activation?weeks=8&by=source',
     { cache: 'no-store', ...(signal ? { signal } : {}) },
   );
@@ -149,7 +129,7 @@ export async function fetchActivationSourceRows(
         monday: week.start.slice(0, 10),
         source,
         signups: counts.signups,
-        startedQuiz: counts.startedQuiz,
+        startedQuiz: counts.startedQuiz ?? 0,
         activated: counts.activated,
         inProgress: !week.complete,
       })),

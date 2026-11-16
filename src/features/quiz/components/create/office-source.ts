@@ -1,5 +1,6 @@
 import type { Accept } from 'react-dropzone';
 
+import { isPdfFile } from '@/features/quiz/components/create/pdf-file-error';
 import {
   OFFICE_MAX_FILE_BYTES,
   extractOfficeText,
@@ -44,12 +45,12 @@ function officeTypeOf(file: Pick<File, 'name' | 'type'>): OfficeFileType | null 
   return file.type === PPTX_MIME ? 'pptx' : null;
 }
 
-export function createFileKind(file: Pick<File, 'name' | 'type'>): CreateFileKind {
+export function createFileKind(file: File): CreateFileKind {
   const ext = extensionOf(file);
   if (ext === 'doc' || ext === 'ppt' || file.type === DOC_MIME || file.type === PPT_MIME) {
     return 'legacy';
   }
-  if (file.type === 'application/pdf' || ext === 'pdf') return 'pdf';
+  if (isPdfFile(file)) return 'pdf';
   return officeTypeOf(file) ? 'office' : 'other';
 }
 

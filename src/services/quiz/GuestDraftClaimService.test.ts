@@ -18,6 +18,7 @@ const draft: ClaimableGuestDraft = {
   locale: 'vi',
   entry: 'landing',
   source: 'pdf',
+  pageCount: null,
   complete: true,
 };
 
@@ -81,6 +82,7 @@ describe('GuestDraftClaimService (RIN-1447)', () => {
       locale: 'vi',
       entry: 'landing',
       source: 'pdf',
+      pageCount: null,
     });
     const forwarded = JSON.stringify([
       drafts.findClaimable.mock.calls,
@@ -108,6 +110,27 @@ describe('GuestDraftClaimService (RIN-1447)', () => {
       locale: 'vi',
       entry: 'landing',
       source: 'text',
+      pageCount: null,
+    });
+  });
+
+  it('claims a photo draft like a PDF one and sends its source and page count (RIN-1792)', async () => {
+    const imageDraft: ClaimableGuestDraft = { ...draft, source: 'image', pageCount: 3 };
+    const { service, quizzes, events } = setup([imageDraft]);
+
+    await expect(service.claim('user-1', [TOKEN])).resolves.toEqual(['fake-biology-quiz']);
+
+    expect(quizzes.createQuizFromDraft).toHaveBeenCalledWith('user-1', 'api-draft-1', {
+      title: 'Fake biology quiz',
+      questions: imageDraft.questions,
+      submitToPremium: false,
+    });
+    expect(events.claimed).toHaveBeenCalledWith({
+      draftId: imageDraft.id,
+      locale: 'vi',
+      entry: 'landing',
+      source: 'image',
+      pageCount: 3,
     });
   });
 

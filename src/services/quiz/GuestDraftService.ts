@@ -14,6 +14,7 @@ import type {
   GuestDraftView,
   IGuestDraftService,
   GuestDraftEventContext,
+  GuestImageDraftCreateInput,
   GuestTextDraftCreateInput,
   UpstreamGuestDraft,
   UpstreamGuestDraftResult,
@@ -29,6 +30,7 @@ import {
 type Clock = () => Date;
 type UpstreamQuestion = NonNullable<UpstreamGuestDraft['questions']>[number];
 type UpstreamFailure = Extract<UpstreamGuestDraftResult, { ok: false }>;
+type StartExtras = { pageCount?: number };
 type StartInput = Omit<GuestDraftCreateInput, 'pdf'> & {
   sourceFileType?: GuestDraftFileType | undefined;
 };
@@ -92,6 +94,16 @@ function apiRefused(status: number): boolean {
   return status >= 400 && status < 500;
 }
 
+/**
+ * Photos are read before any draft exists, so any error the API actually answered (a 503 from
+ * the kill switch or a down OCR pool included) means no paid draft work: the shared daily slot
+ * comes back. Only our own timeout or a network error (`unreachable`) keeps it.
+ */
+function refundsDaily(source: GuestDraftSource, failure: UpstreamFailure): boolean {
+  if (source === 'image') return failure.unreachable !== true;
+  return apiRefused(failure.status);
+}
+
 function isIndex(value: unknown, options: readonly string[]): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < options.length;
 }
@@ -148,10 +160,18 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
     );
   }
 
+  /** Photos (RIN-1792): OCR runs in the API first, so a refusal costs the visitor no cap. */
+  createFromImages(input: GuestImageDraftCreateInput): Promise<GuestDraftResult> {
+    return this.start(input, 'image', () => this.upstream.createFromImages(input.images), {
+      pageCount: input.images.length,
+    });
+  }
+
   private async start(
     input: StartInput,
     source: GuestDraftSource,
     createUpstream: UpstreamStart,
+    extras: StartExtras = {},
   ): Promise<GuestDraftResult> {
     const tokenHash = hashGuestClaimToken(input.token);
     if (await this.repository.findByTokenHash(tokenHash)) {
@@ -168,7 +188,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       // the API refused outright; after a timeout or 5xx extraction may already be running.
       await Promise.all([
         this.limiter.refundIp(input.ip),
-        apiRefused(created.status) ? this.limiter.refundDaily() : undefined,
+        refundsDaily(source, created) ? this.limiter.refundDaily() : undefined,
       ]);
       return upstreamError(created);
     }
@@ -178,6 +198,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       locale: input.locale,
       entry: input.entry,
       source,
+      ...extras,
       ...(input.sourceFileType ? { sourceFileType: input.sourceFileType } : {}),
       expiresAt: new Date(this.now().getTime() + GUEST_DRAFT_TTL_MS),
     });
@@ -361,6 +382,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       locale: record.locale,
       entry: record.entry,
       source: record.source,
+      ...(record.pageCount ? { pageCount: record.pageCount } : {}),
       fileType: record.sourceFileType,
     };
   }

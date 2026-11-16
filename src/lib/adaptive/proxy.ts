@@ -35,6 +35,9 @@ type ProxyOptions = {
   // Async LLM routes: read the accepted job from the success envelope so the
   // committed unit can be refunded if that job later fails.
   llmJobLink?: (payload: unknown) => LlmUsageJobLink | null;
+  // The API refuses before it does paid work (e.g. 422 too_little_text on a photo draft),
+  // so any non-2xx gives the reserved unit back instead of only 5xx and 429.
+  refundOnClientError?: boolean;
   cache?: {
     revalidateSeconds: number;
     tags: string[];
@@ -319,7 +322,7 @@ export async function proxyAdaptiveRequest(
       }
 
       if (llmReservation) {
-        if (response.status >= 500 || response.status === 429) {
+        if (response.status >= 500 || response.status === 429 || options?.refundOnClientError) {
           await refundLlmUsage(llmReservation);
         } else {
           await commitLlmUsage(llmReservation);

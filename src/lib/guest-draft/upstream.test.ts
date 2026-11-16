@@ -111,6 +111,43 @@ describe('createGuestDraftUpstream', () => {
     expect(init?.headers).not.toHaveProperty('x-user-id');
   });
 
+  it('forwards photos as multipart to the image route with a 50 s timeout (RIN-1792)', async () => {
+    fetchMock.mockResolvedValue(respond(201, { success: true, data: { draft } }));
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    const photos = [
+      new Blob(['a'], { type: 'image/jpeg' }),
+      new Blob(['b'], { type: 'image/jpeg' }),
+    ];
+
+    const result = await createGuestDraftUpstream().createFromImages(photos);
+
+    expect(result).toEqual({ ok: true, draft });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe('http://api.test/api/quiz/guest-drafts/image');
+    expect(init?.body).toBeInstanceOf(FormData);
+    expect((init?.body as FormData).getAll('images')).toHaveLength(2);
+    expect(init?.headers).toMatchObject({ 'x-service-token': 'fake-service-token' });
+    expect(init?.headers).not.toHaveProperty('content-type');
+    expect(init?.headers).not.toHaveProperty('x-user-id');
+    expect(timeout).toHaveBeenCalledWith(50_000);
+  });
+
+  it('passes through too_little_text and returns 503 on a network error for photos', async () => {
+    fetchMock.mockResolvedValueOnce(
+      respond(422, { error: { code: 'too_little_text', meta: { reason: 'too_little_text' } } }),
+    );
+    expect(await createGuestDraftUpstream().createFromImages([new Blob(['a'])])).toEqual({
+      ok: false,
+      status: 422,
+      code: 'too_little_text',
+      meta: { reason: 'too_little_text' },
+    });
+    fetchMock.mockRejectedValueOnce(new TypeError('network'));
+    expect(await createGuestDraftUpstream().createFromImages([new Blob(['a'])])).toMatchObject({
+      status: 503,
+    });
+  });
+
   it('adds source_file_type to the text body when the browser read an office file (RIN-1786)', async () => {
     fetchMock.mockResolvedValue(respond(201, { success: true, data: { draft } }));
 

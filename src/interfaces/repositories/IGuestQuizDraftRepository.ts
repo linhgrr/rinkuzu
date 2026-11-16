@@ -40,6 +40,8 @@ export interface GuestDraftRecord {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** Photo drafts only (RIN-1792). */
+  pageCount: number | null;
   /** Set on a text draft made from a Word or PowerPoint file (RIN-1786). */
   sourceFileType?: GuestDraftFileType | undefined;
   failureReason: string | null;
@@ -52,6 +54,8 @@ export interface NewGuestDraft {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** Photo drafts only (RIN-1792); the count, never the photos. */
+  pageCount?: number;
   /** Set on a text draft made from a Word or PowerPoint file (RIN-1786). */
   sourceFileType?: GuestDraftFileType | undefined;
   expiresAt: Date;
@@ -105,6 +109,7 @@ export interface ClaimableGuestDraft {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  pageCount: number | null;
   /** Set on a text draft made from a Word or PowerPoint file (RIN-1786). */
   sourceFileType?: GuestDraftFileType | undefined;
   /** False while the API still extracts the rest (RIN-1619). */

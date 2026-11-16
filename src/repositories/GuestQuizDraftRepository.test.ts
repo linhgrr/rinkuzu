@@ -44,6 +44,7 @@ describe('GuestQuizDraftRepository', () => {
       status: 'processing',
       title: null,
       questionCount: 0,
+      pageCount: null,
       complete: false,
       completion: null,
       locale: 'en',

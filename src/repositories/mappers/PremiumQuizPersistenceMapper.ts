@@ -100,10 +100,10 @@ export class PremiumQuizPersistenceMapper {
   static toSession(record: PremiumPlaySessionPersistenceRecord): PremiumPlaySession {
     const answers: PremiumAnswer[] = [];
     for (const stored of record.answers) {
-      answers[stored.questionIndex] =
-        stored.selectedIndexes !== undefined
-          ? stored.selectedIndexes
-          : (stored.selectedIndex ?? -1);
+      // Mongoose stores `selectedIndexes: []` beside a single answer's `selectedIndex`, so
+      // `selectedIndex` decides first; reading the empty array as a multiple answer made every
+      // single-choice submit fail attempt validation (RIN-1758).
+      answers[stored.questionIndex] = stored.selectedIndex ?? stored.selectedIndexes ?? -1;
     }
     return {
       id: serializeId(record._id, 'premiumSession._id'),

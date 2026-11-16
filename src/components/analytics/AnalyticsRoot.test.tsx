@@ -170,4 +170,13 @@ describe('AnalyticsRoot consent banner', () => {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('stores the first-touch cookie even when consent is denied (RIN-1762)', () => {
+    mocks.setConsent('denied');
+    document.cookie = 'rk_ft=; Max-Age=0; Path=/';
+    render(<AnalyticsRoot />);
+
+    expect(document.cookie).toContain('rk_ft=');
+    document.cookie = 'rk_ft=; Max-Age=0; Path=/';
+  });
 });

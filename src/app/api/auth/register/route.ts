@@ -6,6 +6,7 @@ import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
 import { getAuthAccountService } from '@/lib/auth-account-factory';
 import { parseJsonBody } from '@/lib/api/validated';
 import { resolveAccountLocale } from '@/lib/auth/account-locale';
+import { FIRST_TOUCH_COOKIE, parseFirstTouch } from '@/lib/attribution/first-touch';
 import { ipBucketKey, resolveClientCountry } from '@/lib/client-ip';
 
 const authAccountService = getAuthAccountService();
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
     cookies: request.cookies,
   });
   const signupCountry = resolveClientCountry(request.headers);
+  const signupSource = parseFirstTouch(request.cookies.get(FIRST_TOUCH_COOKIE)?.value, new Date());
   const result = await authAccountService.register(
     {
       email: input.data.email,
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
         : {}),
       ...(locale ? { locale } : {}),
       ...(signupCountry ? { signupCountry } : {}),
+      ...(signupSource ? { signupSource } : {}),
     },
     context,
   );

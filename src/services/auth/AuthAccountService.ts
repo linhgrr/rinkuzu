@@ -80,6 +80,7 @@ export class AuthAccountService implements IAuthAccountService {
           signupLocale: input.locale ?? defaultLocale,
           signupCountry: input.signupCountry ?? null,
         },
+        ...(input.signupSource ? { signupSource: input.signupSource } : {}),
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
         ...(guestClaimHashes.length > 0 ? { guestClaimHashes } : {}),

@@ -2,11 +2,18 @@
 
 import type { AnalyticsEventName } from './events';
 import { readQuizFirstTouch } from './quiz-first-touch';
+import {
+  CAMPAIGN_VALUE_PATTERN,
+  campaignValue,
+  classifyReferrer,
+  isReferrerClass,
+  normalizeLandingPath,
+  type ReferrerClass,
+} from '@/lib/attribution/first-touch';
 import { resolveQuizEntryAttribution } from '@/shared/constants/starter-quiz';
 const ANALYTICS_CONSENT_STORAGE_KEY = 'rinkuzu_analytics_consent_v1';
 const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
 const LANDING_ATTRIBUTION_STORAGE_KEY = 'rinkuzu_landing_attribution_v1';
-const CAMPAIGN_VALUE_PATTERN = /^[a-zA-Z0-9._~-]{1,100}$/;
 const PENDING_LOGIN_STORAGE_KEY = 'rinkuzu_analytics_pending_login_v1';
 const PENDING_SIGNUP_STORAGE_KEY = 'rinkuzu_analytics_pending_signup_v1';
 const PIPELINE_TERMINAL_STORAGE_KEY = 'rinkuzu_analytics_pipeline_terminal_v1';
@@ -48,7 +55,7 @@ type PostHogClient = typeof import('posthog-js').default;
 type LandingAttribution = {
   landing_id: string;
   landing_path: string;
-  landing_referrer_class: 'direct' | 'internal' | 'search' | 'social' | 'referral';
+  landing_referrer_class: ReferrerClass;
   landing_at: string;
   utm_source?: string;
   utm_medium?: string;
@@ -75,48 +82,6 @@ function sanitizeProperties(
   );
 }
 
-function normalizeLandingPath(pathname: string): string {
-  const normalized = pathname.replace(/\/{2,}/g, '/').replace(/\/$/, '');
-  return normalized || '/';
-}
-
-function campaignValue(searchParams: URLSearchParams, key: string): string | undefined {
-  const value = searchParams.get(key)?.trim();
-  return value && CAMPAIGN_VALUE_PATTERN.test(value) ? value : undefined;
-}
-
-function classifyReferrer(
-  referrer: string,
-  currentHost: string,
-): LandingAttribution['landing_referrer_class'] {
-  if (!referrer) return 'direct';
-
-  try {
-    const host = new URL(referrer).hostname.toLowerCase();
-    if (host === currentHost.toLowerCase()) return 'internal';
-    if (/(^|\.)(google|bing|yahoo|duckduckgo|ecosia)\./.test(host)) return 'search';
-    if (/(^|\.)(facebook|instagram|linkedin|threads|tiktok|twitter|x)\.com$/.test(host)) {
-      return 'social';
-    }
-  } catch {
-    return 'direct';
-  }
-
-  return 'referral';
-}
-
-function isLandingReferrerClass(
-  value: unknown,
-): value is LandingAttribution['landing_referrer_class'] {
-  return (
-    value === 'direct' ||
-    value === 'internal' ||
-    value === 'search' ||
-    value === 'social' ||
-    value === 'referral'
-  );
-}
-
 function readLandingAttribution(): LandingAttribution | null {
   if (!isBrowser() || getAnalyticsConsent() !== 'granted') return null;
   const stored = window.localStorage.getItem(LANDING_ATTRIBUTION_STORAGE_KEY);
@@ -127,7 +92,7 @@ function readLandingAttribution(): LandingAttribution | null {
     if (
       typeof value.landing_id !== 'string' ||
       typeof value.landing_path !== 'string' ||
-      !isLandingReferrerClass(value.landing_referrer_class) ||
+      !isReferrerClass(value.landing_referrer_class) ||
       typeof value.landing_at !== 'string' ||
       !Object.values({
         utm_source: value.utm_source,

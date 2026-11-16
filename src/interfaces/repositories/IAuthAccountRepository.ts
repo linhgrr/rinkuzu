@@ -6,6 +6,7 @@ import type {
   FailedLoginAttemptState,
 } from '@/entities/AuthAccount';
 import type { Locale } from '@/i18n/config';
+import type { FirstTouch } from '@/lib/attribution/first-touch';
 
 /** Analytics-only origin of a new account (RIN-1268); set once, at creation. */
 export interface SignupOrigin {
@@ -14,6 +15,9 @@ export interface SignupOrigin {
   signupCountry: string | null;
 }
 
+/** First touch of a new account (RIN-1762), already validated by `parseFirstTouch`. */
+export type SignupSource = FirstTouch;
+
 export interface CreatePendingAccountData {
   email: string;
   passwordHash: string;
@@ -21,6 +25,7 @@ export interface CreatePendingAccountData {
   /** UI locale the signup came from; omitted when the request did not say. */
   locale?: Locale;
   signupOrigin: SignupOrigin;
+  signupSource?: SignupSource;
   verificationTokenHash: string;
   verificationExpires: Date;
   /** SHA-256 hashes of the guest claim tokens the browser held at sign-up (RIN-1310). */
@@ -120,4 +125,9 @@ export interface IAccountLocaleRepository {
 /** Records a new account's signup origin once; never overwrites one (RIN-1268). */
 export interface ISignupOriginRepository {
   recordSignupOriginIfMissing(accountId: string, origin: SignupOrigin): Promise<void>;
+}
+
+/** Records a new account's signup source once; never overwrites one (RIN-1762). */
+export interface ISignupSourceRepository {
+  recordSignupSourceIfMissing(accountId: string, source: SignupSource): Promise<void>;
 }

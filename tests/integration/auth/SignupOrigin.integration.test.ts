@@ -10,7 +10,9 @@ describe('AuthAccountRepository signup origin integration', () => {
   const stamp = Date.now();
   const credentialsEmail = `origin-a-${stamp}@example.test`;
   const googleEmail = `origin-b-${stamp}@example.test`;
-  const emails = [credentialsEmail, googleEmail];
+  const sourceEmail = `origin-c-${stamp}@example.test`;
+  const googleSourceEmail = `origin-d-${stamp}@example.test`;
+  const emails = [credentialsEmail, googleEmail, sourceEmail, googleSourceEmail];
   const users = () => mongoose.connection.collection('users');
 
   beforeAll(async () => {
@@ -52,5 +54,45 @@ describe('AuthAccountRepository signup origin integration', () => {
 
     const doc = await users().findOne({ email: googleEmail });
     expect(doc).toMatchObject({ signupLocale: 'vi', signupCountry: 'VN' });
+  });
+
+  it('stores a first-touch source at creation and records a Google one once (RIN-1762)', async () => {
+    const source = {
+      utm_source: 'threads',
+      referrer_class: 'social' as const,
+      entry_path: '/vi',
+      first_seen_at: '2026-11-16T10:00:00.000Z',
+    };
+    const created = await repo.createPending({
+      email: sourceEmail,
+      passwordHash: 'fake-hash',
+      verificationTokenHash: 'fake-verify-hash-2',
+      verificationExpires: new Date(Date.now() + 86_400_000),
+      signupOrigin: { signupLocale: 'vi', signupCountry: null },
+      signupSource: source,
+    });
+    expect(created).not.toBeNull();
+    expect(await users().findOne({ email: sourceEmail })).toMatchObject({
+      signupSource: { ...source, first_seen_at: new Date(source.first_seen_at) },
+    });
+
+    const google = await repo.resolveVerifiedGoogleAccount({
+      subject: `fake-google-src-${stamp}`,
+      email: googleSourceEmail,
+      now: new Date(),
+      ip: null,
+    });
+    if (!google) throw new Error('Google account was not created');
+    await repo.recordSignupSourceIfMissing(google.id, source);
+    await repo.recordSignupSourceIfMissing(google.id, {
+      ...source,
+      utm_source: 'other',
+      referrer_class: 'direct',
+    });
+    const doc = await users().findOne({ email: googleSourceEmail });
+    expect(doc?.['signupSource']).toMatchObject({
+      utm_source: 'threads',
+      referrer_class: 'social',
+    });
   });
 });

@@ -173,6 +173,20 @@ describe('POST /api/auth/register', () => {
     expect(registerMock.mock.calls[0]?.[0]).toMatchObject({ signupCountry: 'JP' });
   });
 
+  it('passes the validated first-touch cookie and ignores a tampered one (RIN-1762)', async () => {
+    const touch = {
+      referrer_class: 'search',
+      entry_path: '/en',
+      first_seen_at: new Date().toISOString(),
+    };
+    const good = Buffer.from(JSON.stringify(touch)).toString('base64url');
+    await POST(request(validBody, { cookie: `rk_ft=${good}` }));
+    await POST(request(validBody, { cookie: 'rk_ft=%%%tampered' }));
+    expect(registerMock.mock.calls[0]?.[0]).toMatchObject({ signupSource: touch });
+    expect(registerMock.mock.calls[1]?.[0]).not.toHaveProperty('signupSource');
+    expect(registerMock).toHaveBeenCalledTimes(2);
+  });
+
   it('passes no country when the header is missing, unknown or malformed', async () => {
     await POST(request(validBody));
     await POST(request(validBody, { 'x-vercel-ip-country': 'XX' }));

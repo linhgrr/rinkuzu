@@ -13,6 +13,12 @@ interface KeyedText {
   key: string;
 }
 
+interface CrossLink {
+  lead: string;
+  label: string;
+  href: string;
+}
+
 interface GuestToolSeoCopy {
   howTitle: string;
   steps: readonly (KeyedText & { title: string; body: string })[];
@@ -21,17 +27,31 @@ interface GuestToolSeoCopy {
   faqTitle: string;
   faqs: readonly (KeyedText & { q: string; a: string })[];
   /** The sibling guest tool (RIN-1540): `/try/pdf` and `/try/text` link to each other. */
-  crossLink: { lead: string; label: string; href: string };
+  crossLink: CrossLink;
+  /** Another sibling, as its own sentence: every tool links to `/try/slides` (RIN-1788). */
+  moreLink?: CrossLink;
 }
 
 interface GuestToolSeoContentProps {
-  /** `pdf` or `text`: prefixes the section ids, test ids and the JSON-LD id. */
+  /** `pdf`, `text` or `slides`: prefixes the section ids, test ids and the JSON-LD id. */
   tool: string;
   copy: GuestToolSeoCopy;
 }
 
+function CrossLinkLine({ testId, link }: { testId: string; link: CrossLink }) {
+  return (
+    <p data-testid={testId} className={BODY}>
+      {link.lead}{' '}
+      <Link href={link.href} className={CROSS_LINK}>
+        {link.label}
+      </Link>
+    </p>
+  );
+}
+
 /**
- * Crawlable copy under a guest tool widget (`/try/pdf` RIN-1498, `/try/text` RIN-1540):
+ * Crawlable copy under a guest tool widget (`/try/pdf` RIN-1498, `/try/text` RIN-1540,
+ * `/try/slides` RIN-1788):
  * how it works, the trial limits, a link to the other tool and an FAQ. Rendered on the
  * server, so it is in the initial HTML; the `FAQPage` JSON-LD is built from the same
  * strings as the visible answers.
@@ -64,12 +84,10 @@ export function GuestToolSeoContent({ tool, copy }: GuestToolSeoContentProps) {
             </li>
           ))}
         </ol>
-        <p data-testid={id('cross-link')} className={BODY}>
-          {copy.crossLink.lead}{' '}
-          <Link href={copy.crossLink.href} className={CROSS_LINK}>
-            {copy.crossLink.label}
-          </Link>
-        </p>
+        <CrossLinkLine testId={id('cross-link')} link={copy.crossLink} />
+        {copy.moreLink ? (
+          <CrossLinkLine testId={id('cross-link-more')} link={copy.moreLink} />
+        ) : null}
       </section>
 
       <section aria-labelledby={id('limits')} className="space-y-4">

@@ -3,7 +3,8 @@
 /**
  * Where the guest started; carried on every guest_draft_* event. `seo`: no known `?entry=`
  * and a search engine referrer (RIN-1497). `try_text`: `/try/text` with no known `?entry=`
- * (RIN-1539), its own row in the activation-by-entry table.
+ * (RIN-1539), its own row in the activation-by-entry table. `try_slides`: the same for
+ * `/try/slides` (RIN-1788), which ignores the referrer.
  */
 export const GUEST_DRAFT_ENTRIES = [
   'landing',
@@ -13,6 +14,7 @@ export const GUEST_DRAFT_ENTRIES = [
   'seo',
   'try_text',
   'try_photo',
+  'try_slides',
 ] as const;
 export type GuestDraftEntry = (typeof GUEST_DRAFT_ENTRIES)[number];
 

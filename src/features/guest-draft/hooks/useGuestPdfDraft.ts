@@ -62,7 +62,11 @@ export function useGuestPdfDraft(surface: GuestDraftOfficeSurface = 'try_pdf') {
   };
 
   const entry = () =>
-    resolveGuestDraftEntry(guestDraftEntryFromSearch(window.location.search), document.referrer);
+    resolveGuestDraftEntry(
+      guestDraftEntryFromSearch(window.location.search),
+      document.referrer,
+      surface === 'try_slides' ? 'try_slides' : undefined,
+    );
 
   const submitOffice = (source: NonNullable<ReturnType<typeof guestOfficeFile>>, file: File) =>
     start(async (token, locale) => {

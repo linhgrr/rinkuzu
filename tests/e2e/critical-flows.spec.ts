@@ -2085,6 +2085,69 @@ test.describe('production critical paths', () => {
     });
   });
 
+  test('makes a quiz from slides on the indexable /try/slides page, entry try_slides (en) @critical-quiz-guest-draft-upload', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1788: the slides page leads with PowerPoint, carries its FAQ JSON-LD, and a draft made
+    // there says `try_slides` for both the surface and the entry.
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const copy = GUEST_UPLOAD_COPY.en;
+      const seeded: { draft?: SeededGuestDraft; body?: string } = {};
+      await page.addInitScript(() => {
+        window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+      });
+      await page.route('**/api/guest-drafts/text', async (route) => {
+        const token = route.request().headers()['x-guest-draft-token'] ?? '';
+        seeded.body = route.request().postData() ?? '';
+        seeded.draft = await seedReadyGuestDraft(fixture.db, token);
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: READY_GUEST_DRAFT_BODY,
+        });
+      });
+      try {
+        await page.goto('/en/try/slides');
+        await expect(
+          page.getByRole('heading', {
+            level: 1,
+            name: 'Make a multiple-choice quiz from PowerPoint slides',
+          }),
+        ).toBeVisible();
+        await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+          'href',
+          /\/en\/try\/slides$/,
+        );
+        await expect(page.locator('script#try-slides-faq-schema')).toHaveCount(1);
+        const fileInput = page.locator('input[type="file"]');
+        await expect
+          .poll(() =>
+            fileInput.evaluate((node) =>
+              Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+            ),
+          )
+          .toBe(true);
+        await fileInput.setInputFiles({
+          name: 'fake-lecture.pptx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          buffer: fakeSlideDeck(),
+        });
+        await page.getByRole('button', { name: copy.create, exact: true }).click();
+
+        await page.waitForURL(/\/en\/try\/text\/play$/);
+        expect(JSON.parse(seeded.body ?? '{}')).toMatchObject({
+          source_file_type: 'pptx',
+          upload_surface: 'try_slides',
+          entry: 'try_slides',
+          locale: 'en',
+        });
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+      } finally {
+        if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
+      }
+    });
+  });
+
   test('refuses a legacy .ppt signed out with its own message and no request @critical-quiz-guest-draft-upload', async ({
     page,
   }) => {

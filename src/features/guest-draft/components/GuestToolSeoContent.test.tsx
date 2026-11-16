@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import enGuest from '../../../../messages/en/guestDraft.json';
 import viGuest from '../../../../messages/vi/guestDraft.json';
+import { OFFICE_MAX_FILE_BYTES } from '@/lib/office-text/types';
 import {
   GUEST_DRAFT_MAX_PAGES,
   GUEST_DRAFT_MAX_PDF_BYTES,
@@ -28,6 +29,7 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 import { GuestPdfSeoContent } from './GuestPdfSeoContent';
+import { GuestSlidesSeoContent } from './GuestSlidesSeoContent';
 import { GuestTextSeoContent } from './GuestTextSeoContent';
 
 const LOCALES = ['vi', 'en'] as const;
@@ -46,6 +48,8 @@ const TOOLS = [
       String(GUEST_DRAFT_TTL_MS / 3_600_000),
     ],
     otherTool: '/try/text',
+    moreTool: '/try/slides',
+    moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).seo.slidesLink.label,
   },
   {
     tool: 'text',
@@ -60,6 +64,24 @@ const TOOLS = [
       String(GUEST_DRAFT_TTL_MS / 3_600_000),
     ],
     otherTool: '/try/pdf',
+    moreTool: '/try/slides',
+    moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).textSeo.slidesLink.label,
+  },
+  {
+    tool: 'slides',
+    issue: 'RIN-1788',
+    Component: GuestSlidesSeoContent,
+    seo: (l: Locale) => (l === 'vi' ? viGuest : enGuest).slidesSeo,
+    // 20 MB per file and the first 20,000 characters, as each locale formats the number.
+    limits: (l: Locale) => [
+      String(OFFICE_MAX_FILE_BYTES / (1024 * 1024)),
+      l === 'vi' ? '20.000' : '20,000',
+      String(GUEST_DRAFT_MAX_QUESTIONS),
+      String(GUEST_DRAFT_TTL_MS / 3_600_000),
+    ],
+    otherTool: '/try/pdf',
+    moreTool: '/try/text',
+    moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).slidesSeo.textLink.label,
   },
 ] as const;
 
@@ -110,6 +132,13 @@ describe.each(CASES)('$tool SEO content in $locale ($issue)', (c) => {
     expect(link?.textContent).toBe(c.seo(c.locale).crossLink.label);
   });
 
+  it('links to the remaining guest tool in its own sentence (RIN-1788)', async () => {
+    const doc = await serverHtml();
+    const link = doc.querySelector(`[data-testid="${id('cross-link-more')}"] a`);
+    expect(link?.getAttribute('href')).toBe(c.moreTool);
+    expect(link?.textContent).toBe(c.moreLabel(c.locale));
+  });
+
   it('emits FAQPage JSON-LD equal to the visible Q&A', async () => {
     const doc = await serverHtml();
     const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
@@ -137,6 +166,7 @@ describe.each(CASES)('$tool SEO content in $locale ($issue)', (c) => {
       ...Array.from(doc.querySelectorAll(`${faqSelector} p`)),
       doc.querySelector(`[data-testid="${id('limits')}"]`),
       doc.querySelector(`[data-testid="${id('cross-link')}"]`),
+      doc.querySelector(`[data-testid="${id('cross-link-more')}"]`),
     ];
     for (const body of bodies) expect(body?.className).toMatch(/\btext-base\b/);
   });

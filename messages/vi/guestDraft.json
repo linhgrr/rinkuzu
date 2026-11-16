@@ -18,7 +18,10 @@
     "tryAgain": "Thử lại",
     "privacy": "Tệp của bạn chỉ được giữ 24 giờ rồi bị xóa, và chỉ bạn mở được.",
     "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí",
-    "truncatedNote": "Chúng tôi đã dùng {max, number} ký tự đầu tiên."
+    "truncatedNote": "Chúng tôi đã dùng {max, number} ký tự đầu tiên.",
+    "slidesTitle": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint",
+    "slidesSubtitle": "Tải lên tệp .pptx hoặc Word tối đa {officeMb} MB. Rin đọc nội dung và viết tối đa {questions} câu hỏi, bạn làm ngay. Tệp PDF cũng dùng được.",
+    "slidesLimitHint": "PowerPoint (.pptx) hoặc Word (.docx) tối đa {officeMb} MB. PDF tối đa {pages} trang và {mb} MB"
   },
   "alerts": {
     "tooLarge": "PDF này vượt giới hạn dùng thử: tối đa {pages} trang và {mb} MB. Đăng ký miễn phí để dùng giới hạn đầy đủ.",
@@ -79,6 +82,10 @@
   "textMeta": {
     "title": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí | RinKuzu",
     "description": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí: dán ghi chú hoặc bài đọc, Rin viết tối đa 10 câu hỏi cá nhân hóa và bạn làm ngay. Không cần tài khoản."
+  },
+  "slidesMeta": {
+    "title": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint miễn phí | RinKuzu",
+    "description": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint miễn phí: tải tệp .pptx hoặc Word lên, Rin viết tối đa 10 câu hỏi cá nhân hóa và bạn làm ngay. Không cần tài khoản."
   },
   "text": {
     "badge": "Không cần tài khoản",
@@ -159,6 +166,10 @@
     "crossLink": {
       "lead": "Chỉ có ghi chú dạng chữ, không có PDF?",
       "label": "Dán văn bản để tạo câu hỏi trắc nghiệm"
+    },
+    "slidesLink": {
+      "lead": "Bạn học từ slide PowerPoint?",
+      "label": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint"
     }
   },
   "textSeo": {
@@ -204,6 +215,65 @@
       "expiry": {
         "q": "Quiz của tôi sẽ ra sao sau {hours} giờ?",
         "a": "Nếu bạn chưa đăng ký, quiz và văn bản của bạn sẽ bị xóa {hours} giờ sau khi tạo. Trước đó chỉ bạn mở được chúng."
+      },
+      "keep": {
+        "q": "Làm sao để giữ quiz của tôi?",
+        "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
+      }
+    },
+    "slidesLink": {
+      "lead": "Bạn học từ slide PowerPoint?",
+      "label": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint"
+    }
+  },
+  "slidesSeo": {
+    "howTitle": "Cách hoạt động",
+    "steps": {
+      "upload": {
+        "title": "Tải slide lên",
+        "body": "Chọn tệp PowerPoint (.pptx) hoặc Word (.docx) tối đa {officeMb} MB. Tệp PDF của slide cũng dùng được."
+      },
+      "generate": {
+        "title": "Rinkuzu soạn câu hỏi",
+        "body": "Rin đọc tiêu đề, nội dung, ghi chú của người trình bày và bảng trong slide, rồi viết tối đa {questions} câu hỏi trắc nghiệm cá nhân hóa, thường mất khoảng một phút."
+      },
+      "play": {
+        "title": "Làm quiz, đăng ký để lưu lại",
+        "body": "Làm quiz ngay. Đăng ký miễn phí để giữ quiz; nếu không, quiz sẽ bị xóa sau {hours} giờ."
+      }
+    },
+    "crossLink": {
+      "lead": "Tài liệu của bạn là tệp PDF?",
+      "label": "Tạo quiz từ PDF"
+    },
+    "textLink": {
+      "lead": "Chỉ có ghi chú dạng chữ?",
+      "label": "Dán văn bản để tạo câu hỏi trắc nghiệm"
+    },
+    "limitsTitle": "Giới hạn khi dùng thử miễn phí",
+    "limits": {
+      "size": "Tối đa {officeMb} MB mỗi tệp PowerPoint hoặc Word",
+      "chars": "Dùng {max, number} ký tự văn bản đầu tiên",
+      "questions": "Tối đa {questions} câu hỏi mỗi quiz",
+      "kept": "Lưu {hours} giờ nếu bạn chưa đăng ký"
+    },
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": {
+      "free": {
+        "q": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint có miễn phí không?",
+        "a": "Có. Tạo và làm quiz từ slide của bạn hoàn toàn miễn phí. Số lượt dùng không cần tài khoản mỗi ngày có giới hạn, và đăng ký cũng miễn phí."
+      },
+      "account": {
+        "q": "Tôi có cần tài khoản không?",
+        "a": "Không. Bạn tải tệp lên và làm quiz mà không cần đăng ký hay nhập email."
+      },
+      "read": {
+        "q": "Rin đọc những gì trong slide của tôi?",
+        "a": "Rin đọc tiêu đề, nội dung, ghi chú và bảng. Hình ảnh không được đọc, nên slide chỉ toàn ảnh sẽ cho ít câu hỏi hơn. Trình duyệt của bạn đọc chữ trong tệp và chỉ gửi phần chữ đó, không tải tệp lên. Tệp .ppt cũ chưa được hỗ trợ: hãy lưu lại thành .pptx trước."
+      },
+      "expiry": {
+        "q": "Quiz của tôi sẽ ra sao sau {hours} giờ?",
+        "a": "Nếu bạn chưa đăng ký, quiz và văn bản lấy từ slide của bạn sẽ bị xóa {hours} giờ sau khi tạo. Trước đó chỉ bạn mở được chúng."
       },
       "keep": {
         "q": "Làm sao để giữ quiz của tôi?",

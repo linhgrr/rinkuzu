@@ -77,7 +77,7 @@ function UploadAlert({ alert }: { alert: GuestUploadState['alert'] }) {
 
 type Flow = ReturnType<typeof useGuestPdfDraft>;
 
-function UploadForm({ flow }: { flow: Flow }) {
+function UploadForm({ flow, slides }: { flow: Flow; slides: boolean }) {
   const t = useTranslations('guestDraft.upload');
   const { state } = flow;
   const checking = state.phase === 'checking';
@@ -88,6 +88,7 @@ function UploadForm({ flow }: { flow: Flow }) {
         file={state.file}
         checking={checking}
         disabled={false}
+        slides={slides}
         onChoose={(file) => void flow.choose(file)}
         onRemove={flow.remove}
       />
@@ -105,7 +106,7 @@ function UploadForm({ flow }: { flow: Flow }) {
   );
 }
 
-function FlowBody({ flow }: { flow: Flow }) {
+function FlowBody({ flow, slides }: { flow: Flow; slides: boolean }) {
   const t = useTranslations('guestDraft.upload');
   const { state, office } = flow;
   const { phase, file } = state;
@@ -141,13 +142,16 @@ function FlowBody({ flow }: { flow: Flow }) {
       </div>
     );
   }
-  return <UploadForm flow={flow} />;
+  return <UploadForm flow={flow} slides={slides} />;
 }
 
 interface GuestPdfUploadPageProps {
   /** Server-rendered copy under the widget (RIN-1498); the widget stays first on screen. */
   children?: ReactNode;
-  /** The page this is mounted on, for the upload counters; `/try/slides` passes `try_slides`. */
+  /**
+   * The page this is mounted on, for the upload counters; `/try/slides` (RIN-1788) passes
+   * `try_slides`, which also leads the copy with PowerPoint and Word.
+   */
   surface?: GuestDraftOfficeSurface;
 }
 
@@ -158,6 +162,7 @@ interface GuestPdfUploadPageProps {
 export function GuestPdfUploadPage({ children, surface = 'try_pdf' }: GuestPdfUploadPageProps) {
   const t = useTranslations('guestDraft.upload');
   const flow = useGuestPdfDraft(surface);
+  const slides = surface === 'try_slides';
 
   return (
     <>
@@ -170,10 +175,12 @@ export function GuestPdfUploadPage({ children, surface = 'try_pdf' }: GuestPdfUp
         <div className="mx-auto max-w-xl space-y-6">
           <Pill>{t('badge')}</Pill>
           <h1 className="text-3xl font-bold leading-tight text-neutral-950 lg:text-4xl">
-            {t('title')}
+            {t(slides ? 'slidesTitle' : 'title')}
           </h1>
-          <p className="text-base text-neutral-600">{t('subtitle', GUEST_DRAFT_LIMIT_COPY)}</p>
-          <FlowBody flow={flow} />
+          <p className="text-base text-neutral-600">
+            {t(slides ? 'slidesSubtitle' : 'subtitle', GUEST_DRAFT_LIMIT_COPY)}
+          </p>
+          <FlowBody flow={flow} slides={slides} />
           <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
             {t('higherLimits')}
           </Link>

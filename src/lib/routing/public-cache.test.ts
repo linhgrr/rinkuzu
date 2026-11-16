@@ -188,6 +188,7 @@ describe('cdnCacheControlFor (RIN-1679)', () => {
     '/vi/try',
     '/vi/try/pdf',
     '/vi/try/text',
+    '/vi/try/slides',
     '/vi/explore',
     '/vi/explore/toan-hoc',
     '/vi/explore/',

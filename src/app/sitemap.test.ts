@@ -336,10 +336,14 @@ describe('sitemap', () => {
     });
   });
 
-  // RIN-1497, RIN-1540: the guest tools are indexable with a constant lastmod; their players are not.
-  it.each(['pdf', 'text'])(
+  // RIN-1497, RIN-1540, RIN-1788: the guest tools are indexable with a constant lastmod; their players are not.
+  it.each([
+    ['pdf', '2026-11-11'],
+    ['text', '2026-11-11'],
+    ['slides', '2026-11-17'],
+  ])(
     'lists /try/%s in both locales with a stable lastmod and never its player',
-    async (tool) => {
+    async (tool, lastmod) => {
       serveQuizzes([]);
 
       const entries = await sitemap();
@@ -351,7 +355,7 @@ describe('sitemap', () => {
         `/vi${path}`,
       ]);
       for (const entry of tryEntries) {
-        expect(entry.lastModified).toEqual(new Date('2026-11-11T00:00:00.000Z'));
+        expect(entry.lastModified).toEqual(new Date(`${lastmod}T00:00:00.000Z`));
         expect(entry.alternates?.languages).toMatchObject({
           vi: expect.stringMatching(new RegExp(`/vi${path}$`)),
           en: expect.stringMatching(new RegExp(`/en${path}$`)),

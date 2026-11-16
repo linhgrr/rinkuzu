@@ -1,4 +1,5 @@
 import type {
+  AdminActivationBreakdownDto,
   AdminActivationStatsDto,
   AdminStatsDto,
   AdminActivityStatsListDto,
@@ -13,6 +14,7 @@ import {
 import { toStatsModalResultViewModel } from '@/features/admin/stats/mappers/stats-modal.mapper';
 import type {
   ActivationFunnelViewModel,
+  ActivationSourceRowViewModel,
   AdminGrowthPeriodViewModel,
   AdminGrowthTrendsViewModel,
   AdminStatsViewModel,
@@ -97,4 +99,59 @@ export async function fetchActivationFunnelViewModel(
       }))
       .reverse(),
   };
+}
+
+/** The unknown and other keys are catch-alls: they sort after the named sources of a week. */
+const LAST_SOURCES = ['unknown', 'other'];
+
+function sourceRank(key: string): number {
+  const index = LAST_SOURCES.indexOf(key);
+  return index === -1 ? 0 : index + 1;
+}
+
+/**
+ * The breakdown counts per source. The startedQuiz count rides next to the locale and
+ * country counts on the same response shape (RIN-1763).
+ */
+type BreakdownWeekDto = AdminActivationBreakdownDto['weeks'][number];
+
+interface SourceSegmentCountsDto {
+  signups: number;
+  startedQuiz: number;
+  activated: number;
+}
+
+interface SourceBreakdownWeekDto extends Omit<BreakdownWeekDto, 'segments'> {
+  segments: Record<string, SourceSegmentCountsDto>;
+}
+
+interface SourceBreakdownDto extends Omit<AdminActivationBreakdownDto, 'weeks'> {
+  weeks: SourceBreakdownWeekDto[];
+}
+
+/** Signups by source for the same 8 weeks, newest week first (RIN-1761). */
+export async function fetchActivationSourceRows(
+  signal?: AbortSignal,
+): Promise<ActivationSourceRowViewModel[]> {
+  const dto = await fetchApiData<SourceBreakdownDto>(
+    '/api/admin/stats/activation?weeks=8&by=source',
+    { cache: 'no-store', ...(signal ? { signal } : {}) },
+  );
+  return [...dto.weeks].reverse().flatMap((week) =>
+    Object.entries(week.segments)
+      .filter(([, counts]) => counts.signups > 0)
+      .sort(
+        ([a, x], [b, y]) =>
+          sourceRank(a) - sourceRank(b) || y.signups - x.signups || a.localeCompare(b),
+      )
+      .map(([source, counts]) => ({
+        isoWeek: week.isoWeek,
+        monday: week.start.slice(0, 10),
+        source,
+        signups: counts.signups,
+        startedQuiz: counts.startedQuiz,
+        activated: counts.activated,
+        inProgress: !week.complete,
+      })),
+  );
 }

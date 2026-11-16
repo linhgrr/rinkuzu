@@ -92,7 +92,7 @@ function SourceTable({ rows, t }: { rows: ActivationSourceRowViewModel[]; t: Tra
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-neutral-500">{t('activationSourceCaption')}</p>
+      <p className="mt-2 text-xs leading-5 text-neutral-500">{t('activationSourceCaption')}</p>
     </>
   );
 }

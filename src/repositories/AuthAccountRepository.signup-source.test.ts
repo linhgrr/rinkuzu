@@ -12,6 +12,7 @@ vi.mock('@/models/User', () => ({
 }));
 
 import { AuthAccountRepository } from '@/repositories/AuthAccountRepository';
+import type { CreatePendingAccountData } from '@/interfaces/repositories/IAuthAccountRepository';
 import type { FirstTouch } from '@/lib/attribution/first-touch';
 
 const source: FirstTouch = {
@@ -32,13 +33,14 @@ describe('AuthAccountRepository signup source', () => {
     mocks.updateOne.mockResolvedValue({ modifiedCount: 1 });
     await new AuthAccountRepository().recordSignupSourceIfMissing(accountId, source);
 
-    const [filter, update] = mocks.updateOne.mock.calls[0] as [
-      { signupSource: null },
-      { $set: { signupSource: { first_seen_at: Date; utm_source: string } } },
-    ];
-    expect(filter.signupSource).toBeNull();
-    expect(update.$set.signupSource.utm_source).toBe('threads');
-    expect(update.$set.signupSource.first_seen_at).toEqual(new Date(source.first_seen_at));
+    expect(mocks.updateOne).toHaveBeenCalledWith(expect.objectContaining({ signupSource: null }), {
+      $set: {
+        signupSource: expect.objectContaining({
+          utm_source: 'threads',
+          first_seen_at: new Date(source.first_seen_at),
+        }),
+      },
+    });
   });
 
   it('recordSignupSourceIfMissing ignores an invalid account id without touching the DB', async () => {
@@ -48,23 +50,27 @@ describe('AuthAccountRepository signup source', () => {
 
   it('createPending stores signupSource when given and omits it otherwise', async () => {
     mocks.create.mockResolvedValue({ _id: accountId, email: 'a@example.com', role: 'user' });
-    const base = {
+    const base: CreatePendingAccountData = {
       email: 'a@example.com',
       passwordHash: 'hash',
       signupOrigin: { signupLocale: 'en', signupCountry: 'VN' },
       verificationTokenHash: 'tok',
       verificationExpires: new Date('2026-11-17T00:00:00.000Z'),
-    } as never;
+    };
     const repo = new AuthAccountRepository();
 
-    await repo.createPending({ ...(base as object), signupSource: source } as never);
+    await repo.createPending({ ...base, signupSource: source });
     await repo.createPending(base);
 
-    const withSource = mocks.create.mock.calls[0]?.[0] as {
-      signupSource?: { first_seen_at: Date };
-    };
-    const without = mocks.create.mock.calls[1]?.[0] as Record<string, unknown>;
-    expect(withSource.signupSource?.first_seen_at).toBeInstanceOf(Date);
-    expect('signupSource' in without).toBe(false);
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        signupSource: expect.objectContaining({ first_seen_at: new Date(source.first_seen_at) }),
+      }),
+    );
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      2,
+      expect.not.objectContaining({ signupSource: expect.anything() }),
+    );
   });
 });

@@ -65,11 +65,17 @@ export function isReferrerClass(value: unknown): value is ReferrerClass {
   return REFERRER_CLASSES.includes(value as ReferrerClass);
 }
 
+/** Path the parser accepts: disallowed characters (`+ : @ ,` ...) are dropped, length capped. */
+function safeEntryPath(pathname: string): string {
+  const cleaned = normalizeLandingPath(pathname).replace(/[^A-Za-z0-9._~\-/%]/g, '');
+  return ('/' + cleaned.replace(/^\/+/, '')).slice(0, 200);
+}
+
 /** @public Unit-tested directly. Builds the record for one page load: lowercased, truncated utm values, path without query. */
 export function buildFirstTouch(landingUrl: URL, referrer: string, now: Date): FirstTouch {
   const touch: FirstTouch = {
     referrer_class: classifyReferrer(referrer, landingUrl.hostname),
-    entry_path: normalizeLandingPath(landingUrl.pathname).slice(0, 200),
+    entry_path: safeEntryPath(landingUrl.pathname),
     first_seen_at: now.toISOString(),
   };
   for (const key of UTM_KEYS) {
@@ -88,7 +94,7 @@ export function parseFirstTouch(raw: string | null | undefined, now: Date): Firs
   if (!raw || raw.length > FIRST_TOUCH_MAX_COOKIE_LENGTH) return null;
   let value: unknown;
   try {
-    value = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+    value = JSON.parse(decodeBase64Url(raw));
   } catch {
     return null;
   }
@@ -112,6 +118,12 @@ export function parseFirstTouch(raw: string | null | undefined, now: Date): Firs
     if (typeof item === 'string' && STORED_VALUE_PATTERN.test(item)) touch[key as UtmKey] = item;
   }
   return touch;
+}
+
+/** Browser-safe base64url decode (no Node Buffer: Turbopack does not polyfill it). */
+function decodeBase64Url(raw: string): string {
+  const base64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+  return atob(base64 + '='.repeat((4 - (base64.length % 4)) % 4));
 }
 
 /** @public Unit-tested directly; the browser cookie encoding. */

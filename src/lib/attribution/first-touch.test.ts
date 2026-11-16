@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   buildFirstTouch,
@@ -137,5 +137,36 @@ describe('parseFirstTouch', () => {
       NOW,
     );
     expect(parsed).toEqual(valid);
+  });
+});
+
+describe('first touch without Node Buffer and with odd paths', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('parses the cookie when Buffer is missing (browser bundle)', () => {
+    const touch: FirstTouch = {
+      utm_source: 'threads',
+      referrer_class: 'social',
+      entry_path: '/vi/blog',
+      first_seen_at: NOW.toISOString(),
+    };
+    const raw = encodeFirstTouch(touch);
+    vi.stubGlobal('Buffer', undefined);
+    expect(parseFirstTouch(raw, NOW)).toEqual(touch);
+  });
+
+  it('round-trips a pathname with characters the parser would reject', () => {
+    for (const pathname of [
+      '/a+b',
+      '/x:y@z,w',
+      '/vi/blog/a;b=c',
+      '/%E1%BB%87/ok',
+      '/' + 'a'.repeat(300),
+    ]) {
+      const built = buildFirstTouch(new URL(`https://www.rinkuzu.app${pathname}`), '', NOW);
+      expect(parseFirstTouch(encodeFirstTouch(built), NOW)).toEqual(built);
+    }
   });
 });

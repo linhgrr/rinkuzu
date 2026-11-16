@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "detector": {
     "name": "jscpd",
-    "version": "5.0.12",
+    "version": "5.4.3",
     "mode": "mild",
     "minLines": 5,
     "minTokens": 50,
@@ -27,5 +27,5 @@
     "facedba7b8f892e53f3b151f4a28ee7c6d34195fb4a3302b09d284967b7e67af"
   ],
   "generatedFrom": "working-tree",
-  "configFingerprint": "513a05e33b2c8ec76d56c7eb8ae1d84bb49a39bbbc4f856164e724effa795313"
+  "configFingerprint": "5b3d9d34feaa7a695a75784c8a5dc46b4bb4eec2ab6d381c9cc12bde639bc9ba"
 }

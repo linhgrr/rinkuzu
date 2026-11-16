@@ -38,7 +38,11 @@ async function withPreviewFixture(
   await client.connect();
   const db = client.db(databaseName);
   const pageErrors: string[] = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
+  // The config blocks service workers, so Serwist's window hook reads `registration.waiting` of
+  // nothing. That is the harness, not the page under test.
+  page.on('pageerror', (error) => {
+    if (!/reading 'waiting'/.test(error.message)) pageErrors.push(error.message);
+  });
   const runId = `${testInfo.project.name}-${randomUUID()}`.toLowerCase();
   const slug = `e2e-premium-preview-${runId}`;
   const seed = await seedPremiumSubmission(db, {

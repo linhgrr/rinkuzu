@@ -26,14 +26,35 @@ describe('IndexNow key file', () => {
 
 describe('isIndexNowEnabled', () => {
   it.each([['preview'], ['development'], [undefined], ['staging']])(
-    'is off for VERCEL_ENV=%s',
+    'is off for VERCEL_ENV=%s without the flag',
     (vercelEnv) => {
-      expect(isIndexNowEnabled(vercelEnv)).toBe(false);
+      expect(isIndexNowEnabled({ VERCEL_ENV: vercelEnv })).toBe(false);
+      expect(isIndexNowEnabled({ VERCEL_ENV: vercelEnv, INDEXNOW_ENABLED: 'false' })).toBe(false);
     },
   );
 
+  it('is off when neither variable is set', () => {
+    expect(isIndexNowEnabled({})).toBe(false);
+  });
+
   it('is on for VERCEL_ENV=production', () => {
-    expect(isIndexNowEnabled('production')).toBe(true);
+    expect(isIndexNowEnabled({ VERCEL_ENV: 'production' })).toBe(true);
+  });
+
+  it('is on for INDEXNOW_ENABLED=true without VERCEL_ENV (self-hosted web)', () => {
+    expect(isIndexNowEnabled({ INDEXNOW_ENABLED: 'true' })).toBe(true);
+  });
+
+  it('stays on when both are set', () => {
+    expect(isIndexNowEnabled({ VERCEL_ENV: 'production', INDEXNOW_ENABLED: 'true' })).toBe(true);
+  });
+
+  it('lets the flag turn it on for a preview deployment too', () => {
+    expect(isIndexNowEnabled({ VERCEL_ENV: 'preview', INDEXNOW_ENABLED: 'true' })).toBe(true);
+  });
+
+  it('reads the validated env by default and is off under test', () => {
+    expect(isIndexNowEnabled()).toBe(false);
   });
 });
 

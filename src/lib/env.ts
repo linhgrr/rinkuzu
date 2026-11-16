@@ -88,6 +88,8 @@ const envSchema = z
     // Vercel builds Preview with NODE_ENV=production; VERCEL_ENV carries the real target.
     // Kept a plain string so an unknown value from Vercel never breaks parsing.
     VERCEL_ENV: z.string().optional(),
+    // 'true' turns IndexNow pings on outside Vercel production (the VPS web, RIN-1754). A plain string so a typo never stops boot; anything but 'true' is off.
+    INDEXNOW_ENABLED: z.string().optional(),
     MONGODB_URI: z
       .string()
       .min(1, 'MONGODB_URI is required')

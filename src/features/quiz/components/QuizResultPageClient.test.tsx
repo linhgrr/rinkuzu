@@ -64,6 +64,12 @@ vi.mock('@/features/quiz/api/quiz-result-page-api', () => ({
   fetchQuizResultPageData: (...args: unknown[]) => fetchPageDataMock(...args),
 }));
 
+vi.mock('@/features/quiz/components/PremiumPreviewResultCard', () => ({
+  PremiumPreviewResultCard: (props: { playableCount: number; slug: string }) => (
+    <div data-testid="preview-card">{`${props.slug}:${props.playableCount}`}</div>
+  ),
+}));
+
 vi.mock('@/features/quiz/api/review-reminder-api', () => ({
   fetchReviewReminderStatus: (...args: unknown[]) => reminderStatusMock(...args),
   optInReviewReminder: (...args: unknown[]) => optInMock(...args),
@@ -466,6 +472,49 @@ describe('QuizResultPageClient signed-out result (RIN-912)', () => {
 
     expect(await screen.findByRole('button', { name: 'common.retry' })).toBeInTheDocument();
     expect(screen.queryByText('80%')).not.toBeInTheDocument();
+  });
+});
+
+describe('QuizResultPageClient premium preview (RIN-1725)', () => {
+  const previewResult = {
+    ...guestResult,
+    totalQuestions: 5,
+    missedCount: 0,
+    nextQuiz: { slug: 'starter', title: 'Starter' },
+    quiz: { ...guestResult.quiz, slug: 'premium-bio' },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    session.value = { data: { user: { id: 'u1' } }, status: 'authenticated' };
+    searchParams.value = new URLSearchParams('attemptId=attempt-1');
+  });
+
+  it('shows the preview card and drops the own try-another action', async () => {
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: {
+        ...previewResult,
+        premiumPreview: { fullQuestionCount: 20, quizId: 'quiz-1', freeQuiz: null },
+      },
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    render(<QuizResultPageClient />);
+
+    expect(await screen.findByTestId('preview-card')).toHaveTextContent('premium-bio:5');
+    expect(screen.queryByRole('link', { name: 'tryAnother' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the usual try-another action and no card for a normal attempt', async () => {
+    fetchPageDataMock.mockResolvedValueOnce({
+      result: previewResult,
+      bookmarks: { bookmarkedQuestions: new Set(), bookmarkIdsByQuestion: {} },
+    });
+
+    render(<QuizResultPageClient />);
+
+    expect(await screen.findByRole('link', { name: 'tryAnother' })).toBeInTheDocument();
+    expect(screen.queryByTestId('preview-card')).not.toBeInTheDocument();
   });
 });
 

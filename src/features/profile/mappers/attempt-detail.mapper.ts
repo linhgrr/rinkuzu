@@ -55,6 +55,7 @@ export function toAttemptDetailViewModel(
     },
     missedCount: dto.missedCount,
     nextQuiz: dto.nextQuiz,
+    ...(dto.premiumPreview !== undefined && { premiumPreview: dto.premiumPreview }),
     ...(dto.retryOfAttemptId !== undefined && { retryOfAttemptId: dto.retryOfAttemptId }),
     ...(dto.questionIndices !== undefined && { questionIndices: dto.questionIndices }),
     ...(dto.mode !== undefined && { mode: dto.mode }),

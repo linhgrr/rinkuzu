@@ -24,7 +24,7 @@ import {
   shouldCleanupPendingPdfUpload,
   uploadPdfViaPresignedUrl,
 } from '@/lib/pdf';
-import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { createQuizDraft, createTextQuizDraft } from '@/lib/quiz/draftApi';
 import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
@@ -33,14 +33,23 @@ import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect
 import { ROUTES } from '@/shared/constants/routes';
 import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
 import { PublicQuizNotice } from '@/features/quiz/components/PublicQuizNotice';
+import { getPdfRejectionMessage } from '@/features/quiz/components/create/pdf-file-error';
 import {
-  getPdfRejectionMessage,
-  isPdfFile,
-} from '@/features/quiz/components/create/pdf-file-error';
+  CREATE_FILE_ACCEPT,
+  OFFICE_MAX_FILE_MB,
+  createFileKind,
+  getOfficeRefusalMessage,
+  readOfficeFile,
+  titleFromFileName,
+  type OfficeSource,
+} from '@/features/quiz/components/create/office-source';
+import { QUIZ_TEXT_MAX_CHARS } from '@/shared/constants/quiz-text-source';
 import { reportDropzoneRejection, reportUploadRejection } from '@/lib/upload-rejection-client';
 
 type MobileCreateState = {
   file: File | null;
+  /** The text of a Word or PowerPoint file, read in the browser when it was picked (RIN-1787). */
+  office: OfficeSource | null;
   title: string;
   description: string;
   selectedFolderId: string | null;
@@ -56,10 +65,12 @@ type MobileCreateState = {
 };
 
 type MobileCreateAction =
-  { type: 'patch'; value: Partial<MobileCreateState> } | { type: 'setFile'; value: File | null };
+  | { type: 'patch'; value: Partial<MobileCreateState> }
+  | { type: 'setFile'; value: File | null; office?: OfficeSource };
 
 const initialState: MobileCreateState = {
   file: null,
+  office: null,
   title: '',
   description: '',
   selectedFolderId: null,
@@ -80,9 +91,10 @@ function mobileCreateReducer(
       return {
         ...state,
         file: action.value,
+        office: action.office ?? null,
         fileError: '',
         submitError: '',
-        title: action.value ? action.value.name.replace(/\.pdf$/i, '') : '',
+        title: action.value ? titleFromFileName(action.value.name) : '',
         aiPrompt: action.value ? state.aiPrompt : '',
       };
     default:
@@ -102,9 +114,18 @@ export function MobileCreateQuizPage() {
 
   const selectPdf = useCallback(
     async (file: File) => {
-      if (!isPdfFile(file)) {
-        reportUploadRejection({ file, reason: 'wrong_type', surface: 'create_pdf_mobile' });
-        dispatch({ type: 'patch', value: { fileError: t('pdfWrongType') } });
+      if (createFileKind(file) !== 'pdf') {
+        // Word and PowerPoint are read here, in the browser; anything else is refused.
+        const read = await readOfficeFile(file);
+        if (!read.ok) {
+          reportUploadRejection({ file, reason: read.reason, surface: 'create_pdf_mobile' });
+          dispatch({
+            type: 'patch',
+            value: { fileError: getOfficeRefusalMessage(read.reason, t, OFFICE_MAX_FILE_MB) },
+          });
+          return;
+        }
+        dispatch({ type: 'setFile', value: file, office: read.source });
         return;
       }
       try {
@@ -155,7 +176,7 @@ export function MobileCreateQuizPage() {
         value: { fileError: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB) },
       });
     },
-    accept: { 'application/pdf': ['.pdf'] },
+    accept: CREATE_FILE_ACCEPT,
     maxFiles: 1,
     maxSize: uploadPolicy.maxBytes,
     disabled: state.isUploading || uploadPolicy.isLoading,
@@ -168,19 +189,33 @@ export function MobileCreateQuizPage() {
 
     let pendingS3Key: string | null = null;
     try {
-      const { s3Key } = await uploadPdfViaPresignedUrl(state.file);
-      pendingS3Key = s3Key;
-
-      const draft = await createQuizDraft({
-        title: state.title.trim(),
-        s3Key,
-        fileName: state.file.name,
-        fileSize: state.file.size,
-        folderId: state.selectedFolderId,
-        description: state.description.trim() || undefined,
-        prompt: state.aiPrompt.trim() || undefined,
-      });
-      pendingS3Key = null;
+      const description = state.description.trim();
+      const prompt = state.aiPrompt.trim();
+      let draft;
+      if (state.office) {
+        // A Word or PowerPoint file was read in the browser: only its text is sent, as a text draft.
+        draft = await createTextQuizDraft({
+          title: state.title.trim(),
+          text: state.office.text,
+          folderId: state.selectedFolderId,
+          office: { fileType: state.office.fileType, surface: 'create_pdf_mobile' },
+          ...(description ? { description } : {}),
+          ...(prompt ? { prompt } : {}),
+        });
+      } else {
+        const { s3Key } = await uploadPdfViaPresignedUrl(state.file);
+        pendingS3Key = s3Key;
+        draft = await createQuizDraft({
+          title: state.title.trim(),
+          s3Key,
+          fileName: state.file.name,
+          fileSize: state.file.size,
+          folderId: state.selectedFolderId,
+          description: description || undefined,
+          prompt: prompt || undefined,
+        });
+        pendingS3Key = null;
+      }
 
       addDraft({
         id: draft.id,
@@ -244,6 +279,11 @@ export function MobileCreateQuizPage() {
             <p className="text-sm text-neutral-500">
               {(state.file.size / 1024 / 1024).toFixed(2)} MB
             </p>
+            {state.office?.truncated ? (
+              <p className="mt-1 text-xs text-neutral-600">
+                {t('officeTruncatedNote', { max: QUIZ_TEXT_MAX_CHARS })}
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="ghost"
@@ -254,6 +294,7 @@ export function MobileCreateQuizPage() {
                   type: 'patch',
                   value: {
                     file: null,
+                    office: null,
                     fileError: '',
                     title: '',
                     description: '',
@@ -278,7 +319,7 @@ export function MobileCreateQuizPage() {
               {t('pdfLimitHint', { pages: uploadPolicy.maxPages })}
             </p>
             <p className="mt-1 text-xs text-neutral-400">
-              {t('pdfTechnicalLimit', { size: MAX_QUIZ_PDF_MB })}
+              {t('pdfTechnicalLimit', { size: MAX_QUIZ_PDF_MB, officeSize: OFFICE_MAX_FILE_MB })}
             </p>
           </div>
         )}

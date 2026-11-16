@@ -1,3 +1,6 @@
+import type { CreateTextQuizDraftInputDto, OfficeDraftSurface } from '@/dtos/quiz-draft';
+import type { OfficeSource } from '@/features/quiz/components/create/office-source';
+
 interface CreateQuizDraftFormValues {
   aiPrompt: string;
   description: string;
@@ -32,6 +35,29 @@ export function toCreateQuizDraftInput(
     fileSize: file.size,
     folderId: state.selectedFolderId,
     submitToPremium: state.submitToPremium,
+    ...(description ? { description } : {}),
+    ...(prompt ? { prompt } : {}),
+  };
+}
+
+/**
+ * The text draft for a Word or PowerPoint file read in the browser (RIN-1787): the title
+ * defaults to the file name (already in the form state), the file itself is never uploaded.
+ */
+export function toOfficeTextDraftInput(
+  state: CreateQuizDraftFormValues,
+  source: OfficeSource,
+  surface: OfficeDraftSurface,
+): CreateTextQuizDraftInputDto {
+  const description = state.description.trim();
+  const prompt = state.aiPrompt.trim();
+
+  return {
+    title: state.title.trim(),
+    text: source.text,
+    folderId: state.selectedFolderId,
+    submitToPremium: state.submitToPremium,
+    office: { fileType: source.fileType, surface },
     ...(description ? { description } : {}),
     ...(prompt ? { prompt } : {}),
   };

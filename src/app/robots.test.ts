@@ -25,6 +25,7 @@ const ALLOWED = [
   '/en/blog/play-smarter-study-less',
   '/vi/try/pdf',
   '/en/try/text',
+  '/en/try/slides',
   '/vi/explore',
   '/vi/explore/sinh-hoc',
   '/vi/premium-quizzes',

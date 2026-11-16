@@ -18,6 +18,8 @@ export const ROUTES = {
   TRY_TEXT_PLAY: '/try/text/play',
   /** Play page of a guest quiz from photos (RIN-1792); the upload page comes with RIN-1793. */
   TRY_PHOTO_PLAY: '/try/photo/play',
+  /** Guest quiz from PowerPoint or Word (RIN-1788): the `TRY_PDF` uploader; plays on `TRY_TEXT_PLAY`. */
+  TRY_SLIDES: '/try/slides',
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',

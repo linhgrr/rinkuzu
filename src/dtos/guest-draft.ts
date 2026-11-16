@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { quizProgressAnswerSchema, type PlayableQuizQuestionDto } from '@/dtos/quiz';
 import { quizTextSchema } from '@/dtos/quiz-text-source';
 import { guestClaimTokenSchema } from '@/lib/validation/guest-claim-token';
-import { GUEST_DRAFT_ENTRIES, type GuestDraftCompletion } from '@/shared/constants/guest-draft';
+import {
+  GUEST_DRAFT_ENTRIES,
+  GUEST_DRAFT_FILE_TYPES,
+  GUEST_DRAFT_OFFICE_SURFACES,
+  type GuestDraftCompletion,
+} from '@/shared/constants/guest-draft';
 
 /** Text fields of the multipart `POST /api/guest-drafts`; the token comes in a header. */
 export const createGuestDraftFieldsSchema = z.object({
@@ -15,9 +20,15 @@ export const createGuestDraftFieldsSchema = z.object({
 /**
  * JSON body of `POST /api/guest-drafts/text` (RIN-1538) plus the header token. The text
  * goes to the API and nowhere else: never logged, stored here or sent to analytics.
+ * `source_file_type` is set when the browser extracted the text from a .docx or .pptx
+ * (RIN-1786); `upload_surface` says which page that was, for the daily office counter.
  */
 export const createGuestTextDraftRequestSchema = createGuestDraftFieldsSchema
-  .extend({ text: quizTextSchema })
+  .extend({
+    text: quizTextSchema,
+    source_file_type: z.enum(GUEST_DRAFT_FILE_TYPES).optional(),
+    upload_surface: z.enum(GUEST_DRAFT_OFFICE_SURFACES).optional(),
+  })
   .strict();
 
 /**

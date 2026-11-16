@@ -2,6 +2,7 @@ import type { components } from '@/generated/adaptive-api';
 import type {
   GuestDraftCompletion,
   GuestDraftEntry,
+  GuestDraftFileType,
   GuestDraftSource,
 } from '@/shared/constants/guest-draft';
 
@@ -36,7 +37,10 @@ export type UpstreamGuestDraftResult =
 export interface GuestDraftUpstream {
   create(pdf: Blob): Promise<UpstreamGuestDraftResult>;
   /** Pasted text (RIN-1538): no OCR, same draft shape, caps and TTL as a PDF draft. */
-  createFromText(text: string): Promise<UpstreamGuestDraftResult>;
+  createFromText(
+    text: string,
+    sourceFileType?: GuestDraftFileType,
+  ): Promise<UpstreamGuestDraftResult>;
   get(apiDraftId: string): Promise<UpstreamGuestDraftResult>;
   remove(apiDraftId: string): Promise<void>;
 }
@@ -46,10 +50,12 @@ export interface GuestDraftEventContext {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** Set on a draft made from a Word or PowerPoint file (RIN-1786). */
+  fileType?: GuestDraftFileType | undefined;
 }
 
 /**
- * Server-side guest_draft_* events: locale, entry and source only, never content (file or
+ * Server-side guest_draft_* events: locale, entry, source and file type only, never content (file or
  * pasted text), IP or token.
  */
 export interface GuestDraftEvents {
@@ -78,6 +84,8 @@ export interface GuestDraftCreateInput extends GuestDraftCreateBase {
 /** The text is passed to the API and never stored, logged or sent to analytics here. */
 export interface GuestTextDraftCreateInput extends GuestDraftCreateBase {
   text: string;
+  /** Set when the browser extracted the text from a .docx or .pptx (RIN-1786). */
+  sourceFileType?: GuestDraftFileType | undefined;
 }
 
 export interface GuestDraftView {

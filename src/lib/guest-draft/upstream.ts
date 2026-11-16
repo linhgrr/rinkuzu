@@ -63,6 +63,7 @@ const unavailable: UpstreamGuestDraftResult = {
   status: 503,
   code: 'service_unavailable',
   meta: null,
+  unreachable: true,
 };
 
 /** The API owns a guest draft only while it extracts (RIN-1444); the draft id stays here. */

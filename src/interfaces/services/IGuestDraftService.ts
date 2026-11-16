@@ -21,7 +21,14 @@ export interface GuestDraftLimiter {
 /** Upstream result: the draft, or the API's HTTP status and error code when it refused. */
 export type UpstreamGuestDraftResult =
   | { ok: true; draft: UpstreamGuestDraft }
-  | { ok: false; status: number; code: string | null; meta: Record<string, unknown> | null };
+  | {
+      ok: false;
+      status: number;
+      code: string | null;
+      meta: Record<string, unknown> | null;
+      /** Set when the API never answered (timeout or network error): it may still be working. */
+      unreachable?: true;
+    };
 
 /** The API's guest-draft endpoints, called with the service token and no user. */
 export interface GuestDraftUpstream {

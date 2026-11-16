@@ -141,6 +141,37 @@ describe('GuestDraftService.createFromImages (RIN-1792)', () => {
     );
   });
 
+  it('gives the daily slot back on an API 503 for photos (kill switch or OCR pool down)', async () => {
+    const { service, limiter, upstream } = setup();
+    upstream.createFromImages.mockResolvedValue({
+      ok: false,
+      status: 503,
+      code: 'service_unavailable',
+      meta: null,
+    });
+
+    await service.createFromImages(imageInput);
+
+    expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+    expect(limiter.refundDaily).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the daily slot when the photo call timed out or the network failed', async () => {
+    const { service, limiter, upstream } = setup();
+    upstream.createFromImages.mockResolvedValue({
+      ok: false,
+      status: 503,
+      code: 'service_unavailable',
+      meta: null,
+      unreachable: true,
+    });
+
+    await service.createFromImages(imageInput);
+
+    expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+    expect(limiter.refundDaily).not.toHaveBeenCalled();
+  });
+
   it('gives both caps back on a 422 too_little_text and creates no draft', async () => {
     const { service, repository, limiter, upstream, events } = setup();
     upstream.createFromImages.mockResolvedValue({

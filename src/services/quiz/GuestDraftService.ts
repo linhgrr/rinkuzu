@@ -91,6 +91,16 @@ function apiRefused(status: number): boolean {
   return status >= 400 && status < 500;
 }
 
+/**
+ * Photos are read before any draft exists, so any error the API actually answered (a 503 from
+ * the kill switch or a down OCR pool included) means no paid draft work: the shared daily slot
+ * comes back. Only our own timeout or a network error (`unreachable`) keeps it.
+ */
+function refundsDaily(source: GuestDraftSource, failure: UpstreamFailure): boolean {
+  if (source === 'image') return failure.unreachable !== true;
+  return apiRefused(failure.status);
+}
+
 function isIndex(value: unknown, options: readonly string[]): value is number {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < options.length;
 }
@@ -172,7 +182,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       // the API refused outright; after a timeout or 5xx extraction may already be running.
       await Promise.all([
         this.limiter.refundIp(input.ip),
-        apiRefused(created.status) ? this.limiter.refundDaily() : undefined,
+        refundsDaily(source, created) ? this.limiter.refundDaily() : undefined,
       ]);
       return upstreamError(created);
     }

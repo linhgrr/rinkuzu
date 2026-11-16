@@ -2110,7 +2110,9 @@ test.describe('production critical paths', () => {
       buffer: Buffer.from('fake legacy powerpoint'),
     });
 
-    await expect(page.getByRole('alert')).toContainText('Old .doc and .ppt files');
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Old .doc and .ppt files' }),
+    ).toBeVisible();
     expect(draftRequests).toBe(0);
   });
 

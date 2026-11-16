@@ -140,6 +140,9 @@ export function useGuestDraftPlay(source: GuestDraftSource = 'pdf') {
       ({ play, token: draftToken }) => {
         if (cancelled) return;
         const { from, quiz } = roundOf(play.quiz, parseRoundStart(window.location.search));
+        // Set with the state, not after its commit: a submit before the sync effect below
+        // runs would otherwise store a first-batch round as not pending.
+        pendingRef.current = !play.complete;
         setLoad({
           status: 'ready',
           quiz,

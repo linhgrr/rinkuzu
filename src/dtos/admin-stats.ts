@@ -256,6 +256,33 @@ const guestFunnelWeekSchema = z
   })
   .strict();
 
+const uploadExtSchema = z.string().regex(/^[a-z0-9]{1,8}$/);
+
+const uploadWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    /** Top 10 `ext` x `reason` pairs, then one `other` x `other` row for the rest. */
+    uploadRejections: z.array(
+      z
+        .object({
+          ext: uploadExtSchema,
+          reason: z.string().regex(/^[a-z_]{1,32}$/),
+          count: countSchema,
+        })
+        .strict(),
+    ),
+    officeDrafts: z.array(
+      z
+        .object({
+          surface: z.string().regex(/^[a-z_]{1,32}$/),
+          ext: uploadExtSchema,
+          count: countSchema,
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
 /**
  * Aggregate-only by contract: integers, rates, dates and definition strings.
  * Strict at every level so a future field cannot leak learner data unnoticed.
@@ -290,6 +317,8 @@ export const adminActivationStatsSchema = z
         guestCompleted: z.string(),
         guestClaimed7d: z.string(),
         reviewOptInFromGuest: z.string(),
+        uploadRejections: z.string(),
+        officeDrafts: z.string(),
       })
       .strict(),
     // 'unavailable': the adaptive API did not answer, so every number is
@@ -300,6 +329,8 @@ export const adminActivationStatsSchema = z
     activationEmail: z.object({ weeks: z.array(activationEmailWeekSchema) }).strict(),
     // Same weeks as `weeks`, bucketed by the week the guest attempt or opt-in happened in.
     guestFunnel: z.object({ weeks: z.array(guestFunnelWeekSchema) }).strict(),
+    // Same weeks as `weeks`, bucketed by the UTC day the file was refused or the draft made (RIN-1785).
+    uploads: z.object({ weeks: z.array(uploadWeekSchema) }).strict(),
   })
   .strict();
 

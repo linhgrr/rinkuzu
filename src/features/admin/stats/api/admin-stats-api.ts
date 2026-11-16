@@ -86,6 +86,21 @@ export async function fetchActivationFunnelViewModel(
         ];
       })
       .reverse(),
+    uploadWeeks: dto.uploads.weeks
+      .flatMap((upload) => {
+        const week = bounds.get(upload.isoWeek);
+        if (!week) return [];
+        return [
+          {
+            isoWeek: upload.isoWeek,
+            monday: week.start.slice(0, 10),
+            rejections: upload.uploadRejections,
+            officeDrafts: upload.officeDrafts,
+            inProgress: inProgress(week.start, week.end),
+          },
+        ];
+      })
+      .reverse(),
     weeks: dto.weeks
       .map((week) => ({
         isoWeek: week.isoWeek,

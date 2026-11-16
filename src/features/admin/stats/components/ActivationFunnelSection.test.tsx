@@ -44,6 +44,7 @@ function emailWeek(
 function funnel(overrides: Partial<ActivationFunnelViewModel> = {}): ActivationFunnelViewModel {
   return {
     adaptiveAvailable: true,
+    uploadWeeks: [],
     weeks: [
       {
         isoWeek: '2026-W45',

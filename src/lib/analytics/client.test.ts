@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const posthogMock = vi.hoisted(() => ({
   init: vi.fn(),
@@ -423,5 +423,65 @@ describe('analytics client', () => {
         expect.objectContaining({ error_code: expected }),
       );
     });
+  });
+});
+
+describe('analytics client: agent traffic (RIN-1760)', () => {
+  const normalUa = window.navigator.userAgent;
+
+  function stubUserAgent(userAgent: string) {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+  }
+
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    document.head.innerHTML = '';
+    delete window.dataLayer;
+    delete window.gtag;
+    vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_GA_ID', 'G-TEST123');
+    vi.stubEnv('NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN', 'phc_test');
+    vi.stubEnv('NEXT_PUBLIC_POSTHOG_HOST', 'https://us.i.posthog.com');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends nothing with consent granted and an agent User-Agent', async () => {
+    stubUserAgent(`${normalUa} rinkuzu-agent/qa`);
+    const analytics = await loadAnalytics();
+
+    analytics.grantAnalyticsConsent();
+    expect(await analytics.initializeAnalytics()).toBe(false);
+    analytics.captureAnalyticsEvent('pdf_upload_completed', { duration_ms: 1200 });
+    analytics.captureAnalyticsEventOnce('pdf_upload_completed', 'once-key');
+    analytics.trackAnalyticsPageView('https://www.rinkuzu.app/en', 'Home');
+    await analytics.identifyAnalyticsUser('user-1');
+    await Promise.resolve();
+
+    expect(analytics.getAnalyticsConsent()).toBe('granted');
+    expect(posthogMock.init).not.toHaveBeenCalled();
+    expect(posthogMock.capture).not.toHaveBeenCalled();
+    expect(posthogMock.identify).not.toHaveBeenCalled();
+    expect(document.querySelector('script[data-rinkuzu-analytics="google"]')).toBeNull();
+    expect(window.gtag).toBeUndefined();
+    expect(window.localStorage.getItem('rinkuzu_analytics_once_anonymous_once-key')).toBeNull();
+  });
+
+  it('is unchanged with consent granted and a normal User-Agent', async () => {
+    stubUserAgent(normalUa);
+    const analytics = await loadAnalytics();
+
+    analytics.grantAnalyticsConsent();
+    expect(await analytics.initializeAnalytics()).toBe(true);
+    analytics.captureAnalyticsEvent('pdf_upload_completed', { duration_ms: 1200 });
+    analytics.trackAnalyticsPageView('https://www.rinkuzu.app/en', 'Home');
+
+    await vi.waitFor(() => expect(posthogMock.capture).toHaveBeenCalledTimes(2));
+    expect(posthogMock.init).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('script[data-rinkuzu-analytics="google"]')).not.toBeNull();
   });
 });

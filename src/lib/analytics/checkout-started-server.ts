@@ -3,6 +3,7 @@ import 'server-only';
 import { after, type NextRequest } from 'next/server';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
 import { resolveClientCountry } from '@/lib/client-ip';
+import { isAgentUserAgent } from '@/shared/constants/agent-traffic';
 import { captureAnonymousServerEvent } from './server';
 
 function knownLocale(value: string | undefined): Locale | undefined {
@@ -39,6 +40,8 @@ function requestCountry(request: NextRequest): string | null {
  * Sent after the response, so the order never waits on PostHog.
  */
 export function scheduleCheckoutStartedServerEvent(request: NextRequest, planId: string): void {
+  // Our own agents' orders are not demand (RIN-1760); `after` may not see the request headers.
+  if (isAgentUserAgent(request.headers.get('user-agent'))) return;
   const properties = {
     locale: requestLocale(request),
     plan: planId,

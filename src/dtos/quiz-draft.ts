@@ -38,7 +38,14 @@ export const createTextQuizDraftRequestSchema = z.strictObject({
   category_id: objectIdSchema.nullable().optional(),
   prompt: z.string().max(2000).nullable().optional(),
   submit_to_premium: z.boolean().optional(),
+  /** Set when the browser extracted the text from a Word or PowerPoint file (RIN-1787). */
+  source_file_type: z.enum(['docx', 'pptx']).optional(),
+  /** Which create page that was, for the daily office counter; never forwarded to the API. */
+  upload_surface: z.enum(['create_pdf', 'create_pdf_mobile']).optional(),
 });
+
+/** Where an office-file text draft was picked (RIN-1787). */
+export type OfficeDraftSurface = 'create_pdf' | 'create_pdf_mobile';
 
 export interface CreateTextQuizDraftInputDto {
   title: string;
@@ -47,6 +54,8 @@ export interface CreateTextQuizDraftInputDto {
   description?: string;
   prompt?: string;
   submitToPremium?: boolean;
+  /** A text read from a .docx or .pptx in the browser (RIN-1787); the file is never uploaded. */
+  office?: { fileType: 'docx' | 'pptx'; surface: OfficeDraftSurface };
 }
 
 export interface CreateManualQuizDraftInputDto {

@@ -127,24 +127,24 @@ test.describe('create hub drafts list (RIN-992)', () => {
         );
         expect(overflow, `page overflow at ${viewport.width}`).toBeLessThanOrEqual(0);
 
-        // The failed draft offers Continue; the processing one shows its disabled status.
+        // The failed draft offers Try again (no Continue); the processing one shows its status.
         const failedRow = list.locator(':scope > *').first();
-        const continueButton = failedRow.getByRole('button', {
-          name: enCreate.continueEditing,
+        const tryAgain = failedRow.getByRole('link', {
+          name: enCreate.draftTryAgain,
           exact: true,
         });
-        await expect(continueButton).toBeEnabled();
-        await expect(continueButton).toBeInViewport({ ratio: 1 });
+        await expect(tryAgain).toBeVisible();
+        await expect(tryAgain).toBeInViewport({ ratio: 1 });
         await expect(
-          list
-            .locator(':scope > *')
-            .nth(1)
-            .getByRole('button', { name: enCreate.processingDraft, exact: true }),
-        ).toBeDisabled();
+          failedRow.getByRole('button', { name: enCreate.continueEditing, exact: true }),
+        ).toHaveCount(0);
+        const busyRow = list.locator(':scope > *').nth(1);
+        await expect(busyRow).toContainText(enCreate.draftStatus.processing);
+        await expect(busyRow.getByRole('progressbar')).toBeVisible();
 
-        // Keyboard: Continue, then Tab lands on Delete.
-        await continueButton.focus();
-        await expect(continueButton).toBeFocused();
+        // Keyboard: Try again, then Tab lands on Delete.
+        await tryAgain.focus();
+        await expect(tryAgain).toBeFocused();
         await page.keyboard.press('Tab');
         await expect(
           failedRow.getByRole('button', {

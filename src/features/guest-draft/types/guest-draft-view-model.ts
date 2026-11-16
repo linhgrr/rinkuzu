@@ -32,7 +32,8 @@ export type GuestDraftRefusal =
   | 'legacy_format'
   | 'encrypted'
   | 'corrupt'
-  | 'too_little_text';
+  | 'too_little_text'
+  | 'service_unavailable';
 
 /** One submit of a guest-draft attempt (RIN-1448); the draft token is passed beside it. */
 export interface GuestDraftAttemptInput {

@@ -5,7 +5,15 @@ import { HiOutlineRefresh } from 'react-icons/hi';
 import { Card } from '@/components/ui/Card';
 import { useGuestDraftMore } from '@/features/guest-draft/hooks/useGuestDraftMore';
 import { Link } from '@/i18n/navigation';
+import type { GuestDraftSource } from '@/shared/constants/guest-draft';
 import { ROUTES } from '@/shared/constants/routes';
+
+/** The player route of each draft source: "Keep going" reopens it at the next question. */
+const PLAY_ROUTE: Record<GuestDraftSource, string> = {
+  pdf: ROUTES.TRY_PDF_PLAY,
+  text: ROUTES.TRY_TEXT_PLAY,
+  image: ROUTES.TRY_PHOTO_PLAY,
+};
 
 /**
  * Under the score of a first-batch round (RIN-1620, spec state 5): exactly one of "more on
@@ -17,7 +25,7 @@ export function GuestDraftMoreCard({ attemptId }: { attemptId: string | null }) 
   const { round, more } = useGuestDraftMore(attemptId);
   if (!round || !more) return null;
 
-  const keepGoingHref = `${round.source === 'text' ? ROUTES.TRY_TEXT_PLAY : ROUTES.TRY_PDF_PLAY}?from=${round.from + round.count}`;
+  const keepGoingHref = `${PLAY_ROUTE[round.source]}?from=${round.from + round.count}`;
   return (
     <Card
       variant="bordered"

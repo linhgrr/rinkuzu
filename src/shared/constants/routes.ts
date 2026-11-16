@@ -16,7 +16,8 @@ export const ROUTES = {
   /** Guest quiz from pasted text (RIN-1539): same progress, play and claim flow as `TRY_PDF`. */
   TRY_TEXT: '/try/text',
   TRY_TEXT_PLAY: '/try/text/play',
-  /** Play page of a guest quiz from photos (RIN-1792); the upload page comes with RIN-1793. */
+  /** Guest quiz from 1-5 photos (RIN-1793): same progress, play and claim flow as `TRY_TEXT`. */
+  TRY_PHOTO: '/try/photo',
   TRY_PHOTO_PLAY: '/try/photo/play',
   /** Guest quiz from PowerPoint or Word (RIN-1788): the `TRY_PDF` uploader; plays on `TRY_TEXT_PLAY`. */
   TRY_SLIDES: '/try/slides',
@@ -26,6 +27,8 @@ export const ROUTES = {
   CREATE_QUIZ_PDF: '/create/pdf',
   /** Signed-in quiz draft from pasted text (RIN-1542); lands in the normal draft review. */
   CREATE_QUIZ_TEXT: '/create/text',
+  /** Signed-in quiz draft from photos (RIN-1794); where a guest returns after the photo cap card. */
+  CREATE_QUIZ_PHOTO: '/create/photo',
   /** The learner's own quizzes, including the ones a guest draft claim made (RIN-1485). */
   MY_QUIZZES: '/my-quizzes',
   ADAPTIVE_PIPELINE_DEBUG: '/adaptive/pipeline-debug',

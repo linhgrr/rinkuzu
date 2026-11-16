@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import {
+  HiOutlineCamera,
   HiOutlineCheckCircle,
   HiOutlineDocumentText,
   HiOutlineExclamationCircle,
@@ -19,7 +20,7 @@ interface GuestDraftProgressCardProps {
   label: string;
   /** Second line under the label, e.g. the file size. */
   meta?: string | undefined;
-  /** `text` says "Sending…" instead of "Uploading…". */
+  /** `text` says "Sending…" instead of "Uploading…"; `image` "Reading the text in your photos…". */
   source?: GuestDraftSource;
   progress: GuestDraftProgress | null;
   pollErrors: number;
@@ -38,7 +39,11 @@ function statusLine(
       ? t('readyFirstBatch', { count })
       : t('ready', { count });
   }
-  if (props.phase === 'uploading') return props.source === 'text' ? t('sending') : t('uploading');
+  if (props.phase === 'uploading') {
+    // A photo draft is read (OCR) in the same request, so "Uploading…" would be wrong (RIN-1793).
+    if (props.source === 'image') return t('reading');
+    return props.source === 'text' ? t('sending') : t('uploading');
+  }
   if (props.pollErrors > 0) return t('pollError');
   return t('processing', { percent: props.progress?.percent ?? 0, count });
 }
@@ -48,7 +53,7 @@ function statusLine(
  * "First 5 questions ready" when the player opens on the first batch (RIN-1620).
  */
 export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
-  const { phase, label, meta, progress, onCancel, onPlayNow } = props;
+  const { phase, label, meta, progress, source, onCancel, onPlayNow } = props;
   const t = useTranslations('guestDraft.progress');
   const playRef = useRef<HTMLButtonElement>(null);
   const ready = phase === 'ready';
@@ -70,7 +75,11 @@ export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
           />
         ) : (
           <div className="flex-shrink-0 rounded-xl bg-red-100 p-2">
-            <HiOutlineDocumentText className="size-6 text-red-600" aria-hidden="true" />
+            {source === 'image' ? (
+              <HiOutlineCamera className="size-6 text-red-600" aria-hidden="true" />
+            ) : (
+              <HiOutlineDocumentText className="size-6 text-red-600" aria-hidden="true" />
+            )}
           </div>
         )}
         <div className="min-w-0 flex-1">
@@ -106,7 +115,9 @@ export function GuestDraftProgressCard(props: GuestDraftProgressCardProps) {
         </Button>
       ) : (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-neutral-500">{t('hint')}</p>
+          <p className="text-xs text-neutral-500">
+            {phase === 'uploading' && source === 'image' ? t('readingHint') : t('hint')}
+          </p>
           <Button
             variant="ghost"
             onClick={onCancel}
@@ -141,7 +152,9 @@ export function GuestDraftFailedCard({
       ? 'guestDraft.failedOffice'
       : source === 'text'
         ? 'guestDraft.failedText'
-        : 'guestDraft.failed',
+        : source === 'image'
+          ? 'guestDraft.failedPhoto'
+          : 'guestDraft.failed',
   );
   return (
     <Card variant="bordered" role="alert" className="space-y-4 border-red-200 bg-red-50 p-5 sm:p-6">

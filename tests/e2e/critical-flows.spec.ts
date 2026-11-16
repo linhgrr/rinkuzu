@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import { Db, MongoClient, ObjectId } from 'mongodb';
+import { strToU8, zipSync } from 'fflate';
 import { PDFDocument } from 'pdf-lib';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS } from './support/auth-rate-limit-keys';
@@ -466,6 +467,20 @@ async function fakeOnePagePdf(): Promise<Buffer> {
   const doc = await PDFDocument.create();
   doc.addPage();
   return Buffer.from(await doc.save());
+}
+
+/**
+ * A one-slide .pptx with enough fake text for the browser extraction (RIN-1786): the file is
+ * read in the page and never uploaded, so only its text reaches the (mocked) text route.
+ */
+function fakeSlideDeck(): Buffer {
+  const text = 'Fake e2e slide about mitochondria and the cell. '.repeat(8);
+  const slide =
+    '<?xml version="1.0"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>' +
+    '<p:sp><p:nvSpPr><p:cNvPr id="1" name="s"/><p:cNvSpPr/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr>' +
+    `<p:txBody><a:p><a:r><a:t>${text}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`;
+  return Buffer.from(zipSync({ 'ppt/slides/slide1.xml': strToU8(slide) }, { level: 1 }));
 }
 
 const GUEST_UPLOAD_COPY = {
@@ -2017,6 +2032,87 @@ test.describe('production critical paths', () => {
       });
     });
   }
+
+  test('reads a PowerPoint file signed out, sends only its text and plays the quiz (en) @critical-quiz-guest-draft-upload', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1786: the .pptx is read in the browser and goes through the text route with its
+    // file type; the route is answered with a seeded ready draft (no generation in e2e).
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const copy = GUEST_UPLOAD_COPY.en;
+      const seeded: { draft?: SeededGuestDraft; body?: string } = {};
+      await page.addInitScript(() => {
+        window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+      });
+      await page.route('**/api/guest-drafts/text', async (route) => {
+        const token = route.request().headers()['x-guest-draft-token'] ?? '';
+        seeded.body = route.request().postData() ?? '';
+        seeded.draft = await seedReadyGuestDraft(fixture.db, token);
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: READY_GUEST_DRAFT_BODY,
+        });
+      });
+      try {
+        await page.goto('/en/try/pdf');
+        const fileInput = page.locator('input[type="file"]');
+        await expect
+          .poll(() =>
+            fileInput.evaluate((node) =>
+              Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+            ),
+          )
+          .toBe(true);
+        await fileInput.setInputFiles({
+          name: 'fake-lecture.pptx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          buffer: fakeSlideDeck(),
+        });
+        await page.getByRole('button', { name: copy.create, exact: true }).click();
+
+        await page.waitForURL(/\/en\/try\/text\/play$/);
+        expect(JSON.parse(seeded.body ?? '{}')).toMatchObject({
+          source_file_type: 'pptx',
+          upload_surface: 'try_pdf',
+          locale: 'en',
+        });
+        expect(JSON.parse(seeded.body ?? '{}').text).toContain('Slide 1:');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+      } finally {
+        if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
+      }
+    });
+  });
+
+  test('refuses a legacy .ppt signed out with its own message and no request @critical-quiz-guest-draft-upload', async ({
+    page,
+  }) => {
+    // RIN-1786: an old .ppt cannot be read: it is told to save as .pptx or PDF, and no
+    // draft request is made.
+    let draftRequests = 0;
+    await page.route('**/api/guest-drafts**', async (route) => {
+      draftRequests += 1;
+      await route.abort();
+    });
+    await page.goto('/en/try/pdf');
+    const fileInput = page.locator('input[type="file"]');
+    await expect
+      .poll(() =>
+        fileInput.evaluate((node) =>
+          Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+        ),
+      )
+      .toBe(true);
+    await fileInput.setInputFiles({
+      name: 'old-lecture.ppt',
+      mimeType: 'application/vnd.ms-powerpoint',
+      buffer: Buffer.from('fake legacy powerpoint'),
+    });
+
+    await expect(page.getByRole('alert')).toContainText('Old .doc and .ppt files');
+    expect(draftRequests).toBe(0);
+  });
 
   test('points a new learner from the dashboard to a starter quiz @critical-starter', async ({
     page,

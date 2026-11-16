@@ -64,8 +64,7 @@ const IndexNowThrottleSchema = new Schema<IndexNowThrottleDocument>(
 
 export const IndexNowPendingUrl =
   (mongoose.models['IndexNowPendingUrl'] as
-    | mongoose.Model<IndexNowPendingUrlDocument>
-    | undefined) ??
+    mongoose.Model<IndexNowPendingUrlDocument> | undefined) ??
   mongoose.model<IndexNowPendingUrlDocument>(
     'IndexNowPendingUrl',
     IndexNowPendingUrlSchema,

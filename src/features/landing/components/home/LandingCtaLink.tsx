@@ -8,12 +8,7 @@ import type { MarketingHeaderPosition } from '@/lib/routing/pathname';
 type LandingCta = 'play_first' | 'upload' | 'guest_pdf' | 'register' | 'signin' | 'dashboard';
 /** Homepage spots (RIN-1178), the blog quiz card's (RIN-1258) and the content-page header's (RIN-1519). */
 type LandingCtaPosition =
-  | 'hero'
-  | 'bottom'
-  | 'blog_inline'
-  | 'blog_end'
-  | 'blog_index'
-  | MarketingHeaderPosition;
+  'hero' | 'bottom' | 'blog_inline' | 'blog_end' | 'blog_index' | MarketingHeaderPosition;
 
 interface LandingCtaLinkProps {
   href: string;

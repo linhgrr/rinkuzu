@@ -61,8 +61,7 @@ type ActivationEmailWeekDto = AdminActivationStatsDto['activationEmail']['weeks'
 type ActivationEmailCounts = ActivationEmailWeekDto['byTrigger']['24h'];
 
 export type ActivationStatsActor =
-  | { kind: 'admin'; userId: string; email: string }
-  | { kind: 'service' };
+  { kind: 'admin'; userId: string; email: string } | { kind: 'service' };
 
 const ACTIVATION_DEFINITIONS: AdminActivationStatsDto['definitions'] = {
   week: 'ISO-8601 week in UTC, Monday 00:00:00.000 to Sunday 23:59:59.999. `end` is the last millisecond of the week.',

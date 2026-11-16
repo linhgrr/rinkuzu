@@ -4,12 +4,10 @@ type RouteParamValue = string | string[] | undefined;
 export type RouteParams = Record<string, RouteParamValue>;
 
 type JsonBodyResult =
-  | { success: true; data: unknown }
-  | { success: false; error: 'Request body must be valid JSON' };
+  { success: true; data: unknown } | { success: false; error: 'Request body must be valid JSON' };
 
 export type ValidationResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; fields: Record<string, string> };
+  { success: true; data: T } | { success: false; error: string; fields: Record<string, string> };
 
 type ValidationFailure = Extract<ValidationResult<never>, { success: false }>;
 

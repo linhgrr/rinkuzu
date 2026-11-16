@@ -30,12 +30,7 @@ import { DEFAULT_DATE_TIME_ZONE } from '@/lib/formatters';
 import { useAdminApiErrorMessage } from '@/lib/api/use-api-error';
 
 type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue | undefined };
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue | undefined };
 
 type PipelineQualityReport = {
   passed: boolean;

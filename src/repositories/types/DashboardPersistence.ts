@@ -21,8 +21,7 @@ export interface DashboardUserProgressPersistenceRecord {
   streakFreezeCount: number;
   totalXp: number;
   weeklyActivity:
-    | Map<string, DashboardWeeklyActivityFields>
-    | Record<string, DashboardWeeklyActivityFields>;
+    Map<string, DashboardWeeklyActivityFields> | Record<string, DashboardWeeklyActivityFields>;
   totalQuestionsLearned: number;
   totalReviewSessions: number;
   averageAccuracy: number;

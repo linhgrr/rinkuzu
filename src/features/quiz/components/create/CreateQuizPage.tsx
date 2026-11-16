@@ -67,8 +67,7 @@ interface CreateQuizState {
 }
 
 type CreateQuizAction =
-  | { type: 'patch'; value: Partial<CreateQuizState> }
-  | { type: 'setPdfFile'; file: File | null };
+  { type: 'patch'; value: Partial<CreateQuizState> } | { type: 'setPdfFile'; file: File | null };
 
 interface PdfPreviewData {
   pdfUrl: string;

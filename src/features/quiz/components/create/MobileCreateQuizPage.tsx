@@ -55,8 +55,7 @@ type MobileCreateState = {
 };
 
 type MobileCreateAction =
-  | { type: 'patch'; value: Partial<MobileCreateState> }
-  | { type: 'setFile'; value: File | null };
+  { type: 'patch'; value: Partial<MobileCreateState> } | { type: 'setFile'; value: File | null };
 
 const initialState: MobileCreateState = {
   file: null,

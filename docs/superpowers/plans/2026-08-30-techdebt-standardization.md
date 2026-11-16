@@ -323,8 +323,7 @@ export interface ValidationFailureLike {
 export type ParsedResult<T> = { ok: true; data: T } | { ok: false; response: NextResponse };
 
 export type ParsedParamsAndBody<TParams, TBody> =
-  | { ok: true; params: TParams; body: TBody }
-  | { ok: false; response: NextResponse };
+  { ok: true; params: TParams; body: TBody } | { ok: false; response: NextResponse };
 
 export interface ParamsAndBodySchemas<TParams, TBody> {
   params: ZodType<TParams>;

@@ -33,8 +33,7 @@ export interface ReviewReminderOptInInput {
 
 /** Outcome of "Remind me": the email's send time, or the weekly cap already used. */
 export type ReviewReminderOptInOutcome =
-  | { status: 'scheduled'; scheduledFor: string }
-  | { status: 'capped'; scheduledFor: null };
+  { status: 'scheduled'; scheduledFor: string } | { status: 'capped'; scheduledFor: null };
 
 export interface QuizResultBookmarkMutationViewModel {
   id: string;

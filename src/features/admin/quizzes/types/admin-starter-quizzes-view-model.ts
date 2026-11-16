@@ -2,12 +2,7 @@ export type AdminStarterQuizLocale = 'vi' | 'en';
 
 /** Why a starter is hidden from learners; mirrors the API's drop rule (RIN-1177). */
 export type AdminStarterQuizDropReason =
-  | 'missing'
-  | 'not-public'
-  | 'premium'
-  | 'empty'
-  | 'personal-data'
-  | 'held';
+  'missing' | 'not-public' | 'premium' | 'empty' | 'personal-data' | 'held';
 
 export interface AdminStarterQuizViewModel {
   /** The starter row id (PATCH/DELETE). */

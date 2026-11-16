@@ -475,11 +475,7 @@ export async function getConceptDetail(
 }
 
 export type ApiReadinessCause =
-  | 'unauthorized'
-  | 'not_ready'
-  | 'upstream_error'
-  | 'timeout'
-  | 'network';
+  'unauthorized' | 'not_ready' | 'upstream_error' | 'timeout' | 'network';
 
 export type ApiReadiness = { ok: true } | { ok: false; cause: ApiReadinessCause };
 

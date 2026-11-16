@@ -36,15 +36,13 @@ export function toAdminQuizTopicDetailViewModel(
   return {
     topic: toAdminQuizTopicViewModel(detail.topic),
     quizzes: detail.quizzes
-      .map(
-        (quiz): AdminQuizTopicQuizViewModel => ({
-          quizId: quiz.quizId,
-          order: quiz.order,
-          title: quiz.title,
-          questionCount: quiz.questionCount,
-          isPublic: quiz.isPublic,
-        }),
-      )
+      .map((quiz): AdminQuizTopicQuizViewModel => ({
+        quizId: quiz.quizId,
+        order: quiz.order,
+        title: quiz.title,
+        questionCount: quiz.questionCount,
+        isPublic: quiz.isPublic,
+      }))
       .sort((first, second) => first.order - second.order),
   };
 }

@@ -19,9 +19,10 @@ const {
 } = vi.hoisted(() => ({
   fetchHistoryMock: vi.fn(),
   fetchBookmarksMock: vi.fn(),
-  fetchBookmarkQuizzesMock: vi.fn(
-    async (): Promise<ProfileBookmarkQuizListViewModel> => ({ quizzes: [], total: 0 }),
-  ),
+  fetchBookmarkQuizzesMock: vi.fn(async (): Promise<ProfileBookmarkQuizListViewModel> => ({
+    quizzes: [],
+    total: 0,
+  })),
   fetchLibraryMock: vi.fn(),
   foldersState: {
     folders: [] as { id: string; name: string; quizCount: number }[],

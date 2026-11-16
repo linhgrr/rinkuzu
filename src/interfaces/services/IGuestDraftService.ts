@@ -18,8 +18,7 @@ export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'] & {
 };
 
 export type GuestDraftReservation =
-  | { ok: true }
-  | { ok: false; scope: 'ip' | 'daily'; retryAfterSeconds: number };
+  { ok: true } | { ok: false; scope: 'ip' | 'daily'; retryAfterSeconds: number };
 
 /** Per-IP and global caps (spec AC3), checked before any upstream call. */
 export interface GuestDraftLimiter {

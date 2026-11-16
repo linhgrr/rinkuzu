@@ -115,12 +115,7 @@ export interface FakeInboxEvent {
   inboxRef: string;
   orderCode: number | null;
   status:
-    | 'verified'
-    | 'processing'
-    | 'processed'
-    | 'orphaned'
-    | 'retryable_failure'
-    | 'dead_letter';
+    'verified' | 'processing' | 'processed' | 'orphaned' | 'retryable_failure' | 'dead_letter';
   attemptCount: number;
   nextAttemptAtMs: number;
   leaseUntilMs: number | null;

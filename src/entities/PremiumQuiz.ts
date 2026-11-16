@@ -97,11 +97,7 @@ export interface CreditWallet {
 }
 
 type CreditLedgerType =
-  | 'submission_reward'
-  | 'quiz_unlock'
-  | 'refund'
-  | 'admin_adjustment'
-  | 'fraud_reversal';
+  'submission_reward' | 'quiz_unlock' | 'refund' | 'admin_adjustment' | 'fraud_reversal';
 
 export interface CreditLedgerEntry {
   id: string;

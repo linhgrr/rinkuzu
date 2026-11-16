@@ -125,10 +125,7 @@ interface RejectedPayOSWebhook extends PayOSWebhookFacts {
 }
 
 export type PayOSWebhookOutcome =
-  | AcceptedPayOSWebhook
-  | IgnoredPayOSWebhook
-  | UnsupportedPayOSWebhook
-  | RejectedPayOSWebhook;
+  AcceptedPayOSWebhook | IgnoredPayOSWebhook | UnsupportedPayOSWebhook | RejectedPayOSWebhook;
 
 export function webhookVerificationClass(outcome: PayOSWebhookOutcome): WebhookVerificationClass {
   switch (outcome.kind) {

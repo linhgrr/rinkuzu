@@ -14,9 +14,7 @@ import { readGuestDraftClaims } from '@/features/quiz/lib/guest-draft-claims';
 
 /** What the results card says about the rest of a first-batch round (RIN-1620). */
 export type GuestDraftMore =
-  | { kind: 'pending' }
-  | { kind: 'arrived'; count: number }
-  | { kind: 'failed' };
+  { kind: 'pending' } | { kind: 'arrived'; count: number } | { kind: 'failed' };
 
 /** Same cadence as the player's and the upload page's polling. */
 const MORE_POLL_MS = 2_000;

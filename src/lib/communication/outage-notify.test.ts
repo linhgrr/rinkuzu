@@ -66,9 +66,8 @@ const sent: OutboundCommunicationEmail[] = [];
 function deps(list: FakeList, failFor: (to: string) => boolean = () => false) {
   return {
     list,
-    starterHref: vi.fn(
-      async (locale: string): Promise<string | null> =>
-        locale === 'en' ? '/quiz/en-starter?mode=quick' : '/quiz/vi-starter',
+    starterHref: vi.fn(async (locale: string): Promise<string | null> =>
+      locale === 'en' ? '/quiz/en-starter?mode=quick' : '/quiz/vi-starter',
     ),
     send: vi.fn(async (mail: OutboundCommunicationEmail) => {
       clock += 100;

@@ -48,8 +48,7 @@ const AdminMutationFenceSchema = new Schema(
 
 const AdminMutationFence =
   (mongoose.models['AdminMutationFence'] as
-    | mongoose.Model<AdminMutationFenceDocument>
-    | undefined) ??
+    mongoose.Model<AdminMutationFenceDocument> | undefined) ??
   mongoose.model<AdminMutationFenceDocument>('AdminMutationFence', AdminMutationFenceSchema);
 
 export default AdminMutationFence;

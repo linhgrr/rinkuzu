@@ -58,7 +58,9 @@ function completionOf(
 }
 
 /** `sourceFileType` only when set, so a PDF or pasted-text record keeps its shape. */
-function fileTypeOf(doc: Pick<GuestQuizDraftDocument, 'sourceFileType'>) {
+function fileTypeOf(
+  doc: Pick<GuestQuizDraftDocument, 'sourceFileType'>,
+): Pick<GuestQuizDraftDocument, 'sourceFileType'> {
   return doc.sourceFileType ? { sourceFileType: doc.sourceFileType } : {};
 }
 

@@ -1,3 +1,4 @@
+import { OFFICE_MAX_FILE_BYTES } from '@/lib/office-text/types';
 import {
   GUEST_DRAFT_MAX_PAGES,
   GUEST_DRAFT_MAX_PDF_BYTES,
@@ -12,6 +13,8 @@ import {
 export const GUEST_DRAFT_LIMIT_COPY = {
   pages: GUEST_DRAFT_MAX_PAGES,
   mb: GUEST_DRAFT_MAX_PDF_BYTES / (1024 * 1024),
+  /** Word and PowerPoint files are read in the browser, so only their own limit applies. */
+  officeMb: OFFICE_MAX_FILE_BYTES / (1024 * 1024),
   questions: GUEST_DRAFT_MAX_QUESTIONS,
   hours: GUEST_DRAFT_TTL_MS / (60 * 60 * 1000),
 } as const;

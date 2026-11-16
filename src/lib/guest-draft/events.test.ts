@@ -80,6 +80,24 @@ describe('createGuestDraftEvents', () => {
     );
   });
 
+  it('adds file_type on every event of a draft made from an office file (RIN-1786)', async () => {
+    const capture = vi.fn(async () => true);
+    const events = createGuestDraftEvents(capture);
+    const officeContext = { ...context, source: 'text' as const, fileType: 'pptx' as const };
+
+    await events.started(officeContext);
+    await events.ready(officeContext);
+    await events.claimed(officeContext);
+    await events.started({ ...context, source: 'text' as const });
+
+    expect(capture.mock.calls.map((call) => call.at(2))).toEqual([
+      expect.objectContaining({ source: 'text', file_type: 'pptx' }),
+      expect.objectContaining({ file_type: 'pptx' }),
+      expect.objectContaining({ file_type: 'pptx' }),
+      expect.not.objectContaining({ file_type: expect.anything() }),
+    ]);
+  });
+
   it('sends first_batch_ready with ms_since_submit and no content (RIN-1619)', async () => {
     const capture = vi.fn(async () => true);
     const events = createGuestDraftEvents(capture);

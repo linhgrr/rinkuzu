@@ -77,6 +77,17 @@ export const GUEST_DRAFT_SOURCES = ['pdf', 'text', 'image'] as const;
 export type GuestDraftSource = (typeof GUEST_DRAFT_SOURCES)[number];
 
 /**
+ * The Word or PowerPoint file a text draft was extracted from in the browser (RIN-1786).
+ * The source stays `text`; only this type is stored and sent to the API, never the file.
+ */
+export const GUEST_DRAFT_FILE_TYPES = ['docx', 'pptx'] as const;
+export type GuestDraftFileType = (typeof GUEST_DRAFT_FILE_TYPES)[number];
+
+/** Pages that may count a guest office draft on `office_draft_created` (RIN-1785). */
+export const GUEST_DRAFT_OFFICE_SURFACES = ['try_pdf', 'try_slides'] as const;
+export type GuestDraftOfficeSurface = (typeof GUEST_DRAFT_OFFICE_SURFACES)[number];
+
+/**
  * How a ready guest draft ended (RIN-1619): `first_batch_only` when the rest of the
  * questions never came (the API failed after the first batch), `full` otherwise.
  */

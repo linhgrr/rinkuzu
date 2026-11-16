@@ -23,14 +23,17 @@ import { hashGuestClaimToken } from '@/lib/guest-claim-token';
 import {
   GUEST_DRAFT_TTL_MS,
   type GuestDraftCompletion,
+  type GuestDraftFileType,
   type GuestDraftSource,
 } from '@/shared/constants/guest-draft';
 
 type Clock = () => Date;
 type UpstreamQuestion = NonNullable<UpstreamGuestDraft['questions']>[number];
 type UpstreamFailure = Extract<UpstreamGuestDraftResult, { ok: false }>;
-type StartInput = Omit<GuestDraftCreateInput, 'pdf'>;
 type StartExtras = { pageCount?: number };
+type StartInput = Omit<GuestDraftCreateInput, 'pdf'> & {
+  sourceFileType?: GuestDraftFileType | undefined;
+};
 type UpstreamStart = () => Promise<UpstreamGuestDraftResult>;
 
 const FAILED_UPSTREAM_STATUSES = new Set(['failed', 'cancelled', 'expired']);
@@ -151,7 +154,10 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
 
   /** Pasted text (RIN-1538): the same caps budget, attempt record and events as a PDF. */
   createFromText(input: GuestTextDraftCreateInput): Promise<GuestDraftResult> {
-    return this.start(input, 'text', () => this.upstream.createFromText(input.text));
+    const { sourceFileType } = input;
+    return this.start(input, 'text', () =>
+      this.upstream.createFromText(input.text, sourceFileType),
+    );
   }
 
   /** Photos (RIN-1792): OCR runs in the API first, so a refusal costs the visitor no cap. */
@@ -193,6 +199,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       entry: input.entry,
       source,
       ...extras,
+      ...(input.sourceFileType ? { sourceFileType: input.sourceFileType } : {}),
       expiresAt: new Date(this.now().getTime() + GUEST_DRAFT_TTL_MS),
     });
     await this.events.started(this.context(record));
@@ -376,6 +383,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       entry: record.entry,
       source: record.source,
       ...(record.pageCount ? { pageCount: record.pageCount } : {}),
+      fileType: record.sourceFileType,
     };
   }
 }

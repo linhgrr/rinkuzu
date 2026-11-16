@@ -4,10 +4,12 @@ import { QuizQuestionSchema, type QuizQuestionDocument } from '@/models/schemas/
 import {
   GUEST_DRAFT_COMPLETIONS,
   GUEST_DRAFT_ENTRIES,
+  GUEST_DRAFT_FILE_TYPES,
   GUEST_DRAFT_SOURCES,
   GUEST_DRAFT_STATUSES,
   type GuestDraftCompletion,
   type GuestDraftEntry,
+  type GuestDraftFileType,
   type GuestDraftSource,
   type GuestDraftStatus,
 } from '@/shared/constants/guest-draft';
@@ -37,6 +39,8 @@ export interface GuestQuizDraftDocument {
   source?: GuestDraftSource;
   /** Photo drafts only (RIN-1792): how many photos, never their content. */
   pageCount?: number;
+  /** Set when the text came from a .docx or .pptx read in the browser (RIN-1786). */
+  sourceFileType?: GuestDraftFileType;
   failureReason?: string;
   expiresAt: Date;
   createdAt: Date;
@@ -56,6 +60,7 @@ const GuestQuizDraftSchema = new Schema<GuestQuizDraftDocument>(
     entry: { type: String, enum: GUEST_DRAFT_ENTRIES, required: true },
     source: { type: String, enum: GUEST_DRAFT_SOURCES, default: 'pdf', immutable: true },
     pageCount: { type: Number, min: 1, max: 5, immutable: true },
+    sourceFileType: { type: String, enum: GUEST_DRAFT_FILE_TYPES, immutable: true },
     failureReason: { type: String, maxlength: 64 },
     expiresAt: { type: Date, required: true },
   },

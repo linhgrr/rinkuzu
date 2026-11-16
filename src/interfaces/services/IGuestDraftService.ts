@@ -2,6 +2,7 @@ import type { components } from '@/generated/adaptive-api';
 import type {
   GuestDraftCompletion,
   GuestDraftEntry,
+  GuestDraftFileType,
   GuestDraftSource,
 } from '@/shared/constants/guest-draft';
 
@@ -33,13 +34,16 @@ export type UpstreamGuestDraftResult =
 /** The API's guest-draft endpoints, called with the service token and no user. */
 export interface GuestDraftUpstream {
   create(pdf: Blob): Promise<UpstreamGuestDraftResult>;
-  /** Pasted text (RIN-1538): no OCR, same draft shape, caps and TTL as a PDF draft. */
-  createFromText(text: string): Promise<UpstreamGuestDraftResult>;
   /**
    * Photos (RIN-1792): the API runs OCR before any draft exists, so a refusal such as
    * `too_little_text` creates nothing. The photos are forwarded, never kept.
    */
   createFromImages(images: readonly Blob[]): Promise<UpstreamGuestDraftResult>;
+  /** Pasted text (RIN-1538): no OCR, same draft shape, caps and TTL as a PDF draft. */
+  createFromText(
+    text: string,
+    sourceFileType?: GuestDraftFileType,
+  ): Promise<UpstreamGuestDraftResult>;
   get(apiDraftId: string): Promise<UpstreamGuestDraftResult>;
   remove(apiDraftId: string): Promise<void>;
 }
@@ -51,10 +55,12 @@ export interface GuestDraftEventContext {
   source: GuestDraftSource;
   /** Photo drafts only (RIN-1792): how many photos; null otherwise. */
   pageCount?: number | null;
+  /** Set on a draft made from a Word or PowerPoint file (RIN-1786). */
+  fileType?: GuestDraftFileType | undefined;
 }
 
 /**
- * Server-side guest_draft_* events: locale, entry and source only, never content (file or
+ * Server-side guest_draft_* events: locale, entry, source and file type only, never content (file or
  * pasted text), IP or token.
  */
 export interface GuestDraftEvents {
@@ -83,6 +89,8 @@ export interface GuestDraftCreateInput extends GuestDraftCreateBase {
 /** The text is passed to the API and never stored, logged or sent to analytics here. */
 export interface GuestTextDraftCreateInput extends GuestDraftCreateBase {
   text: string;
+  /** Set when the browser extracted the text from a .docx or .pptx (RIN-1786). */
+  sourceFileType?: GuestDraftFileType | undefined;
 }
 
 /** The photos go to the API and nowhere else: never stored, logged or sent to analytics. */

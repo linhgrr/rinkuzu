@@ -18,6 +18,9 @@
     // RIN-1248: the topic hub read service ships before its pages (RIN-1249).
     // Remove this entry in the RIN-1249 PR that imports it.
     "src/lib/quiz-topic-hub-factory.ts!",
+    // RIN-1784: office text extraction ships before its upload surfaces (RIN-1781 c and d).
+    // Remove this entry in the PR that imports it.
+    "src/lib/office-text/index.ts!",
     // RIN-1790: the on-device photo preparation ships before its upload UI (RIN-1793).
     // Remove these two entries in the RIN-1793 PR that imports them.
     "src/features/quiz-images/lib/prepare-quiz-image.ts!",

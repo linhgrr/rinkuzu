@@ -80,11 +80,16 @@ export function createGuestDraftUpstream(): GuestDraftUpstream {
         return unavailable;
       }
     },
-    async createFromText(text) {
+    async createFromText(text, sourceFileType) {
       try {
         const response = await call(
           GUEST_TEXT_DRAFTS_PATH,
-          { method: 'POST', body: JSON.stringify({ text }) },
+          {
+            method: 'POST',
+            body: JSON.stringify(
+              sourceFileType ? { text, source_file_type: sourceFileType } : { text },
+            ),
+          },
           { 'content-type': 'application/json' },
         );
         return await toResult(response);

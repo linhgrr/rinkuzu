@@ -30,6 +30,7 @@ type StoredGuestDraft = Pick<
   | 'entry'
   | 'source'
   | 'pageCount'
+  | 'sourceFileType'
   | 'failureReason'
   | 'createdAt'
 > & { _id: Types.ObjectId };
@@ -45,6 +46,7 @@ const RECORD_PROJECTION = {
   entry: 1,
   source: 1,
   pageCount: 1,
+  sourceFileType: 1,
   failureReason: 1,
   createdAt: 1,
 } as const;
@@ -55,6 +57,13 @@ function completionOf(
 ): Pick<GuestDraftRecord, 'complete' | 'completion'> {
   const complete = doc.status === 'ready' && doc.complete !== false;
   return { complete, completion: complete ? (doc.completion ?? 'full') : null };
+}
+
+/** `sourceFileType` only when set, so a PDF or pasted-text record keeps its shape. */
+function fileTypeOf(
+  doc: Pick<GuestQuizDraftDocument, 'sourceFileType'>,
+): Pick<GuestQuizDraftDocument, 'sourceFileType'> {
+  return doc.sourceFileType ? { sourceFileType: doc.sourceFileType } : {};
 }
 
 function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
@@ -69,6 +78,7 @@ function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
     entry: doc.entry,
     source: doc.source ?? 'pdf',
     pageCount: doc.pageCount ?? null,
+    ...fileTypeOf(doc),
     failureReason: doc.failureReason ?? null,
     createdAt: doc.createdAt,
   };
@@ -82,7 +92,15 @@ type StoredReadyDraft = Pick<GuestQuizDraftDocument, 'status' | 'complete' | 'co
 
 type StoredClaimableDraft = Pick<
   GuestQuizDraftDocument,
-  'apiDraftId' | 'title' | 'locale' | 'entry' | 'source' | 'pageCount' | 'status' | 'complete'
+  | 'apiDraftId'
+  | 'title'
+  | 'locale'
+  | 'entry'
+  | 'source'
+  | 'pageCount'
+  | 'sourceFileType'
+  | 'status'
+  | 'complete'
 > & { _id: Types.ObjectId; questions: QuizQuestionDocument[] };
 
 /** Only the fields a guest question has: no subdocument `_id`, no images. */
@@ -196,6 +214,7 @@ export class GuestQuizDraftRepository
         entry: 1,
         source: 1,
         pageCount: 1,
+        sourceFileType: 1,
         status: 1,
         complete: 1,
       },
@@ -213,6 +232,7 @@ export class GuestQuizDraftRepository
       entry: doc.entry,
       source: doc.source ?? 'pdf',
       pageCount: doc.pageCount ?? null,
+      ...fileTypeOf(doc),
       complete: completionOf(doc).complete,
     }));
   }

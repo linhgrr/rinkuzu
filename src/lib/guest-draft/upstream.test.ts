@@ -148,6 +148,15 @@ describe('createGuestDraftUpstream', () => {
     });
   });
 
+  it('adds source_file_type to the text body when the browser read an office file (RIN-1786)', async () => {
+    fetchMock.mockResolvedValue(respond(201, { success: true, data: { draft } }));
+
+    await createGuestDraftUpstream().createFromText('Fake slide text', 'pptx');
+
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    expect(init?.body).toBe(JSON.stringify({ text: 'Fake slide text', source_file_type: 'pptx' }));
+  });
+
   it('returns the API refusal of a text, and never logs the text on a network error', async () => {
     fetchMock.mockResolvedValueOnce(
       respond(413, {

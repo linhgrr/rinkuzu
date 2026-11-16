@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
+import { GUEST_FILE_ACCEPT } from '@/features/guest-draft/lib/check-guest-pdf';
 import { GUEST_DRAFT_LIMIT_COPY } from '@/features/guest-draft/lib/guest-limit-copy';
 
 interface GuestPdfDropZoneProps {
@@ -57,7 +58,10 @@ function ChosenFileRow({
   );
 }
 
-/** The PDF picker of the guest upload page (RIN-1448): the drop zone, or the chosen file. */
+/**
+ * The file picker of the guest upload page (RIN-1448): the drop zone, or the chosen file.
+ * It takes PDF, Word and PowerPoint files (RIN-1786).
+ */
 export function GuestPdfDropZone({
   file,
   checking,
@@ -66,7 +70,8 @@ export function GuestPdfDropZone({
   onRemove,
 }: GuestPdfDropZoneProps) {
   const t = useTranslations('guestDraft.upload');
-  // No `accept` filter: a non-PDF reaches `onChoose`, which shows "Only PDF files".
+  // No `accept` filter on the dropzone: any other file reaches `onChoose`, which says which
+  // files are accepted. The picker's own `accept` below only narrows what the OS shows.
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     disabled,
@@ -89,7 +94,7 @@ export function GuestPdfDropZone({
           : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30',
       )}
     >
-      <input {...getInputProps({ accept: 'application/pdf,.pdf' })} />
+      <input {...getInputProps({ accept: GUEST_FILE_ACCEPT })} />
       <div className="space-y-4">
         <div
           className={cn(

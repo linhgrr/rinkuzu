@@ -20,27 +20,57 @@ import type { GuestUploadState } from '@/features/guest-draft/lib/guest-upload-s
 import { GuestResumeBanner } from '@/features/quiz/components/guest-resume/GuestResumeBanner';
 import { Link } from '@/i18n/navigation';
 import { withAuthCallback } from '@/lib/routing/auth-callback';
+import type { GuestDraftOfficeSurface } from '@/shared/constants/guest-draft';
+import { QUIZ_TEXT_MAX_CHARS } from '@/shared/constants/quiz-text-source';
 import { ROUTES } from '@/shared/constants/routes';
 
 const SIGN_UP_HREF = withAuthCallback(ROUTES.REGISTER, ROUTES.CREATE_QUIZ_PDF);
 
+type UploadAlertKey = NonNullable<GuestUploadState['alert']>;
+
+/** The message key of each refusal; the PDF over-limit one also takes the trial limits. */
+const ALERT_MESSAGE = {
+  too_large: 'tooLarge',
+  too_short: 'uploadError',
+  not_pdf: 'notPdf',
+  upload_error: 'uploadError',
+  office_too_large: 'officeTooLarge',
+  legacy_format: 'legacyFormat',
+  encrypted: 'encrypted',
+  corrupt: 'corrupt',
+  too_little_text: 'tooLittleText',
+} as const satisfies Record<UploadAlertKey, string>;
+
+/** Links under the message: sign up for a PDF over the limit, another way in for no text. */
+function AlertLinks({ alert }: { alert: UploadAlertKey }) {
+  const t = useTranslations('guestDraft.alerts');
+  if (alert === 'too_large') {
+    return (
+      <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
+        {t('tooLargeLink')}
+      </Link>
+    );
+  }
+  if (alert !== 'too_little_text') return null;
+  return (
+    <div className="flex flex-wrap gap-x-4">
+      <Link href={ROUTES.TRY_PDF} className={GUEST_SIGN_UP_LINK_CLASS}>
+        {t('pdfVersionLink')}
+      </Link>
+      <Link href={ROUTES.TRY_TEXT} className={GUEST_SIGN_UP_LINK_CLASS}>
+        {t('pasteTextLink')}
+      </Link>
+    </div>
+  );
+}
+
 function UploadAlert({ alert }: { alert: GuestUploadState['alert'] }) {
   const t = useTranslations('guestDraft.alerts');
   if (!alert) return null;
-  const message =
-    alert === 'too_large'
-      ? t('tooLarge', GUEST_DRAFT_LIMIT_COPY)
-      : alert === 'not_pdf'
-        ? t('notPdf')
-        : t('uploadError');
   return (
     <div className="space-y-1">
-      <CreateQuizErrorAlert message={message} focusOnShow />
-      {alert === 'too_large' ? (
-        <Link href={SIGN_UP_HREF} className={GUEST_SIGN_UP_LINK_CLASS}>
-          {t('tooLargeLink')}
-        </Link>
-      ) : null}
+      <CreateQuizErrorAlert message={t(ALERT_MESSAGE[alert], GUEST_DRAFT_LIMIT_COPY)} focusOnShow />
+      <AlertLinks alert={alert} />
     </div>
   );
 }
@@ -76,25 +106,39 @@ function UploadForm({ flow }: { flow: Flow }) {
 }
 
 function FlowBody({ flow }: { flow: Flow }) {
-  const { state } = flow;
+  const t = useTranslations('guestDraft.upload');
+  const { state, office } = flow;
   const { phase, file } = state;
   if (phase === 'cap') return <GuestDraftCapCard />;
   if (phase === 'failed') {
     return (
-      <GuestDraftFailedCard onRetry={() => void flow.submit()} onChooseAnother={flow.remove} />
+      <GuestDraftFailedCard
+        office={office}
+        onRetry={() => void flow.submit()}
+        onChooseAnother={flow.remove}
+      />
     );
   }
   if (file && (phase === 'uploading' || phase === 'processing' || phase === 'ready')) {
     return (
-      <GuestDraftProgressCard
-        phase={phase}
-        label={file.name}
-        meta={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
-        progress={state.progress}
-        pollErrors={state.pollErrors}
-        onCancel={flow.cancel}
-        onPlayNow={flow.playNow}
-      />
+      <div className="space-y-3">
+        <GuestDraftProgressCard
+          phase={phase}
+          // Only the text of a Word or PowerPoint file is sent: "Sending...", not "Uploading...".
+          source={office ? 'text' : 'pdf'}
+          label={file.name}
+          meta={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+          progress={state.progress}
+          pollErrors={state.pollErrors}
+          onCancel={flow.cancel}
+          onPlayNow={flow.playNow}
+        />
+        {flow.truncated ? (
+          <p className="text-xs text-neutral-500">
+            {t('truncatedNote', { max: QUIZ_TEXT_MAX_CHARS })}
+          </p>
+        ) : null}
+      </div>
     );
   }
   return <UploadForm flow={flow} />;
@@ -103,12 +147,17 @@ function FlowBody({ flow }: { flow: Flow }) {
 interface GuestPdfUploadPageProps {
   /** Server-rendered copy under the widget (RIN-1498); the widget stays first on screen. */
   children?: ReactNode;
+  /** The page this is mounted on, for the upload counters; `/try/slides` passes `try_slides`. */
+  surface?: GuestDraftOfficeSurface;
 }
 
-/** `/try/pdf` (RIN-1448): a signed-out visitor turns their own PDF into a quiz and plays it. */
-export function GuestPdfUploadPage({ children }: GuestPdfUploadPageProps) {
+/**
+ * `/try/pdf` (RIN-1448): a signed-out visitor turns their own PDF, Word or PowerPoint file
+ * into a quiz and plays it.
+ */
+export function GuestPdfUploadPage({ children, surface = 'try_pdf' }: GuestPdfUploadPageProps) {
   const t = useTranslations('guestDraft.upload');
-  const flow = useGuestPdfDraft();
+  const flow = useGuestPdfDraft(surface);
 
   return (
     <>

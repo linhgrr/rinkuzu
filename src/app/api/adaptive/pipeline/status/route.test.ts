@@ -26,8 +26,7 @@ describe('GET /api/adaptive/pipeline/status', () => {
       cacheTag: ADAPTIVE_CACHE_TAGS.pipelineStatus,
     });
     const options = createAdaptiveCachedReadRouteMock.mock.calls[0]?.[0] as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(options).toBeDefined();
     expect(options).not.toHaveProperty('infra');
     expect(route.GET).toBeTypeOf('function');

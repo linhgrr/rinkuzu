@@ -2,14 +2,20 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GUEST_CLAIMS_STORAGE_KEY,
   addGuestClaim,
   clearGuestClaims,
+  consumeResumeBannerSignIn,
   createGuestClaimToken,
   findGuestClaimToken,
+  dismissResumeBanner,
+  guestClaimDisplay,
+  markGuestClaimReviewOptIn,
+  markResumeBannerSignIn,
   readGuestClaims,
+  readResumeBannerClaim,
 } from '@/features/quiz/lib/guest-claims';
 
 const NOW = Date.UTC(2026, 10, 5, 12, 0, 0);
@@ -40,9 +46,9 @@ describe('guest claims (RIN-912)', () => {
     ]);
   });
 
-  it('drops claims older than 24 h', () => {
-    addGuestClaim(claim('old', NOW - 25 * HOUR), NOW - 25 * HOUR);
-    addGuestClaim(claim('recent', NOW - 23 * HOUR), NOW - 23 * HOUR);
+  it('drops claims older than 7 days', () => {
+    addGuestClaim(claim('old', NOW - 8 * 24 * HOUR), NOW - 8 * 24 * HOUR);
+    addGuestClaim(claim('recent', NOW - 6 * 24 * HOUR), NOW - 6 * 24 * HOUR);
 
     expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['recent']);
 
@@ -115,9 +121,98 @@ describe('guest claims (RIN-912)', () => {
     expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['attempt-ok']);
   });
 
+  it('keeps the review opt-in mark, still reads entries without it and drops a bad value (RIN-1712)', () => {
+    addGuestClaim(claim('attempt-1'), NOW);
+    addGuestClaim(claim('attempt-2'), NOW);
+
+    markGuestClaimReviewOptIn('attempt-1', NOW);
+    markGuestClaimReviewOptIn('attempt-missing', NOW);
+
+    const byId = Object.fromEntries(readGuestClaims(NOW).map((entry) => [entry.attemptId, entry]));
+    expect(byId['attempt-1']?.reviewOptIn).toBe(true);
+    expect(byId['attempt-2']?.reviewOptIn).toBeUndefined();
+    expect(Object.keys(byId)).toHaveLength(2);
+
+    window.localStorage.setItem(
+      GUEST_CLAIMS_STORAGE_KEY,
+      JSON.stringify([claim('legacy'), { ...claim('bad'), reviewOptIn: 'yes' }]),
+    );
+    expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['legacy']);
+  });
+
   it('keeps zod out of the app-layout client graph (RIN-1370)', () => {
     const source = readFileSync(path.join(__dirname, 'guest-claims.ts'), 'utf8');
 
     expect(source).not.toMatch(/from 'zod/);
+  });
+
+  it('keeps draft attempts only 24 h', () => {
+    const draft = (id: string, age: number) => ({
+      ...claim(id, NOW - age),
+      kind: 'draft' as const,
+    });
+    window.localStorage.setItem(
+      GUEST_CLAIMS_STORAGE_KEY,
+      JSON.stringify([draft('d-old', 25 * HOUR), draft('d-new', 23 * HOUR)]),
+    );
+    expect(readGuestClaims(NOW).map((entry) => entry.attemptId)).toEqual(['d-new']);
+  });
+
+  it('stores score and title, and still reads entries without them', () => {
+    addGuestClaim({ ...claim('a'), ...guestClaimDisplay(79.6, `  ${'x'.repeat(200)}  `) }, NOW);
+    addGuestClaim(claim('legacy', NOW - 1), NOW);
+    const [legacy, withDisplay] = readGuestClaims(NOW);
+    expect(legacy).toEqual(claim('legacy', NOW - 1));
+    expect(withDisplay?.score).toBe(80);
+    expect(withDisplay?.quizTitle).toHaveLength(120);
+    expect(guestClaimDisplay(Number.NaN, '  ')).toEqual({});
+    expect(guestClaimDisplay(150, 'T')).toEqual({ score: 100, quizTitle: 'T' });
+  });
+
+  it('banner picks the newest undismissed claim; dismissal lasts 7 days', () => {
+    addGuestClaim(claim('older', NOW - 50 * HOUR), NOW);
+    addGuestClaim(claim('newer', NOW - 3 * HOUR), NOW);
+    expect(readResumeBannerClaim(NOW)).toMatchObject({ others: 1, ageHours: 3 });
+    expect(readResumeBannerClaim(NOW)?.latest.attemptId).toBe('newer');
+
+    dismissResumeBanner('newer', NOW);
+    expect(readResumeBannerClaim(NOW)?.latest.attemptId).toBe('older');
+
+    addGuestClaim(claim('newest', NOW), NOW);
+    expect(readResumeBannerClaim(NOW)?.latest.attemptId).toBe('newest');
+
+    const later = NOW + 7 * 24 * HOUR + 1;
+    addGuestClaim(claim('fresh', later - HOUR), later);
+    dismissResumeBanner('x', later);
+    expect(readResumeBannerClaim(later)?.latest.attemptId).toBe('fresh');
+    expect(
+      JSON.parse(window.localStorage.getItem('rinkuzu.guestResumeDismissed.v1') ?? '[]'),
+    ).toHaveLength(1);
+  });
+
+  it('banner helpers never throw when storage is disabled', () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    expect(readResumeBannerClaim(NOW)).toBeNull();
+    expect(() => dismissResumeBanner('a', NOW)).not.toThrow();
+    spy.mockRestore();
+  });
+
+  it('reads the resume sign-in marker once, and tolerates disabled session storage', () => {
+    expect(consumeResumeBannerSignIn()).toBe(false);
+    markResumeBannerSignIn();
+    expect(consumeResumeBannerSignIn()).toBe(true);
+    expect(consumeResumeBannerSignIn()).toBe(false);
+
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    expect(() => markResumeBannerSignIn()).not.toThrow();
+    spy.mockRestore();
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    expect(consumeResumeBannerSignIn()).toBe(false);
   });
 });

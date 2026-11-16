@@ -101,4 +101,35 @@ describe('toAttemptDetailViewModel', () => {
     expect(result).not.toHaveProperty('mode');
     expect(quick).toMatchObject({ mode: 'quick', questionIndices: [17] });
   });
+
+  it('carries the Premium preview block and omits it otherwise', () => {
+    const base: AttemptDetailDto = {
+      id: 'attempt-3',
+      score: 60,
+      totalQuestions: 5,
+      takenAt: '2026-07-02T00:00:00.000Z',
+      answers: [],
+      historyStatus: 'complete',
+      quiz: {
+        id: 'quiz-9',
+        title: 'Biology',
+        shareable: false,
+        questionCount: 20,
+        slug: 'biology',
+        questions: [],
+      },
+      missedCount: 0,
+      nextQuiz: null,
+    };
+    const premiumPreview = {
+      fullQuestionCount: 20,
+      quizId: 'quiz-9',
+      freeQuiz: { slug: 'free', title: 'Free quiz' },
+    };
+
+    expect(toAttemptDetailViewModel({ ...base, premiumPreview }, 'en').premiumPreview).toEqual(
+      premiumPreview,
+    );
+    expect(toAttemptDetailViewModel(base, 'en')).not.toHaveProperty('premiumPreview');
+  });
 });

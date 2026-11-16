@@ -7,15 +7,19 @@ import { ApiResponseError } from '@/lib/api/client';
 import { fetchPremiumBatch } from '@/features/quiz/api/premium-quiz-api';
 import PremiumQuizPlayerClient from './PremiumQuizPlayerClient';
 
-const { pushMock, saveAnswerMock, startSessionMock, submitSessionMock, unlockMock } = vi.hoisted(
-  () => ({
+const { captureMock, pushMock, saveAnswerMock, startSessionMock, submitSessionMock, unlockMock } =
+  vi.hoisted(() => ({
+    captureMock: vi.fn(),
     pushMock: vi.fn(),
     saveAnswerMock: vi.fn(),
     startSessionMock: vi.fn(),
     submitSessionMock: vi.fn(),
     unlockMock: vi.fn(),
-  }),
-);
+  }));
+
+vi.mock('@/lib/analytics/client', () => ({
+  captureAnalyticsEvent: (...args: unknown[]) => captureMock(...args),
+}));
 
 vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: pushMock, back: vi.fn() }),
@@ -301,5 +305,131 @@ describe('PremiumQuizPlayerClient', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('errors.api.codes.quotaExceeded');
     expect(screen.queryByText(/wallet 42/)).not.toBeInTheDocument();
+  });
+
+  describe('preview session (RIN-1722)', () => {
+    const question = (n: number) => ({
+      id: `question-${n}`,
+      question: `Question ${n}?`,
+      options: ['No', 'Yes'],
+      type: 'single' as const,
+    });
+
+    async function previewBatch(fullQuestionCount: number, playable: number) {
+      const first = await startSessionMock.getMockImplementation()?.();
+      return {
+        ...first,
+        totalQuestions: playable,
+        questions: [question(1), question(2), question(3)],
+        nextCursor: playable > 3 ? 'cursor-1' : undefined,
+        answers: Array.from({ length: playable }, () => null),
+        preview: { fullQuestionCount },
+      };
+    }
+
+    function renderPreviewPlayer(questionCount: number) {
+      return render(
+        <PremiumQuizPlayerClient
+          quizId="quiz-1"
+          slug="premium-quiz"
+          title="Premium quiz"
+          questionCount={questionCount}
+        />,
+      );
+    }
+
+    it('counts and bounds by the playable questions and shows the preview marker', async () => {
+      startSessionMock.mockResolvedValue({ ...(await previewBatch(40, 3)), nextCursor: undefined });
+
+      renderPreviewPlayer(40);
+
+      expect(await screen.findByText('Question 1?')).toBeInTheDocument();
+      expect(screen.getByText('premiumPreviewBadge')).toBeInTheDocument();
+      expect(screen.getByText('premiumPreviewNote')).toBeInTheDocument();
+      expect(screen.getByText('1/3')).toBeInTheDocument();
+      expect(screen.queryByText('1/40')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'premiumUnlockButton' })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'next' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'next' }));
+      expect(await screen.findByText('3/3')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'submitQuiz' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'next' })).not.toBeInTheDocument();
+      expect(fetchPremiumBatch).not.toHaveBeenCalled();
+    });
+
+    it('announces the start, and the completion once the preview is submitted', async () => {
+      startSessionMock.mockResolvedValue({ ...(await previewBatch(40, 3)), nextCursor: undefined });
+      submitSessionMock.mockResolvedValue({
+        attemptId: 'attempt-9',
+        score: 67,
+        correctAnswers: 2,
+        totalQuestions: 3,
+        sessionId: 'session-1',
+        preview: true,
+      });
+
+      renderPreviewPlayer(40);
+      await screen.findByText('Question 1?');
+      expect(captureMock).toHaveBeenCalledWith('quiz_started', {
+        mode: 'full',
+        question_count: 3,
+        premium_preview: true,
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'next' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'next' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'submitQuiz' }));
+
+      await waitFor(() =>
+        expect(pushMock).toHaveBeenCalledWith('/quiz/premium-quiz/result?attemptId=attempt-9'),
+      );
+      expect(captureMock).toHaveBeenCalledWith(
+        'quiz_completed',
+        expect.objectContaining({
+          question_count: 3,
+          score: 67,
+          authenticated: true,
+          mode: 'full',
+          premium_preview: true,
+        }),
+      );
+    });
+
+    it('stays on the question with the preview-limit message on a stale 403, no unlock card', async () => {
+      startSessionMock.mockResolvedValue({ ...(await previewBatch(40, 3)), nextCursor: undefined });
+      saveAnswerMock.mockRejectedValueOnce(
+        new ApiResponseError({
+          message: 'Premium subscription or one credit is required',
+          status: 403,
+          payload: {},
+          code: 'premium_required',
+        }),
+      );
+
+      renderPreviewPlayer(40);
+      fireEvent.click(await screen.findByRole('radio', { name: 'Option B' }));
+
+      expect(await screen.findByText('premiumPreviewLimitError')).toBeInTheDocument();
+      expect(screen.getByText('Question 1?')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'premiumUnlockButton' })).not.toBeInTheDocument();
+    });
+
+    it('looks like the normal player when the whole quiz fits in the preview', async () => {
+      startSessionMock.mockResolvedValue({ ...(await previewBatch(3, 3)), nextCursor: undefined });
+
+      renderPreviewPlayer(3);
+
+      expect(await screen.findByText('Question 1?')).toBeInTheDocument();
+      expect(screen.getByText('1/3')).toBeInTheDocument();
+      expect(screen.queryByText('premiumPreviewBadge')).not.toBeInTheDocument();
+      expect(screen.queryByText('premiumPreviewNote')).not.toBeInTheDocument();
+    });
+
+    it('sends nothing for a full session (learners with access see no change)', async () => {
+      renderPlayer();
+      await screen.findByText('Premium question?');
+      expect(captureMock).not.toHaveBeenCalled();
+    });
   });
 });

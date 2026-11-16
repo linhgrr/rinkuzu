@@ -1,6 +1,10 @@
 import type { ClaimGuestDraftsResponseDto } from '@/dtos/guest-draft';
 import type { ClaimGuestAttemptsResponseDto } from '@/dtos/quiz';
-import { clearGuestClaims, readGuestClaims } from '@/features/quiz/lib/guest-claims';
+import {
+  clearGuestClaims,
+  consumeResumeBannerSignIn,
+  readGuestClaims,
+} from '@/features/quiz/lib/guest-claims';
 import {
   clearGuestDraftClaims,
   readGuestDraftClaims,
@@ -39,22 +43,32 @@ async function postStoredGuestDrafts(): Promise<void> {
 }
 
 async function postStoredGuestClaims(): Promise<void> {
-  const tokens = readGuestClaims().map((claim) => claim.token);
+  const claims = readGuestClaims();
+  const tokens = claims.map((claim) => claim.token);
   if (tokens.length === 0) return;
+  // The tokens of the attempts whose result card asked for the 2-day review (RIN-1712).
+  const reviewOptInTokens = claims.filter((claim) => claim.reviewOptIn).map((claim) => claim.token);
   try {
     const { claimedAttemptIds } = await fetchApiData<ClaimGuestAttemptsResponseDto>(
       '/api/attempts/claim',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokens }),
+        body: JSON.stringify(
+          reviewOptInTokens.length > 0 ? { tokens, reviewOptInTokens } : { tokens },
+        ),
       },
     );
     // The server already dropped wrong, expired or used tokens: forget them all.
     clearGuestClaims();
+    const fromResumeBanner = consumeResumeBannerSignIn();
     if (claimedAttemptIds.length > 0) {
-      // The count only: never the ids, the tokens or the email.
-      captureAnalyticsEvent('guest_attempt_claimed', { count: claimedAttemptIds.length });
+      // The count only: never the ids, the tokens or the email. `source` is set when the
+      // sign-in started from the resume banner (RIN-1714).
+      captureAnalyticsEvent('guest_attempt_claimed', {
+        count: claimedAttemptIds.length,
+        ...(fromResumeBanner ? { source: 'resume_banner' } : {}),
+      });
     }
   } catch (error) {
     // A 400 means the stored tokens can never pass; anything else (429, 5xx,

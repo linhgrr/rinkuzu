@@ -1,8 +1,5 @@
 export type QuizCreationErrorCode =
-  | 'invalid_draft'
-  | 'invalid_folder'
-  | 'premium_required'
-  | 'slug_conflict';
+  'invalid_draft' | 'invalid_folder' | 'premium_required' | 'slug_conflict';
 
 export class QuizCreationError extends Error {
   constructor(

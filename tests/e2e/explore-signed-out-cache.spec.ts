@@ -12,7 +12,12 @@ const NAMES = ['E2E Admin User', 'E2E Regular User'] as const;
 async function html(request: APIRequestContext, path: string) {
   const response = await request.get(path);
   expect(response.status(), path).toBe(200);
-  return { body: await response.text(), cacheControl: response.headers()['cache-control'] ?? '' };
+  return {
+    body: await response.text(),
+    cacheControl: response.headers()['cache-control'] ?? '',
+    cdn: response.headers()['cloudflare-cdn-cache-control'] ?? '',
+    setCookie: response.headers()['set-cookie'] ?? '',
+  };
 }
 
 test.describe('signed-out explore from the cache (RIN-1646)', () => {
@@ -33,6 +38,9 @@ test.describe('signed-out explore from the cache (RIN-1646)', () => {
 
       // Served by the ISR twin, not rendered per request.
       expect(signedOut.cacheControl).toContain('s-maxage=600');
+      // RIN-1679: Cloudflare may keep it, and nothing on it sets a cookie.
+      expect(signedOut.cdn).toBe('public, max-age=300, stale-while-revalidate=600');
+      expect(signedOut.setCookie).toBe('');
       expect(signedOut.body).toContain('<link rel="canonical" href=');
       expect(signedOut.body).toMatch(/rel="canonical" href="[^"]*\/vi\/explore"/);
       expect(topicMiss.status()).toBe(404);
@@ -55,6 +63,7 @@ test.describe('signed-out explore from the cache (RIN-1646)', () => {
       for (const [index, session] of sessions.entries()) {
         const other = sessions[1 - index];
         expect(session.cacheControl).not.toContain('s-maxage');
+        expect(session.cdn).toBe('no-store');
         expect(session.body).toContain(session.user.email);
         expect(session.body).not.toContain(other?.user.email ?? 'missing');
       }

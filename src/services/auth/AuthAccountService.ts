@@ -33,7 +33,7 @@ export class AuthAccountService implements IAuthAccountService {
     private readonly notifier: IAuthNotifier,
     private readonly audit: IAuthAudit,
     private readonly scheduler: IDeferredTaskScheduler,
-    private readonly guestAttempts: IGuestAttemptClaimService,
+    private readonly guestAttempts: Pick<IGuestAttemptClaimService, 'claimHashed'>,
     private readonly guestDrafts?: Pick<IGuestDraftClaimService, 'claimHashed'>,
   ) {}
 
@@ -80,6 +80,7 @@ export class AuthAccountService implements IAuthAccountService {
           signupLocale: input.locale ?? defaultLocale,
           signupCountry: input.signupCountry ?? null,
         },
+        ...(input.signupSource ? { signupSource: input.signupSource } : {}),
         verificationTokenHash: verification.hash,
         verificationExpires: new Date(Date.now() + VERIFICATION_TTL_MS),
         ...(guestClaimHashes.length > 0 ? { guestClaimHashes } : {}),

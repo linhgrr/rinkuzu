@@ -11,8 +11,7 @@ import { closesFence, openingFence, type Fence } from './body-fences';
 const TRY_QUIZ_LINE_PATTERN = /^\s*<TryQuiz(?:\s+teaser="([^"<>{}]{1,140})")?\s*\/>\s*$/;
 
 export type BlogBodySegment =
-  | { kind: 'markdown'; content: string }
-  | { kind: 'try-quiz'; teaser?: string };
+  { kind: 'markdown'; content: string } | { kind: 'try-quiz'; teaser?: string };
 
 export const isTryQuizLine = (line: string): boolean => TRY_QUIZ_LINE_PATTERN.test(line);
 

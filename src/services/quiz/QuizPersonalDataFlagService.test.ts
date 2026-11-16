@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Quiz } from '@/entities/Quiz';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { QuizPersonalDataFlagService } from '@/services/quiz/QuizPersonalDataFlagService';
+
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 
 const actor = { id: '507f191e810c19729de860ff', email: 'admin@example.com' };
 const checkedAt = new Date('2026-11-01T00:00:00Z');
@@ -57,6 +60,8 @@ describe('QuizPersonalDataFlagService.clear', () => {
       entityId: flaggedQuiz.id,
       details: { slug: flaggedQuiz.slug, kinds: 'email,phone' },
     });
+    // RIN-1647: the cached signed-out page drops the flag's noindex at once.
+    expect(revalidateQuizPages).toHaveBeenCalledWith([flaggedQuiz.slug]);
   });
 
   it('is a no-op without a write or audit when the quiz is not flagged', async () => {

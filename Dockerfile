@@ -15,6 +15,13 @@ COPY . .
 
 ARG NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app
 ARG NEXT_PUBLIC_API_URL=https://api.rinkuzu.app
+# NEXT_PUBLIC_* are inlined into the client bundle at build time, so the analytics ids
+# must be build args (public values; the deploy passes them).
+ARG NEXT_PUBLIC_GA_ID=
+ARG NEXT_PUBLIC_POSTHOG_HOST=
+ARG NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=
+# The gate typechecks before it builds; do not pay for it twice (see next.config.js).
+ARG NEXT_SKIP_TYPECHECK=1
 
 # Build-time validation must not depend on production secrets. These values are
 # scoped to the builder stage; the runtime image still requires real injected
@@ -26,6 +33,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
   AUTH_TRUST_HOST=true \
   NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL} \
   NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+  NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID} \
+  NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST} \
+  NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN} \
   SESSION_MAX_AGE_SECONDS=28800 \
   SESSION_UPDATE_AGE_SECONDS=3600 \
   AUTH_LOCKOUT_MAX_ATTEMPTS=5 \
@@ -46,7 +56,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
   PAYOS_CHECKSUM_KEY=build-only-placeholder \
   NEXT_IMAGE_UNOPTIMIZED=false
 
-RUN npm rebuild argon2 --build-from-source
+# argon2 ships prebuilt binaries for linux (musl and glibc); verify it loads
+# instead of compiling it, so the builder needs no toolchain.
+RUN npm rebuild argon2 sharp && node -e "require('argon2');require('sharp')"
 
 RUN npm run build
 

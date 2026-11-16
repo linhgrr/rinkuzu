@@ -10,12 +10,7 @@ import { QUICK_ROUND_SIZE, isQuickRoundEligible } from '@/shared/constants/quick
 
 /** @public Read by the admin starter list (RIN-1177 part 2) for its warning. */
 export type StarterQuizDropReason =
-  | 'missing'
-  | 'not-public'
-  | 'premium'
-  | 'empty'
-  | 'personal-data'
-  | 'held';
+  'missing' | 'not-public' | 'premium' | 'empty' | 'personal-data' | 'held';
 
 /** @public Read by the admin starter list (RIN-1177 part 2) for its warning. */
 export interface DroppedStarterQuiz {

@@ -28,6 +28,16 @@ interface UserDocument extends Document {
   signupLocale?: Locale;
   /** ISO-3166 alpha-2 country of the signup request, set once at creation; null = not known. */
   signupCountry?: string | null;
+  /** First touch of the signup (RIN-1762), set once at creation; absent = unknown. */
+  signupSource?: {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    referrer_class: 'direct' | 'internal' | 'search' | 'social' | 'referral';
+    entry_path: string;
+    first_seen_at: Date;
+  };
   /** UI locale of signup, else of the first sign-in that knew one (RIN-1263). Absent = unknown. */
   locale?: Locale;
   /** Monotonic session generation; increments on login and real disable/restore. */
@@ -105,6 +115,25 @@ const UserSchema = new Schema<UserDocument>({
   // Analytics only (RIN-1268): no default, so accounts created before stay absent.
   signupLocale: { type: String, enum: locales, required: false },
   signupCountry: { type: String, match: /^[A-Z]{2}$/, required: false },
+  signupSource: {
+    type: new Schema(
+      {
+        utm_source: { type: String, maxlength: 64 },
+        utm_medium: { type: String, maxlength: 64 },
+        utm_campaign: { type: String, maxlength: 64 },
+        utm_content: { type: String, maxlength: 64 },
+        referrer_class: {
+          type: String,
+          enum: ['direct', 'internal', 'search', 'social', 'referral'],
+          required: true,
+        },
+        entry_path: { type: String, maxlength: 200, required: true },
+        first_seen_at: { type: Date, required: true },
+      },
+      { _id: false },
+    ),
+    required: false,
+  },
   locale: { type: String, enum: locales, required: false },
   authVersion: {
     type: Number,

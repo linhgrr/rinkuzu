@@ -40,6 +40,7 @@
     "hint": "Thường mất khoảng 1 phút. Giữ trang này mở.",
     "cancel": "Hủy",
     "ready": "Quiz sẵn sàng • {count} câu hỏi",
+    "readyFirstBatch": "{count} câu đầu tiên đã sẵn sàng • còn nữa đang được tạo",
     "playNow": "Làm quiz ngay",
     "pollError": "Không kiểm tra được tiến trình. Đang thử lại…"
   },
@@ -57,7 +58,15 @@
     "expiredBodyText": "Quiz dùng thử chỉ được giữ 24 giờ. Tạo lại từ văn bản của bạn.",
     "makeAgain": "Tạo lại",
     "goToLibrary": "Tới thư viện của tôi",
-    "loading": "Đang tải quiz…"
+    "loading": "Đang tải quiz…",
+    "pendingMore": "Đang tạo thêm câu hỏi."
+  },
+  "result": {
+    "moreTitle": "Còn câu hỏi nữa đang được tạo",
+    "moreBody": "Chúng tôi đang tạo phần còn lại của quiz.",
+    "arrivedTitle": "Có thêm {count} câu hỏi",
+    "keepGoing": "Làm tiếp",
+    "failed": "Lần này chúng tôi chưa tạo thêm được câu hỏi. Quiz của bạn được lưu 24 giờ."
   },
   "textMeta": {
     "title": "Tạo câu hỏi trắc nghiệm từ văn bản miễn phí | RinKuzu",
@@ -187,5 +196,15 @@
         "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
       }
     }
+  },
+  "resumeBanner": {
+    "region": "Kết quả bài quiz đã lưu trên thiết bị này",
+    "leadScore": "Kết quả của bạn vẫn còn: {score}%",
+    "leadLegacy": "Kết quả bài quiz của bạn",
+    "leadDraft": "Quiz từ tài liệu của bạn sẽ bị xóa sau {hours} giờ",
+    "others": "+{count} kết quả khác",
+    "save": "Lưu với Google",
+    "see": "Xem lại",
+    "dismiss": "Đóng thông báo kết quả"
   }
 }

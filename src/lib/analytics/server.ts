@@ -1,6 +1,9 @@
 import 'server-only';
 
+import { headers } from 'next/headers';
+
 import { logger } from '@/lib/logger';
+import { isAgentUserAgent } from '@/shared/constants/agent-traffic';
 import type { AnalyticsEventName } from './events';
 
 type ServerEventProperties = Record<string, string | number | boolean | null>;
@@ -8,10 +11,25 @@ type ServerEventProperties = Record<string, string | number | boolean | null>;
 const CAPTURE_TIMEOUT_MS = 3_000;
 
 /**
+ * True when the request being handled carries an agent User-Agent (RIN-1760).
+ * Outside a request scope (cron, email sends) there is no header store, so
+ * nothing is skipped.
+ */
+async function isAgentRequest(): Promise<boolean> {
+  try {
+    return isAgentUserAgent((await headers()).get('user-agent'));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Server-side product event (RIN-999): one PostHog capture keyed on the
  * learner's id, the same distinct id the browser identifies with. Best
  * effort: it never throws, and a missing project token skips it. Callers pass
  * only non-personal properties; nothing here is logged but the event name.
+ * A capture made while handling a request from our own agents (User-Agent
+ * `rinkuzu-agent/...`) is skipped and returns false (RIN-1760).
  */
 export async function captureServerEvent(
   event: AnalyticsEventName,
@@ -21,6 +39,7 @@ export async function captureServerEvent(
 ): Promise<boolean> {
   const token = env['NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN']?.trim();
   if (!token) return false;
+  if (await isAgentRequest()) return false;
   const host = (env['NEXT_PUBLIC_POSTHOG_HOST'] ?? 'https://us.i.posthog.com').replace(/\/$/u, '');
   try {
     const response = await fetch(`${host}/i/v0/e/`, {

@@ -28,8 +28,7 @@ QuizTopicAssignmentSchema.index({ topicId: 1, order: 1, createdAt: -1 });
 
 const QuizTopicAssignment =
   (mongoose.models['QuizTopicAssignment'] as
-    | mongoose.Model<QuizTopicAssignmentDocument>
-    | undefined) ??
+    mongoose.Model<QuizTopicAssignmentDocument> | undefined) ??
   mongoose.model<QuizTopicAssignmentDocument>('QuizTopicAssignment', QuizTopicAssignmentSchema);
 
 export default QuizTopicAssignment;

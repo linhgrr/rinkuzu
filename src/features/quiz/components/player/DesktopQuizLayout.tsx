@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { HiOutlineArrowLeft, HiOutlineUser } from 'react-icons/hi';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import { QuestionTotal } from '@/features/quiz/components/player/QuestionTotal';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { isQuestionAnswered } from '@/features/quiz/lib/isQuestionAnswered';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
@@ -164,10 +165,11 @@ function DesktopQuizHeader({
             <div className="text-right">
               <div className="text-sm font-semibold text-neutral-700">
                 {t('question')} {currentQuestionIndex + 1} {t('of', { ns: 'common' })}{' '}
-                {questionCount}
+                <QuestionTotal count={questionCount} />
               </div>
               <div className="text-xs text-neutral-500">
-                {answeredQuestions} {t('of', { ns: 'common' })} {questionCount} {t('answered')}
+                {answeredQuestions} {t('of', { ns: 'common' })}{' '}
+                <QuestionTotal count={questionCount} /> {t('answered')}
               </div>
             </div>
           </div>

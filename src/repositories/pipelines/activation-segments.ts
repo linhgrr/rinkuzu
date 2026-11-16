@@ -4,11 +4,12 @@ import type {
 } from '@/interfaces/repositories/IActivationSegmentStatsRepository';
 
 /** The User field a segmented cohort pipeline groups by (RIN-1268). */
-export type ActivationSegmentField = 'signupLocale' | 'signupCountry';
+export type ActivationSegmentField = 'signupLocale' | 'signupCountry' | 'signupSource';
 
 export const SEGMENT_FIELDS: Record<ActivationSegmentBy, ActivationSegmentField> = {
   locale: 'signupLocale',
   country: 'signupCountry',
+  source: 'signupSource',
 };
 
 interface SegmentCohortKey {
@@ -21,6 +22,7 @@ export interface SegmentCohortAggregate {
   _id: SegmentCohortKey;
   signups: number;
   activated: number;
+  startedQuiz: number;
 }
 
 export function toSegmentWeekRecord(row: SegmentCohortAggregate): ActivationSegmentWeekRecord {
@@ -29,6 +31,7 @@ export function toSegmentWeekRecord(row: SegmentCohortAggregate): ActivationSegm
     segment: typeof row._id.segment === 'string' ? row._id.segment : null,
     signups: row.signups,
     activated: row.activated,
+    startedQuiz: row.startedQuiz,
   };
 }
 
@@ -43,12 +46,20 @@ export interface SegmentStages {
   weekKey: string | Record<string, string>;
 }
 
+/** `signupSource`: utm_source, else referrer_class, else null (RIN-1763). */
+function segmentExpression(field: ActivationSegmentField): Record<string, unknown> {
+  if (field === 'signupSource') {
+    return { $ifNull: ['$signupSource.utm_source', '$signupSource.referrer_class', null] };
+  }
+  return { $ifNull: ['$' + field, null] };
+}
+
 export function segmentStages(field?: ActivationSegmentField): SegmentStages {
   if (field === undefined) {
     return { source: {}, perUser: {}, perSignup: {}, weekKey: '$weekStart' };
   }
   return {
-    source: { segment: { $ifNull: ['$' + field, null] } },
+    source: { segment: segmentExpression(field) },
     perUser: { segment: { $max: '$segment' } },
     perSignup: { segment: 1 },
     weekKey: { weekStart: '$weekStart', segment: '$segment' },

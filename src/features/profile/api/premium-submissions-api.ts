@@ -1,11 +1,7 @@
 import { fetchApiData } from '@/lib/api/client';
 
 export type ProfilePremiumSubmissionStatus =
-  | 'pending'
-  | 'changes_requested'
-  | 'rejected'
-  | 'approved'
-  | 'withdrawn';
+  'pending' | 'changes_requested' | 'rejected' | 'approved' | 'withdrawn';
 
 export interface ProfilePremiumSubmission {
   sourceQuizId: string;

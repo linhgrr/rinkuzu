@@ -73,6 +73,7 @@ export class UserAttemptDtoMapper {
     contentLocked = false,
     nextQuiz: AttemptDetailDto['nextQuiz'] = null,
     share?: AttemptQuizShareFacts,
+    premiumPreview?: AttemptDetailDto['premiumPreview'],
   ): AttemptDetailDto {
     const quiz = requireQuizSnapshot(attempt);
     if (!quiz.questions) {
@@ -109,6 +110,7 @@ export class UserAttemptDtoMapper {
       },
       missedCount: countMissedAnswers(attempt),
       nextQuiz,
+      ...(premiumPreview !== undefined && { premiumPreview }),
       ...(attempt.retryOfAttemptId !== undefined && { retryOfAttemptId: attempt.retryOfAttemptId }),
       ...(attempt.questionIndices !== undefined && { questionIndices: attempt.questionIndices }),
       ...(attempt.mode === 'quick' && { mode: 'quick' as const }),

@@ -68,6 +68,7 @@ export class AttemptPersistenceMapper {
       ...(record.premiumSnapshotHash === undefined
         ? {}
         : { premiumSnapshotHash: record.premiumSnapshotHash }),
+      ...(record.preview === true ? { preview: true } : {}),
       ...(record.retryOfAttemptId == null
         ? {}
         : { retryOfAttemptId: serializeId(record.retryOfAttemptId, 'attempt.retryOfAttemptId') }),

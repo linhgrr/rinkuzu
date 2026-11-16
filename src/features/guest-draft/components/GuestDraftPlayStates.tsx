@@ -20,8 +20,16 @@ interface GuestDraftSourceProps {
 const NOTICE_LINK_CLASS =
   'inline-flex min-h-11 items-center font-medium text-orange-800 underline hover:text-orange-900';
 
+interface GuestDraftNoticeProps extends GuestDraftSourceProps {
+  /**
+   * The rest of a first-batch draft (RIN-1620): `pending` adds "More questions are being
+   * made."; `settled` keeps its space, invisible, so the question below never moves.
+   */
+  more?: 'pending' | 'settled' | 'none';
+}
+
 /** Slim note above question 1 of a guest draft (RIN-1448): kept 24 h unless you sign up. */
-export function GuestDraftNotice({ source = 'pdf' }: GuestDraftSourceProps) {
+export function GuestDraftNotice({ source = 'pdf', more = 'none' }: GuestDraftNoticeProps) {
   const t = useTranslations('guestDraft.play');
   return (
     <p className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-2 text-sm text-neutral-700">
@@ -32,6 +40,16 @@ export function GuestDraftNotice({ source = 'pdf' }: GuestDraftSourceProps) {
           </Link>
         ),
       })}
+      {more === 'none' ? null : (
+        <span
+          data-testid="guest-draft-pending"
+          className={more === 'settled' ? 'invisible' : undefined}
+          aria-hidden={more === 'settled' ? true : undefined}
+        >
+          {' '}
+          {t('pendingMore')}
+        </span>
+      )}
     </p>
   );
 }

@@ -26,6 +26,8 @@ interface AttemptDocument {
   quiz: Types.ObjectId;
   premiumSubmission?: Types.ObjectId;
   premiumSnapshotHash?: string;
+  /** RIN-1722: a Premium preview attempt; its snapshot holds only the preview questions. */
+  preview?: boolean;
   quizSnapshot: AttemptQuizSnapshotDocument;
   score: number;
   correctAnswers: number;
@@ -120,6 +122,10 @@ const AttemptSchema = new Schema<AttemptDocument>({
   },
   fromGuestDraft: {
     type: Boolean,
+  },
+  preview: {
+    type: Boolean,
+    immutable: true,
   },
   idempotencyKey: {
     type: String,

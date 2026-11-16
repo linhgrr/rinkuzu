@@ -16,6 +16,7 @@ import type { IAuthRateLimiter } from '@/interfaces/services/IAuthRateLimiter';
 import type { IDeferredTaskScheduler } from '@/interfaces/services/IDeferredTaskScheduler';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { canonicalizeEmail } from '@/shared/email/canonical-email';
+import { ipBucketKey } from '@/lib/client-ip';
 
 export type AuthSignInPolicy = FailedLoginPolicy;
 
@@ -39,8 +40,7 @@ export type CredentialsSignInFailure =
   | { success: false; code: 'rate_limit_exceeded'; retryAfterSeconds: number };
 
 export type CredentialsSignInResult =
-  | { success: true; user: AuthenticatedUser }
-  | CredentialsSignInFailure;
+  { success: true; user: AuthenticatedUser } | CredentialsSignInFailure;
 
 export type GoogleSignInResult =
   | { success: true; user: AuthenticatedUser; isNewAccount: boolean }
@@ -194,7 +194,7 @@ export class AuthSignInService {
     ip: string | null,
   ): Promise<CredentialsRateLimitFailure | null> {
     const decisions = await Promise.all([
-      this.rateLimiter.consume('credentials_ip', ip?.trim() || 'unknown'),
+      this.rateLimiter.consume('credentials_ip', ipBucketKey(ip)),
       this.rateLimiter.consume('credentials_identity', identityRateLimitKey(email)),
     ]);
     const blocked = decisions.filter(

@@ -26,6 +26,8 @@ export interface PremiumPlaySessionFields<TId> {
   currentQuestionIndex: number;
   highestBatch: number;
   sessionCode: string;
+  /** RIN-1722: preview session (first questions only); absent = full. */
+  preview?: boolean;
   idleExpiresAt: Date;
   absoluteExpiresAt: Date;
   purgeAt: Date;
@@ -63,6 +65,7 @@ const PremiumPlaySessionSchema = new Schema<PremiumPlaySessionDocument>(
     currentQuestionIndex: { type: Number, required: true, default: 0, min: 0 },
     highestBatch: { type: Number, required: true, default: 0, min: 0 },
     sessionCode: { type: String, required: true, trim: true, minlength: 8, maxlength: 32 },
+    preview: { type: Boolean },
     idleExpiresAt: { type: Date, required: true },
     absoluteExpiresAt: { type: Date, required: true },
     purgeAt: { type: Date, required: true },
@@ -83,8 +86,7 @@ PremiumPlaySessionSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 const PremiumPlaySessionModel =
   (mongoose.models['PremiumPlaySession'] as
-    | mongoose.Model<PremiumPlaySessionDocument>
-    | undefined) ??
+    mongoose.Model<PremiumPlaySessionDocument> | undefined) ??
   mongoose.model<PremiumPlaySessionDocument>('PremiumPlaySession', PremiumPlaySessionSchema);
 
 export default PremiumPlaySessionModel;

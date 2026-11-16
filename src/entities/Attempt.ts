@@ -25,6 +25,8 @@ export interface Attempt {
   quiz: string | AttemptQuizSnapshot;
   premiumSubmissionId?: string;
   premiumSnapshotHash?: string;
+  /** RIN-1722: Premium preview attempt (first questions only, readable without a grant). */
+  preview?: boolean;
   answers: AttemptAnswer[];
   score: number;
   totalQuestions: number;

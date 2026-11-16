@@ -119,10 +119,64 @@ describe('AnalyticsRoot consent banner', () => {
     );
   });
 
+  // A DOMRectList stand-in: an array of rects with item().
+  function rectList(list: DOMRect[]): DOMRectList {
+    return Object.assign([...list], { item: (index: number) => list[index] ?? null });
+  }
+
+  it('reserves scroll room under the page for the space the fixed card covers (RIN-1570)', () => {
+    // On a 390 x 664 phone the card sat over the register page's "Create
+    // Account" button and the page could not scroll it clear. An in-flow
+    // spacer at the end of <body> as tall as the covered strip lets every page
+    // scroll its last control above the card.
+    const observers: Array<() => void> = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          observers.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal('innerHeight', 664);
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ top: 520 } as DOMRect);
+    const rects = vi
+      .spyOn(HTMLElement.prototype, 'getClientRects')
+      .mockReturnValue(rectList([{} as DOMRect]));
+    try {
+      const { container } = render(<AnalyticsRoot />);
+      const spacer = container.querySelector('[data-consent-spacer]') as HTMLElement;
+      expect(spacer).toHaveAttribute('aria-hidden', 'true');
+      expect(spacer.style.height).toBe('144px');
+
+      // Hidden (a quiz player is on screen): nothing to reserve.
+      rects.mockReturnValue(rectList([]));
+      for (const observer of observers) observer();
+      expect(spacer.style.height).toBe('0px');
+    } finally {
+      rect.mockRestore();
+      rects.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('renders nothing once the visitor has chosen', () => {
     mocks.setConsent('denied');
     const { container } = render(<AnalyticsRoot />);
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('stores the first-touch cookie even when consent is denied (RIN-1762)', () => {
+    mocks.setConsent('denied');
+    document.cookie = 'rk_ft=; Max-Age=0; Path=/';
+    render(<AnalyticsRoot />);
+
+    expect(document.cookie).toContain('rk_ft=');
+    document.cookie = 'rk_ft=; Max-Age=0; Path=/';
   });
 });

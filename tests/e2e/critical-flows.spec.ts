@@ -411,6 +411,8 @@ interface SeededGuestDraft {
 async function seedReadyGuestDraft(
   db: Db,
   token: string = randomBytes(32).toString('base64url'),
+  /** False: only the first batch is stored and more may come (RIN-1619, RIN-1620). */
+  complete = true,
 ): Promise<SeededGuestDraft> {
   const id = new ObjectId();
   const apiDraftId = `e2e-guest-${randomUUID()}`;
@@ -430,6 +432,8 @@ async function seedReadyGuestDraft(
         correctIndex: 0,
       },
     ],
+    complete,
+    ...(complete ? { completion: 'full' } : {}),
     locale: 'en',
     entry: 'landing',
     expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
@@ -1606,6 +1610,135 @@ test.describe('production critical paths', () => {
             .deleteMany({ key: { $in: [...E2E_CREDENTIAL_IP_RATE_LIMIT_KEYS] } }),
         ]);
         await fixture.db.collection('users').deleteMany({ email });
+      }
+    });
+  });
+
+  test('plays a partial guest draft and takes the rest in without a reload @critical-quiz-guest-draft-partial', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1620: the player opens on the first batch; the rest arrives while the learner plays.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const draft = await seedReadyGuestDraft(fixture.db, undefined, false);
+      try {
+        await storeGuestDraftToken(page, draft.token);
+        await page.goto('/en/try/pdf/play');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+        await expect(page.getByText('More questions are being made.')).toBeVisible();
+        await page.evaluate(() => {
+          document.documentElement.dataset['noReload'] = '1';
+        });
+        await chooseOption(page, 'Mitochondria');
+
+        await fixture.db
+          .collection<{
+            questions: object[];
+            complete: boolean;
+            completion: string;
+          }>('guestquizdrafts')
+          .updateOne(
+            { _id: draft.id },
+            {
+              $set: { complete: true, completion: 'full' },
+              $push: {
+                questions: {
+                  _id: new ObjectId(),
+                  question: 'Which organelle holds the genome in this fake guest draft?',
+                  options: ['Nucleus', 'Golgi'],
+                  type: 'single',
+                  correctIndex: 0,
+                },
+              },
+            },
+          );
+
+        // The next 2 s check finds the rest: the pending line goes, the page is not reloaded
+        // and the question the learner is on, with its answer, stays.
+        await expect(page.getByText('More questions are being made.')).toBeHidden({
+          timeout: 20_000,
+        });
+        await expect(page.locator('html')).toHaveAttribute('data-no-reload', '1');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+      } finally {
+        await cleanupGuestDraft(fixture.db, draft);
+      }
+    });
+  });
+
+  test('offers the rest on the results of a first-batch round and plays only the new questions @critical-quiz-guest-draft-partial', async ({
+    page,
+  }, testInfo) => {
+    // RIN-1620 state 5: Finish on the first batch, the results card follows the draft, and
+    // "Keep going" plays the questions that arrived after it as a second round.
+    testInfo.setTimeout(90_000);
+    await withDatabaseFixture(testInfo, async (fixture) => {
+      const draft = await seedReadyGuestDraft(fixture.db, undefined, false);
+      try {
+        await storeGuestDraftToken(page, draft.token);
+        await page.goto('/en/try/pdf/play');
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+        await chooseOption(page, 'Mitochondria');
+        const desktopSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await desktopSubmit.isVisible()) {
+          await desktopSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /finish \(1\/1\+? answered\)/i }).click();
+        }
+        await page.waitForURL(/\/en\/quiz\/guest-draft-play\/result\?attemptId=/);
+
+        const card = page.getByTestId('guest-draft-more');
+        await expect(card).toContainText('More questions are on the way');
+        await expect(
+          page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle }),
+        ).toBeVisible();
+
+        await fixture.db
+          .collection<{
+            questions: object[];
+            complete: boolean;
+            completion: string;
+          }>('guestquizdrafts')
+          .updateOne(
+            { _id: draft.id },
+            {
+              $set: { complete: true, completion: 'full' },
+              $push: {
+                questions: {
+                  _id: new ObjectId(),
+                  question: 'Which organelle holds the genome in this fake guest draft?',
+                  options: ['Nucleus', 'Golgi'],
+                  type: 'single',
+                  correctIndex: 0,
+                },
+              },
+            },
+          );
+
+        await expect(card).toContainText('1 more question is ready', { timeout: 20_000 });
+        await card.getByRole('link', { name: 'Keep going' }).click();
+        await page.waitForURL(/\/en\/try\/pdf\/play\?from=1$/);
+
+        // Only the new question: the first is not offered again.
+        await expect(
+          page.getByText('Which organelle holds the genome in this fake guest draft?'),
+        ).toBeVisible();
+        await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toHaveCount(0);
+        await chooseOption(page, 'Nucleus');
+        const secondSubmit = page.getByRole('button', { name: 'Submit Quiz', exact: true });
+        if (await secondSubmit.isVisible()) {
+          await secondSubmit.click();
+        } else {
+          await page.getByRole('button', { name: /finish \(1\/1\+? answered\)/i }).click();
+        }
+        await page.waitForURL(/\/en\/quiz\/guest-draft-play\/result\?attemptId=/);
+        await expect(
+          page.getByRole('heading', { name: GUEST_UPLOAD_COPY.en.saveTitle }),
+        ).toBeVisible();
+        // Every stored question is played: no card.
+        await expect(page.getByTestId('guest-draft-more')).toHaveCount(0);
+      } finally {
+        await cleanupGuestDraft(fixture.db, draft);
       }
     });
   });

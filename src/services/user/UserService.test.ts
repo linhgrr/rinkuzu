@@ -20,6 +20,7 @@ interface ServiceOverrides {
       submissionId: string,
       snapshotHash: string,
     ) => Promise<boolean>;
+    getSubmissionQuestionCount?: (submissionId: string) => Promise<number | null>;
   };
   nextQuizResolver?: Pick<NextQuizResolver, 'resolve'>;
 }
@@ -491,6 +492,39 @@ describe('UserService', () => {
       });
     });
 
+    it('opens a 6 day old claim-token guest attempt (no age check, RIN-1710)', async () => {
+      const { service, attemptRepository } = createService();
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          id: 'attempt-1',
+          score: 50,
+          takenAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [
+              {
+                id: 'question-1',
+                question: 'Q1',
+                options: ['A', 'B'],
+                type: 'single',
+                correctIndex: 0,
+              },
+            ],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', {
+        guestClaimToken: 'x'.repeat(43),
+      });
+
+      assertOk(result);
+    });
+
     it('locks Premium questions for a claim-token guest', async () => {
       const canAccessAttempt = vi.fn().mockResolvedValue(true);
       const { service, attemptRepository } = createService({
@@ -519,6 +553,47 @@ describe('UserService', () => {
       assertOk(result);
       expect(canAccessAttempt).not.toHaveBeenCalled();
       expect(result.data).toMatchObject({ historyStatus: 'content_locked' });
+    });
+
+    it('reads a preview attempt without a grant and adds premiumPreview (RIN-1722)', async () => {
+      const canAccessAttempt = vi.fn().mockResolvedValue(false);
+      const getSubmissionQuestionCount = vi.fn().mockResolvedValue(12);
+      const resolve = vi
+        .fn()
+        .mockResolvedValue({ slug: 'free-start', title: 'Free start', quick: false });
+      const { service, attemptRepository } = createService({
+        premiumAccessPolicy: { canAccessAttempt, getSubmissionQuestionCount },
+        nextQuizResolver: { resolve },
+      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          preview: true,
+          premiumSubmissionId: 'submission-1',
+          premiumSnapshotHash: 'a'.repeat(64),
+          score: 100,
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Premium Quiz',
+            slug: 'premium-quiz',
+            questions: [questionFixture('question-1')],
+          },
+        }),
+      );
+
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
+
+      assertOk(result);
+      expect(canAccessAttempt).not.toHaveBeenCalled();
+      expect(result.data).toMatchObject({
+        historyStatus: 'complete',
+        premiumPreview: {
+          fullQuestionCount: 12,
+          quizId: 'quiz-1',
+          freeQuiz: { slug: 'free-start', title: 'Free start' },
+        },
+      });
     });
 
     it('keeps Premium score visible but locks questions when access has expired', async () => {

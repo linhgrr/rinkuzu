@@ -1,11 +1,7 @@
 import { fetchApiData } from '@/lib/api/client';
 
 export type PremiumSubmissionStatusViewModel =
-  | 'pending'
-  | 'changes_requested'
-  | 'rejected'
-  | 'approved'
-  | 'withdrawn';
+  'pending' | 'changes_requested' | 'rejected' | 'approved' | 'withdrawn';
 
 interface PremiumQuestionViewModel {
   id: string;

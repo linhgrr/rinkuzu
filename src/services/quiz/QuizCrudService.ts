@@ -28,6 +28,7 @@ import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 import { copyQuizQuestionContentFields } from '@/lib/quiz/question-fields';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { isPersonalDataFlagged, resolveQuizContentFlags } from '@/lib/quiz/personal-data';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
@@ -160,6 +161,8 @@ export class QuizCrudService {
       }
       // RIN-1500: only a quiz this call created; a draft replay returns earlier.
       notifyQuizCreated(this.quizIndexNow, created);
+      // A signed-out visitor may have cached this slug as "not found" (RIN-1647).
+      revalidateQuizPages([created.slug]);
       return created;
     }
 
@@ -318,6 +321,8 @@ export class QuizCrudService {
       }
 
       if (current) notifyQuizSearchChange(this.quizIndexNow, current, updatedQuiz);
+      // The cached signed-out landing shows the new content or visibility at once (RIN-1647).
+      revalidateQuizPages([authorization.data.slug, updatedQuiz.slug]);
 
       return {
         success: true,
@@ -367,6 +372,7 @@ export class QuizCrudService {
           statusCode: 404,
         };
       }
+      revalidateQuizPages([authorization.data.slug]);
 
       return {
         success: true,

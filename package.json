@@ -210,7 +210,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.59.0",
     "@typescript-eslint/parser": "^8.46.1",
-    "@vitest/coverage-v8": "^4.1.12",
+    "@vitest/coverage-v8": "^5.1.0",
     "autoprefixer": "^10.5.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "17.4.2",
@@ -222,7 +222,7 @@
     "husky": "^9.1.7",
     "ignore": "7.0.14",
     "jest-axe": "11.0.0",
-    "jscpd": "5.0.12",
+    "jscpd": "5.4.3",
     "jsdom": "31.0.0",
     "knip": "6.26.0",
     "lint-staged": "^16.4.0",
@@ -230,12 +230,12 @@
     "mongodb": "6.20.0",
     "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.13",
-    "prettier": "^3.8.3",
+    "prettier": "^3.10.1",
     "react-doctor": "0.9.12",
     "size-limit": "^12.1.0",
     "tailwindcss": "^3.4.19",
     "typescript": "^5",
-    "vitest": "^4.1.12"
+    "vitest": "^5.1.0"
   },
   "overrides": {
     "estimo": {

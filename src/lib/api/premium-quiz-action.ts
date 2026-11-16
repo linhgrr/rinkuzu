@@ -82,9 +82,8 @@ export function withPremiumRead<TData>(
   logMessage: string,
   run: (userId: string) => Promise<TData>,
 ): ReturnType<typeof withAuth> {
-  return withAuth(
-    async (_request, { userId }): Promise<Response> =>
-      premiumOk(logMessage, 200, () => run(userId)),
+  return withAuth(async (_request, { userId }): Promise<Response> =>
+    premiumOk(logMessage, 200, () => run(userId)),
   );
 }
 

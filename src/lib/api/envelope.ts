@@ -17,10 +17,8 @@ export interface StandardErrorEnvelope {
   };
 }
 
-export type StandardApiEnvelope<
-  T,
-  Meta extends Record<string, unknown> = Record<string, unknown>,
-> = StandardSuccessEnvelope<T, Meta> | StandardErrorEnvelope;
+export type StandardApiEnvelope<T, Meta extends Record<string, unknown> = Record<string, unknown>> =
+  StandardSuccessEnvelope<T, Meta> | StandardErrorEnvelope;
 
 export function isRecord(payload: unknown): payload is Record<string, unknown> {
   return payload !== null && typeof payload === 'object' && !Array.isArray(payload);

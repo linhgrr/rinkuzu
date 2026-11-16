@@ -69,3 +69,138 @@ describe('proxy: signed-out twins (RIN-1646)', () => {
     expect(response.headers.get('location')).toBe(`${ORIGIN}/vi/explore/toan-hoc?q=a`);
   });
 });
+
+describe('proxy: signed-out quiz landing twin (RIN-1647)', () => {
+  it.each([
+    ['/vi/quiz/toan-12', '/vi/signed-out/quiz/toan-12'],
+    ['/en/quiz/toan-12', '/en/signed-out/quiz/toan-12'],
+    ['/vi/quiz/toan-12?', '/vi/signed-out/quiz/toan-12'],
+  ])('rewrites a cookie-less GET of %s to the cached twin', async (path, twin) => {
+    const response = await run(path, { cookie: 'NEXT_LOCALE=vi' });
+
+    expect(response.headers.get('x-middleware-rewrite')).toBe(`${ORIGIN}${twin}`);
+    expect(response.headers.get('x-middleware-request-x-rinkuzu-signed-out-twin')).toBe('1');
+  });
+
+  it.each([
+    '/vi/quiz/toan-12?mode=quick',
+    '/vi/quiz/toan-12?mode=full',
+    '/vi/quiz/toan-12?retryOf=6a8ed20a3d0a1892cacdfe0b',
+    '/vi/quiz/toan-12?entry=quiz_landing',
+    '/vi/quiz/toan-12?entry=hub&topic=toan-hoc',
+    '/vi/quiz/toan-12?view=play',
+    '/vi/quiz/toan-12?utm_source=threads',
+  ])('keeps the dynamic route for %s (the query changes the page)', async (path) => {
+    const response = await run(path);
+
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it.each(['/vi/quiz/toan-12/flashcards', '/vi/quiz/toan-12/result', '/vi/quiz'])(
+    'keeps the dynamic route for %s',
+    async (path) => {
+      const response = await run(path);
+
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+    },
+  );
+
+  it.each(['__Secure-authjs.session-token=x', 'authjs.session-token=not-a-jwt'])(
+    'keeps the dynamic route for a signed-in request with %s',
+    async (cookie) => {
+      const response = await run('/vi/quiz/toan-12', { cookie });
+
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+    },
+  );
+
+  it('keeps the dynamic route for a POST', async () => {
+    const response = await run('/vi/quiz/toan-12', { method: 'POST' });
+
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('redirects a direct request for the quiz twin to its public URL', async () => {
+    const response = await run('/vi/signed-out/quiz/toan-12');
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(`${ORIGIN}/vi/quiz/toan-12`);
+  });
+});
+
+describe('proxy: signed-out premium catalog twin (RIN-1770)', () => {
+  it.each([
+    ['/vi/premium-quizzes', '/vi/signed-out/premium-quizzes'],
+    ['/en/premium-quizzes', '/en/signed-out/premium-quizzes'],
+    ['/vi/premium-quizzes?q=toan&page=2', '/vi/signed-out/premium-quizzes?q=toan&page=2'],
+  ])('rewrites a cookie-less GET of %s to the cached twin', async (path, twin) => {
+    const response = await run(path, { cookie: 'NEXT_LOCALE=vi' });
+
+    expect(response.headers.get('x-middleware-rewrite')).toBe(`${ORIGIN}${twin}`);
+    expect(response.headers.get('x-middleware-request-x-rinkuzu-signed-out-twin')).toBe('1');
+    expect(response.headers.get('cloudflare-cdn-cache-control')).toBe(
+      'public, max-age=300, stale-while-revalidate=600',
+    );
+  });
+
+  it.each(['__Secure-authjs.session-token=x', 'authjs.session-token.0=not-a-jwt'])(
+    'does not rewrite a signed-in request with %s',
+    async (cookie) => {
+      const response = await run('/vi/premium-quizzes', { cookie });
+
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+      expect(response.headers.get('cloudflare-cdn-cache-control')).toBe('no-store');
+    },
+  );
+
+  it('does not rewrite a POST', async () => {
+    const response = await run('/vi/premium-quizzes', { method: 'POST' });
+
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('redirects a direct request for the twin to its public URL', async () => {
+    const response = await run('/vi/signed-out/premium-quizzes?q=a');
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(`${ORIGIN}/vi/premium-quizzes?q=a`);
+  });
+});
+
+describe('proxy: Cloudflare-CDN-Cache-Control (RIN-1679)', () => {
+  const header = async (path: string, init: { method?: string; cookie?: string } = {}) =>
+    (await run(path, init)).headers.get('cloudflare-cdn-cache-control');
+
+  it('is public for a cookie-less public page and the explore twin', async () => {
+    expect(await header('/vi/about')).toBe('public, max-age=300, stale-while-revalidate=600');
+    expect(await header('/vi/explore')).toBe('public, max-age=300, stale-while-revalidate=600');
+  });
+
+  it('is no-store with a session cookie, a POST, or a non-allowlisted page', async () => {
+    expect(await header('/vi/about', { cookie: 'authjs.session-token=junk' })).toBe('no-store');
+    expect(await header('/vi/about', { method: 'POST' })).toBe('no-store');
+    expect(await header('/vi/quiz/some-slug')).toBe('no-store');
+  });
+
+  it('is no-store on a redirect and absent on /api', async () => {
+    expect(await header('/vi/signed-out/explore')).toBe('no-store');
+    expect(await header('/api/ready')).toBeNull();
+  });
+});
+
+describe('proxy: proxied twin pass keeps the public header (RIN-1679)', () => {
+  it('judges a marked twin request by its public URL, an unmarked one as no-store', async () => {
+    const marked = await proxy(
+      new NextRequest(`${ORIGIN}/vi/signed-out/explore`, {
+        headers: { 'x-rinkuzu-signed-out-twin': '1' },
+      }),
+      {} as NextFetchEvent,
+    );
+    expect(marked?.headers.get('cloudflare-cdn-cache-control')).toBe(
+      'public, max-age=300, stale-while-revalidate=600',
+    );
+
+    const direct = await run('/vi/signed-out/explore');
+    expect(direct.headers.get('cloudflare-cdn-cache-control')).toBe('no-store');
+  });
+});

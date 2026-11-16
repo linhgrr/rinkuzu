@@ -176,7 +176,7 @@ export const adminActivationQuerySchema = z.object({
     .max(ADMIN_ACTIVATION_MAX_WEEKS)
     .default(ADMIN_ACTIVATION_DEFAULT_WEEKS),
   /** Split by signup locale or country (RIN-1268); absent = today's response. */
-  by: z.enum(['locale', 'country']).optional(),
+  by: z.enum(['locale', 'country', 'source']).optional(),
 });
 
 const isoInstantSchema = z.iso.datetime();
@@ -246,6 +246,16 @@ const activationEmailWeekSchema = activationEmailCountsSchema
   })
   .strict();
 
+/** One UTC ISO week of the guest funnel (RIN-1711), by attempt or opt-in week. */
+const guestFunnelWeekSchema = z
+  .object({
+    isoWeek: z.string().regex(/^\d{4}-W\d{2}$/),
+    guestCompleted: countSchema,
+    guestClaimed7d: countSchema,
+    reviewOptInFromGuest: countSchema,
+  })
+  .strict();
+
 /**
  * Aggregate-only by contract: integers, rates, dates and definition strings.
  * Strict at every level so a future field cannot leak learner data unnoticed.
@@ -277,6 +287,9 @@ export const adminActivationStatsSchema = z
         activationEmail: z.string(),
         activatedByEntry: z.string(),
         blogPosts: z.string(),
+        guestCompleted: z.string(),
+        guestClaimed7d: z.string(),
+        reviewOptInFromGuest: z.string(),
       })
       .strict(),
     // 'unavailable': the adaptive API did not answer, so every number is
@@ -285,6 +298,8 @@ export const adminActivationStatsSchema = z
     weeks: z.array(adminActivationWeekSchema),
     // Same weeks as `weeks`, bucketed by send week rather than signup week.
     activationEmail: z.object({ weeks: z.array(activationEmailWeekSchema) }).strict(),
+    // Same weeks as `weeks`, bucketed by the week the guest attempt or opt-in happened in.
+    guestFunnel: z.object({ weeks: z.array(guestFunnelWeekSchema) }).strict(),
   })
   .strict();
 
@@ -327,10 +342,13 @@ export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchem
  * country, `unknown` (no signup value recorded) or `other` (countries with
  * fewer signups than the fold threshold). Nothing else can be a key.
  */
-const activationSegmentKeySchema = z.string().regex(/^(?:[A-Z]{2}|en|vi|unknown|other)$/);
+const activationSegmentKeySchema = z
+  .string()
+  .regex(/^(?:[A-Z]{2}|en|vi|unknown|other|[a-z0-9._~-]{1,64})$/);
 
+/** `startedQuiz` is present for `by=source` only (RIN-1763); locale and country keep two counts. */
 const activationSegmentCountsSchema = z
-  .object({ signups: countSchema, activated: countSchema })
+  .object({ signups: countSchema, activated: countSchema, startedQuiz: countSchema.optional() })
   .strict();
 
 const adminActivationBreakdownWeekSchema = z
@@ -351,7 +369,7 @@ export const adminActivationBreakdownSchema = z
   .object({
     generatedAt: isoInstantSchema,
     timezone: z.literal('UTC'),
-    by: z.enum(['locale', 'country']),
+    by: z.enum(['locale', 'country', 'source']),
     definitions: z
       .object({
         segments: z.string(),

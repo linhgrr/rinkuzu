@@ -8,6 +8,8 @@ import type {
 } from '@/interfaces/repositories/IPremiumQuizRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { PremiumQuizError, PremiumSubmissionFailedError } from '@/entities/PremiumQuizError';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
+import { PREMIUM_PREVIEW_QUESTION_LIMIT } from '@/shared/constants/premium-preview';
 import { PremiumQuizService } from '@/services/premium/PremiumQuizService';
 import type { IPremiumDecisionNotifier } from '@/interfaces/services/IPremiumDecisionNotifier';
 
@@ -17,6 +19,7 @@ const entitlementMocks = vi.hoisted(() => ({
 
 const loggerMocks = vi.hoisted(() => ({ warn: vi.fn() }));
 
+vi.mock('@/lib/cache/quiz-page-cache', () => ({ revalidateQuizPages: vi.fn() }));
 vi.mock('@/lib/logger', () => ({
   logger: { warn: loggerMocks.warn, info: vi.fn(), error: vi.fn() },
 }));
@@ -407,16 +410,13 @@ describe('PremiumQuizService', () => {
     );
   });
 
-  it('refuses to start a locked quiz with unlock_required, not a bare forbidden (RIN-753)', async () => {
+  it('keeps flashcards locked with unlock_required, not a bare forbidden (RIN-753, RIN-1722)', async () => {
     const { service, premiumRepository } = setup();
     const approved = publication();
     premiumRepository.findActivePublicationByQuizId.mockResolvedValue(approved);
     entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
     premiumRepository.hasGrant.mockResolvedValue(false);
 
-    await expect(
-      service.startSession({ userId: '507f191e810c19729de860ff' }, approved.sourceQuizId),
-    ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
     await expect(
       service.startFlashcardSession({ userId: '507f191e810c19729de860ff' }, approved.sourceQuizId),
     ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
@@ -579,6 +579,33 @@ describe('PremiumQuizService', () => {
       expect(notifier.queueRejectEmail).not.toHaveBeenCalled();
     });
 
+    it.each(['approve', 'reject', 'request_changes'] as const)(
+      'revalidates the cached signed-out page after %s (RIN-1647)',
+      async (decision) => {
+        const { service, premiumRepository } = setup();
+        const result = decided('approved');
+        premiumRepository.decide.mockResolvedValue(result);
+
+        await service.decide('507f191e810c19729de860ef', result.submission.id, {
+          decision,
+          credits: 0,
+        });
+
+        expect(revalidateQuizPages).toHaveBeenCalledWith([result.submission.snapshot.slug]);
+      },
+    );
+
+    it('revalidates nothing when the decision itself fails (RIN-1647)', async () => {
+      const { service, premiumRepository } = setup();
+      premiumRepository.decide.mockRejectedValue(new PremiumQuizError('conflict', 'changed'));
+
+      await service
+        .decide('507f191e810c19729de860ef', publication().id, { decision: 'approve', credits: 3 })
+        .catch(() => undefined);
+
+      expect(revalidateQuizPages).not.toHaveBeenCalled();
+    });
+
     it('keeps the decision when the email cannot be queued, and logs it', async () => {
       const { service, premiumRepository, notifier } = setup();
       const result = decided('rejected');
@@ -613,6 +640,151 @@ describe('PremiumQuizService', () => {
   });
 });
 
+describe('PremiumQuizService preview (RIN-1722)', () => {
+  const learner = '507f191e810c19729de860ee';
+  const attemptId = '507f191e810c19729de860f0';
+  const key = '018f7494-8bd8-7b8a-a387-3bc5a14f22a1';
+
+  function previewSetup(questionCount = 7) {
+    const ctx = setup();
+    const approved = publication({
+      ...quiz(),
+      questions: quiz().questions.slice(0, questionCount),
+    });
+    const session: PremiumPlaySession = { ...playSession(), preview: true };
+    ctx.premiumRepository.findActivePublicationByQuizId.mockResolvedValue(approved);
+    ctx.premiumRepository.hasGrant.mockResolvedValue(false);
+    ctx.premiumRepository.createSession.mockResolvedValue(session);
+    ctx.premiumRepository.findSession.mockResolvedValue(session);
+    ctx.premiumRepository.consumeBatchQuota.mockResolvedValue(true);
+    ctx.premiumRepository.findSubmissionById.mockResolvedValue(approved);
+    return { ...ctx, approved, session };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    entitlementMocks.resolveEntitlements.mockResolvedValue({ tier: 'free' });
+  });
+
+  it('starts a preview session for a learner without access, limited to five questions', async () => {
+    const { service, premiumRepository, approved, session } = previewSetup();
+    const first = await service.startSession({ userId: learner }, approved.sourceQuizId);
+
+    expect(premiumRepository.createSession).toHaveBeenCalledWith(
+      expect.objectContaining({ preview: true }),
+    );
+    expect(first.totalQuestions).toBe(PREMIUM_PREVIEW_QUESTION_LIMIT);
+    expect(first.answers).toHaveLength(PREMIUM_PREVIEW_QUESTION_LIMIT);
+    expect(first.preview).toEqual({ fullQuestionCount: 7 });
+    expect(first.watermark).toBeTypeOf('string');
+
+    const second = await service.getBatch(
+      { userId: session.userId },
+      session.id,
+      first.nextCursor ?? '',
+    );
+    expect(second.questions).toHaveLength(2);
+    expect(second.startIndex).toBe(3);
+    expect(second).not.toHaveProperty('nextCursor');
+  });
+
+  it('refuses a batch cursor past the limit with unlock_required', async () => {
+    const { service, premiumRepository, session } = previewSetup();
+    // Mint a real cursor for batch 2 (indices 6+) from a full session, then replay it on the preview.
+    const { preview: _preview, ...full } = session;
+    premiumRepository.findSession.mockResolvedValue(full);
+    const start = await service.getBatch(
+      { userId: full.userId },
+      full.id,
+      (await service.startSession({ userId: learner }, '507f191e810c19729de860ea')).nextCursor ??
+        '',
+    );
+    premiumRepository.findSession.mockResolvedValue(session);
+    await expect(
+      service.getBatch({ userId: session.userId }, session.id, start.nextCursor ?? ''),
+    ).rejects.toMatchObject({ code: 'unlock_required' } satisfies Partial<PremiumQuizError>);
+  });
+
+  it('refuses flashcard card and reveal for a preview cursor with unlock_required', async () => {
+    const { service, premiumRepository, session } = previewSetup();
+    const start = await service.startSession({ userId: learner }, '507f191e810c19729de860ea');
+    const cursor = start.nextCursor ?? '';
+    premiumRepository.findSession.mockResolvedValue(session);
+    await expect(service.getFlashcard(session.userId, session.id, cursor)).rejects.toMatchObject({
+      code: 'unlock_required',
+    } satisfies Partial<PremiumQuizError>);
+    await expect(service.revealFlashcard(session.userId, session.id, cursor)).rejects.toMatchObject(
+      { code: 'unlock_required' } satisfies Partial<PremiumQuizError>,
+    );
+  });
+
+  it('refuses saveProgress at index 5 and accepts index 4', async () => {
+    const { service, premiumRepository, session } = previewSetup();
+    premiumRepository.updateProgress.mockResolvedValue(session);
+    await service.saveProgress(session.userId, session.id, 4, 0);
+    await expect(service.saveProgress(session.userId, session.id, 5, 0)).rejects.toMatchObject({
+      code: 'unlock_required',
+    } satisfies Partial<PremiumQuizError>);
+  });
+
+  it('scores only the preview questions and flags the attempt', async () => {
+    const { service, premiumRepository, attemptRepository, session } = previewSetup();
+    premiumRepository.findSession.mockResolvedValue({ ...session, answers: [0, 1, 0, 1, 0, 1, 0] });
+    premiumRepository.claimSessionSubmission.mockResolvedValue('claimed');
+    premiumRepository.completeSession.mockResolvedValue({ ...session, completedAt: now });
+    attemptRepository.recordSubmittedAttempt.mockResolvedValue({
+      id: attemptId,
+      score: 100,
+      correctAnswers: 5,
+      totalQuestions: 5,
+    });
+
+    const result = await service.submitSession(session.userId, session.id, key);
+
+    expect(result).toMatchObject({
+      totalQuestions: 5,
+      correctAnswers: 5,
+      score: 100,
+      preview: true,
+    });
+    const recorded = attemptRepository.recordSubmittedAttempt.mock.calls[0]?.[0];
+    expect(recorded?.preview).toBe(true);
+    expect(recorded?.quizSnapshot.questions).toHaveLength(5);
+    expect(recorded?.answers).toHaveLength(5);
+    expect(recorded?.totalQuestions).toBe(5);
+  });
+
+  it('plays a quiz shorter than the limit in full', async () => {
+    const { service, approved, session, attemptRepository, premiumRepository } = previewSetup(3);
+    const first = await service.startSession({ userId: learner }, approved.sourceQuizId);
+    expect(first.totalQuestions).toBe(3);
+    expect(first.preview).toEqual({ fullQuestionCount: 3 });
+    expect(first).not.toHaveProperty('nextCursor');
+    premiumRepository.claimSessionSubmission.mockResolvedValue('claimed');
+    premiumRepository.completeSession.mockResolvedValue({ ...session, completedAt: now });
+    attemptRepository.recordSubmittedAttempt.mockResolvedValue({
+      id: attemptId,
+      score: 0,
+      correctAnswers: 0,
+      totalQuestions: 3,
+    });
+    const result = await service.submitSession(session.userId, session.id, key);
+    expect(result.totalQuestions).toBe(3);
+  });
+
+  it('keeps the full session for an entitled learner', async () => {
+    const { service, premiumRepository, approved } = previewSetup();
+    premiumRepository.hasGrant.mockResolvedValue(true);
+    premiumRepository.createSession.mockResolvedValue(playSession());
+    const first = await service.startSession({ userId: learner }, approved.sourceQuizId);
+    expect(premiumRepository.createSession).toHaveBeenCalledWith(
+      expect.not.objectContaining({ preview: true }),
+    );
+    expect(first.totalQuestions).toBe(7);
+    expect(first).not.toHaveProperty('preview');
+  });
+});
+
 describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
   const ownerId = '507f191e810c19729de860eb';
 
@@ -630,6 +802,7 @@ describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
     const source = quiz();
     base.premiumRepository.isVerifiedUser.mockResolvedValue(true);
     base.quizRepository.findById.mockResolvedValue(source);
+    base.quizRepository.findAccessById.mockResolvedValue(source);
     base.premiumRepository.findDuplicateCandidates.mockResolvedValue([]);
     return { ...base, service, recovery, source };
   }
@@ -664,6 +837,18 @@ describe('PremiumQuizService.submitSavedQuiz (RIN-1347)', () => {
       causeCode: null,
       quizId: source.id,
     });
+  });
+
+  it('revalidates the restored quiz page by its slug (RIN-1647)', async () => {
+    const { service, premiumRepository, recovery, source } = setupWithRecovery();
+    premiumRepository.createSubmission.mockRejectedValue(new Error('db write failed'));
+    recovery.restorePublicAfterFailedSubmission.mockResolvedValue(true);
+
+    await service
+      .submitSavedQuiz(ownerId, { quizId: source.id, rightsAttested: true })
+      .catch(() => undefined);
+
+    expect(revalidateQuizPages).toHaveBeenCalledWith([source.slug]);
   });
 
   it('keeps the Premium refusal as the cause', async () => {

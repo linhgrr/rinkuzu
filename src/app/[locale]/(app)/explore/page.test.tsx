@@ -22,6 +22,10 @@ vi.mock('@/lib/quiz-topic-hub-factory', () => ({
   getQuizTopicHubService: () => ({ listIndexableTopics }),
 }));
 vi.mock('@/lib/logger', () => ({ logger: { error: loggerError } }));
+vi.mock('@/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/i18n/navigation')>()),
+  useRouter: () => ({ prefetch: vi.fn() }),
+}));
 vi.mock('next-intl/server', () => ({
   getTranslations: async ({ locale }: { locale: string }) =>
     createTranslator({ locale, messages: { explore: viExplore }, namespace: 'explore.hub' }),

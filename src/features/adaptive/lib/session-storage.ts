@@ -73,33 +73,31 @@ const exerciseSchema: z.ZodType<Exercise> = z
       .nullable()
       .optional(),
   })
-  .transform(
-    (exercise): Exercise => ({
-      id: exercise.id,
-      exercise_id: exercise.exercise_id,
-      concept_name: exercise.concept_name,
-      concept_idx: exercise.concept_idx,
-      bloom_level: exercise.bloom_level,
-      bloom_label: exercise.bloom_label,
-      exercise_type: exercise.exercise_type,
-      question: exercise.question,
-      options: exercise.options,
-      items: exercise.items,
-      pairs: exercise.pairs,
-      right_items: exercise.right_items,
-      step: exercise.step,
-      max_steps: exercise.max_steps,
-      ...(exercise.sentence !== undefined ? { sentence: exercise.sentence } : {}),
-      ...(exercise.statement !== undefined ? { statement: exercise.statement } : {}),
-      ...(exercise.hint !== undefined ? { hint: exercise.hint } : {}),
-      ...(exercise.rubric !== undefined ? { rubric: exercise.rubric } : {}),
-      ...(exercise.correct_answer !== undefined ? { correct_answer: exercise.correct_answer } : {}),
-      ...(exercise.theory !== undefined ? { theory: exercise.theory } : {}),
-      ...(exercise.recommendation_reason !== undefined
-        ? { recommendation_reason: exercise.recommendation_reason }
-        : {}),
-    }),
-  );
+  .transform((exercise): Exercise => ({
+    id: exercise.id,
+    exercise_id: exercise.exercise_id,
+    concept_name: exercise.concept_name,
+    concept_idx: exercise.concept_idx,
+    bloom_level: exercise.bloom_level,
+    bloom_label: exercise.bloom_label,
+    exercise_type: exercise.exercise_type,
+    question: exercise.question,
+    options: exercise.options,
+    items: exercise.items,
+    pairs: exercise.pairs,
+    right_items: exercise.right_items,
+    step: exercise.step,
+    max_steps: exercise.max_steps,
+    ...(exercise.sentence !== undefined ? { sentence: exercise.sentence } : {}),
+    ...(exercise.statement !== undefined ? { statement: exercise.statement } : {}),
+    ...(exercise.hint !== undefined ? { hint: exercise.hint } : {}),
+    ...(exercise.rubric !== undefined ? { rubric: exercise.rubric } : {}),
+    ...(exercise.correct_answer !== undefined ? { correct_answer: exercise.correct_answer } : {}),
+    ...(exercise.theory !== undefined ? { theory: exercise.theory } : {}),
+    ...(exercise.recommendation_reason !== undefined
+      ? { recommendation_reason: exercise.recommendation_reason }
+      : {}),
+  }));
 
 const submitResultSchema = z.strictObject({
   is_correct: z.boolean(),

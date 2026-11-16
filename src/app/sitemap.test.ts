@@ -379,4 +379,21 @@ describe('sitemap', () => {
       'sitemap: quiz generation failed',
     );
   });
+
+  it('does not read the database during the production build (RIN-1704)', async () => {
+    vi.stubEnv('NEXT_PHASE', 'phase-production-build');
+    try {
+      const entries = await sitemap();
+      expect(entries.length).toBeGreaterThan(0);
+      expect(findPublicSitemapEntries).not.toHaveBeenCalled();
+      expect(loggerError).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('is rendered on request, not prerendered', async () => {
+    const mod = await import('./sitemap');
+    expect(mod.dynamic).toBe('force-dynamic');
+  });
 });

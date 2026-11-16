@@ -16,6 +16,10 @@ import { canonicalFor } from '@/lib/seo';
 // and visibly from the blog list.
 
 vi.mock('next/image', () => ({ default: () => null }));
+vi.mock('@/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/i18n/navigation')>()),
+  useRouter: () => ({ prefetch: vi.fn() }),
+}));
 vi.mock('next-intl/server', () => import('../../../../../tests/helpers/blog-intl-mock'));
 
 const AI_GUIDE = 'ai-powered-quiz-generation-guide';

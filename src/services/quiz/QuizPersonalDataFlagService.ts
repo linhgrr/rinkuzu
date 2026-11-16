@@ -4,6 +4,7 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import type { IQuizIndexNowNotifier } from '@/interfaces/services/IIndexNowNotifier';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { revalidateQuizPages } from '@/lib/cache/quiz-page-cache';
 import { notifyQuizSearchChange } from '@/lib/seo/quiz-search-change';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
 
@@ -79,6 +80,7 @@ export class QuizPersonalDataFlagService {
       }
 
       notifyQuizSearchChange(this.quizIndexNow, quiz, { ...quiz, contentFlags });
+      revalidateQuizPages([quiz.slug]);
       return { success: true, data: AdminQuizDtoMapper.toPersonalDataFlagClear(quiz, true) };
     } catch (error) {
       logger.error({ error, quizId: id }, 'Clear personal-data flag error');

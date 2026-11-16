@@ -48,9 +48,9 @@ export const TableOfContents = ({ headings, title }: TableOfContentsProps) => {
           <li key={item.id}>
             <button
               type="button"
-              className={`flex min-h-11 w-full items-center border-l-2 pl-4 py-2 text-left text-sm transition-all duration-200 ${
+              className={`flex min-h-11 w-full items-center border-l-2 pl-4 py-2 text-left text-sm transition-colors duration-200 ${
                 activeId === item.id
-                  ? 'border-brand-trust text-brand-trust font-medium translate-x-1'
+                  ? 'border-brand-trust text-brand-trust'
                   : 'border-transparent text-neutral-500 hover:text-neutral-900 hover:border-neutral-200'
               }`}
               onClick={() => {

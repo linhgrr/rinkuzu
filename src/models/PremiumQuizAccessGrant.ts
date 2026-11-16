@@ -26,8 +26,7 @@ PremiumQuizAccessGrantSchema.index({ quiz: 1, createdAt: -1 });
 
 const PremiumQuizAccessGrant =
   (mongoose.models['PremiumQuizAccessGrant'] as
-    | mongoose.Model<PremiumQuizAccessGrantDocument>
-    | undefined) ??
+    mongoose.Model<PremiumQuizAccessGrantDocument> | undefined) ??
   mongoose.model<PremiumQuizAccessGrantDocument>(
     'PremiumQuizAccessGrant',
     PremiumQuizAccessGrantSchema,

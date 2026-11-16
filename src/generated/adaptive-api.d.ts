@@ -2164,12 +2164,7 @@ export interface components {
      * @enum {string}
      */
     LlmUsageSource:
-      | 'request'
-      | 'pipeline_job'
-      | 'quiz_draft'
-      | 'guest_quiz_draft'
-      | 'admin_probe'
-      | 'system';
+      'request' | 'pipeline_job' | 'quiz_draft' | 'guest_quiz_draft' | 'admin_probe' | 'system';
     /** LlmUsageSummaryResponse */
     LlmUsageSummaryResponse: {
       /** Window Days */

@@ -1,7 +1,7 @@
 import type { AdminAdaptiveLearnerEvents } from '@/interfaces/repositories/IAdminStatsRepository';
 
 /** What `GET /api/admin/stats/activation?by=` splits signups by (RIN-1268). */
-export type ActivationSegmentBy = 'locale' | 'country';
+export type ActivationSegmentBy = 'locale' | 'country' | 'source';
 
 /**
  * Signups of the week starting `weekStart` whose signup field (`signupLocale`
@@ -13,6 +13,8 @@ export interface ActivationSegmentWeekRecord {
   segment: string | null;
   signups: number;
   activated: number;
+  /** Signups with a completed or in-progress quiz (the default response's `startedQuiz`). */
+  startedQuiz: number;
 }
 
 /**

@@ -2,7 +2,11 @@
 
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GUEST_CLAIMS_STORAGE_KEY, addGuestClaim } from '@/features/quiz/lib/guest-claims';
+import {
+  GUEST_CLAIMS_STORAGE_KEY,
+  addGuestClaim,
+  markResumeBannerSignIn,
+} from '@/features/quiz/lib/guest-claims';
 import {
   GUEST_DRAFTS_STORAGE_KEY,
   addGuestDraftClaim,
@@ -62,7 +66,7 @@ describe('GuestAttemptClaimer (RIN-921)', () => {
 
   it('posts the fresh tokens once after sign-in, clears storage and reports the count only', async () => {
     storeClaim('attempt-1', TOKEN_A);
-    storeClaim('attempt-old', TOKEN_B, Date.now() - 25 * HOUR);
+    storeClaim('attempt-old', TOKEN_B, Date.now() - 8 * 24 * HOUR);
     signIn();
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { success: true, data: { claimedAttemptIds: ['attempt-1'] } }),
@@ -81,6 +85,25 @@ describe('GuestAttemptClaimer (RIN-921)', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ tokens: [TOKEN_A] });
     expect(captureMock).toHaveBeenCalledTimes(1);
     expect(captureMock).toHaveBeenCalledWith('guest_attempt_claimed', { count: 1 });
+  });
+
+  it('reports source resume_banner once when the sign-in started from the banner (RIN-1714)', async () => {
+    storeClaim('attempt-1', TOKEN_A);
+    markResumeBannerSignIn();
+    signIn();
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { success: true, data: { claimedAttemptIds: ['attempt-1'] } }),
+    );
+
+    await renderClaimer();
+
+    await waitFor(() =>
+      expect(captureMock).toHaveBeenCalledWith('guest_attempt_claimed', {
+        count: 1,
+        source: 'resume_banner',
+      }),
+    );
+    expect(window.sessionStorage.length).toBe(0);
   });
 
   it('clears the tokens even when the server claimed none, without an event', async () => {

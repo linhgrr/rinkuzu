@@ -22,6 +22,8 @@ export type AnalyticsEventName =
   | 'retry_missed_clicked'
   | 'try_another_quiz_clicked'
   | 'review_email_opt_in'
+  /** Premium preview result card (RIN-1725); props only `cta`: unlock, upgrade or free_quiz. */
+  | 'premium_preview_cta_clicked'
   /** Result-page share of a public quiz (RIN-1179); props only quizId, method, mode, isGuest. */
   | 'quiz_result_shared'
   /** Server side, once per activation nudge accepted by the provider (RIN-999); props `trigger`, `locale`. */
@@ -41,6 +43,13 @@ export type AnalyticsEventName =
   | 'guest_draft_claimed'
   /** Guest results claimed after sign-in; carries `count` only (RIN-912). */
   | 'guest_attempt_claimed'
+  /** Guest result card that leads with the 2-day review offer (RIN-1712); props only `count_wrong`, `entry`. */
+  | 'guest_review_offer_shown'
+  | 'guest_review_offer_clicked'
+  /** Guest resume banner (RIN-1710); props only `page` and `claim_age_hours`. */
+  | 'guest_resume_banner_shown'
+  | 'guest_resume_banner_clicked'
+  | 'guest_resume_banner_dismissed'
   /** Homepage CTA click (RIN-1178); props only `cta`, `position` and `locale`. */
   | 'landing_cta_clicked'
   /** Paywall funnel (RIN-1269); props only `locale`, `plan` (plan id or null) and `source`. */

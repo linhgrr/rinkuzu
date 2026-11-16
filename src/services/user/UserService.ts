@@ -29,6 +29,7 @@ interface PremiumAttemptAccessPolicy {
     submissionId: string,
     snapshotHash: string,
   ): Promise<PremiumAccessDecision>;
+  getSubmissionQuestionCount?(submissionId: string): Promise<number | null>;
 }
 
 /** Share facts about the live quiz (RIN-1179). */
@@ -121,7 +122,13 @@ export class UserService implements IUserService {
 
       const quiz = typeof attempt.quiz === 'object' ? attempt.quiz : null;
       let canReadPremiumContent = true;
-      if (attempt.premiumSubmissionId !== undefined && attempt.premiumSnapshotHash !== undefined) {
+      // RIN-1722: the owner's preview snapshot holds only the preview questions.
+      const isPreview = attempt.preview === true && owner.userId !== undefined;
+      if (
+        !isPreview &&
+        attempt.premiumSubmissionId !== undefined &&
+        attempt.premiumSnapshotHash !== undefined
+      ) {
         canReadPremiumContent =
           owner.userId !== undefined &&
           quiz !== null &&
@@ -144,10 +151,20 @@ export class UserService implements IUserService {
           : null;
 
       const share = await this.resolveQuizShare(attempt);
+      const premiumPreview =
+        isPreview && quiz !== null
+          ? await this.resolvePremiumPreview(attempt, quiz.id, ownerIdentity, options.locale)
+          : undefined;
 
       return {
         success: true,
-        data: UserAttemptDtoMapper.toDetailDto(attempt, !canReadPremiumContent, nextQuiz, share),
+        data: UserAttemptDtoMapper.toDetailDto(
+          attempt,
+          !canReadPremiumContent,
+          nextQuiz,
+          share,
+          premiumPreview,
+        ),
       };
     } catch (error) {
       logger.error({ error }, 'Get attempt details error');
@@ -157,6 +174,33 @@ export class UserService implements IUserService {
         statusCode: 500,
       };
     }
+  }
+
+  private async resolvePremiumPreview(
+    attempt: Attempt,
+    quizId: string,
+    owner: AttemptOwnerIdentity,
+    locale: string | undefined,
+  ): Promise<AttemptDetailDto['premiumPreview']> {
+    const fullCount =
+      attempt.premiumSubmissionId === undefined
+        ? null
+        : ((await this.premiumAccessPolicy?.getSubmissionQuestionCount?.(
+            attempt.premiumSubmissionId,
+          )) ?? null);
+    const free = this.nextQuizResolver
+      ? await this.nextQuizResolver.resolve({
+          owner,
+          currentSlug: '',
+          includeAttempted: true,
+          ...(locale === undefined ? {} : { locale }),
+        })
+      : null;
+    return {
+      fullQuestionCount: fullCount ?? attempt.totalQuestions,
+      quizId,
+      freeQuiz: free ? { slug: free.slug, title: free.title } : null,
+    };
   }
 
   /**

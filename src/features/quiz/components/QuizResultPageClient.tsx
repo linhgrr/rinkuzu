@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Link } from '@/i18n/navigation';
+import { IntentPrefetchLink } from '@/components/navigation/IntentPrefetchLink';
 import { Suspense, useEffect, useReducer, useState, type ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -30,7 +30,9 @@ import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { ResultActions, type ResultViewer } from '@/features/quiz/components/result/ResultActions';
+import { PremiumPreviewResultCard } from '@/features/quiz/components/PremiumPreviewResultCard';
 import { GuestSaveResultCard } from '@/features/quiz/components/result/GuestSaveResultCard';
+import { GuestDraftMoreCard } from '@/features/guest-draft/components/GuestDraftMoreCard';
 import { isGuestDraftSlug } from '@/shared/constants/guest-draft';
 import type { QuizShareTarget } from '@/features/quiz/components/result/ShareResultButton';
 import { claimStoredGuestAttempts } from '@/features/quiz/api/guest-claim-api';
@@ -249,12 +251,12 @@ function QuizResultActions({
 }) {
   return (
     <div className="mb-8 flex flex-wrap justify-center gap-3">
-      <Link href={`/quiz/${encodedSlug}`}>
+      <IntentPrefetchLink href={`/quiz/${encodedSlug}`}>
         <Button variant="outline">{redoLabel}</Button>
-      </Link>
-      <Link href="/">
+      </IntentPrefetchLink>
+      <IntentPrefetchLink href="/">
         <Button>{backHomeLabel}</Button>
-      </Link>
+      </IntentPrefetchLink>
     </div>
   );
 }
@@ -596,12 +598,20 @@ function QuizResultReadyState({
           attemptId={result.id}
           slug={result.quiz.slug}
           missedCount={result.missedCount}
-          nextQuiz={result.nextQuiz}
+          nextQuiz={result.premiumPreview ? null : result.nextQuiz}
           viewer={viewer}
           contentLocked={contentLocked}
           quickRound={result.mode === 'quick'}
           share={shareTargetFor(result)}
         />
+
+        {result.premiumPreview && !contentLocked ? (
+          <PremiumPreviewResultCard
+            preview={result.premiumPreview}
+            slug={result.quiz.slug}
+            playableCount={result.totalQuestions}
+          />
+        ) : null}
 
         {!contentLocked ? (
           <>
@@ -843,7 +853,16 @@ function QuizResultContent() {
       formatCorrectAnswer={formatCorrectAnswerText}
       guestSaveCard={
         reader === 'guest' ? (
-          <GuestSaveResultCard resultPath={resultPath} variant={draftResult ? 'draft' : 'review'} />
+          <>
+            {draftResult ? <GuestDraftMoreCard attemptId={attemptId} /> : null}
+            <GuestSaveResultCard
+              resultPath={resultPath}
+              variant={draftResult ? 'draft' : 'review'}
+              wrongCount={result.missedCount}
+              entry={resolveQuizEntryAttribution(get('entry'), get('post'), get('topic')).entry}
+              attemptId={attemptId}
+            />
+          </>
         ) : null
       }
       onCancelRemove={() => dispatch({ type: 'setBookmarkToRemove', questionIndex: null })}

@@ -59,6 +59,10 @@ describe('cached signed-out twins stay session-free (RIN-1646)', () => {
     expect(names).toContain('src/app/[locale]/(public-cache)/signed-out/explore/page.tsx');
     expect(names).toContain('src/app/[locale]/(app)/explore/[topic]/page.tsx');
     expect(names).toContain('src/app/[locale]/(app)/explore/TopicHubLinks.tsx');
+    expect(names).toContain('src/app/[locale]/(public-cache)/signed-out/premium-quizzes/page.tsx');
+    expect(names).toContain('src/app/[locale]/(public-cache)/signed-out/quiz/[slug]/page.tsx');
+    expect(names).toContain('src/app/[locale]/(app)/quiz/[slug]/quiz-page-view.tsx');
+    expect(names).toContain('src/app/[locale]/(app)/quiz/[slug]/quiz-metadata.ts');
   });
 
   it.each(guarded.map((file) => [relative(file), file]))(
@@ -74,7 +78,7 @@ describe('cached signed-out twins stay session-free (RIN-1646)', () => {
   it('caches every twin page for a while', () => {
     const pages = twinFiles.filter((file) => path.basename(file) === 'page.tsx');
 
-    expect(pages.length).toBeGreaterThanOrEqual(2);
+    expect(pages.length).toBeGreaterThanOrEqual(3);
     for (const page of pages) {
       expect(readFileSync(page, 'utf8'), relative(page)).toMatch(/export const revalidate = \d+;/);
     }

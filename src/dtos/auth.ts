@@ -1,3 +1,5 @@
+import type { FirstTouch } from '@/lib/attribution/first-touch';
+
 export interface RegisterAccountDto {
   email: string;
   password: string;
@@ -12,6 +14,8 @@ export interface RegisterAccountDto {
   locale?: 'vi' | 'en';
   /** Edge country of the signup request, already sanitised to ISO alpha-2 (RIN-1268). */
   signupCountry?: string;
+  /** Validated first-touch cookie of the request (RIN-1762); absent when none or invalid. */
+  signupSource?: FirstTouch;
 }
 
 export interface RegisterAccountResponseDto {

@@ -50,8 +50,7 @@ interface LoadedOrders {
 }
 
 type OrdersAction =
-  | { type: 'patch'; value: Partial<OrdersState> }
-  | { type: 'loadSuccess'; value: LoadedOrders };
+  { type: 'patch'; value: Partial<OrdersState> } | { type: 'loadSuccess'; value: LoadedOrders };
 
 const INITIAL_STATE: OrdersState = {
   status: 'loading',

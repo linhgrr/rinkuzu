@@ -4,11 +4,13 @@ import { useEffect, useEffectEvent, useMemo, useReducer, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { PremiumPreviewHeader } from '@/features/quiz/components/PremiumPreviewHeader';
 import { PremiumQuizSignInPrompt } from '@/features/quiz/components/PremiumQuizSignInPrompt';
 import { PremiumUnlockCard } from '@/features/quiz/components/PremiumUnlockCard';
 import { QuizQuestionCard } from '@/features/quiz/components/player/QuizQuestionCard';
 import { describeApiError } from '@/lib/api/error-kind';
 import { useApiErrorMessage } from '@/lib/api/use-api-error';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { ROUTES } from '@/shared/constants/routes';
 import {
   fetchPremiumBatch,
@@ -31,6 +33,10 @@ interface PremiumQuizPlayerClientProps {
 
 function isAuthRequired(error: unknown): boolean {
   return describeApiError(error).kind === 'auth_required';
+}
+
+function isUnlockRequired(error: unknown): boolean {
+  return describeApiError(error).kind === 'unlock_required';
 }
 
 export default function PremiumQuizPlayerClient({
@@ -56,7 +62,20 @@ export default function PremiumQuizPlayerClient({
     loadError,
   } = state;
   const prefetching = useRef<Promise<void> | null>(null);
+  const journeyId = useRef<string | null>(null);
   const describeError = useApiErrorMessage();
+
+  function startedPlaying(batch: PremiumBatchViewModel) {
+    dispatch({ type: 'sessionStarted', batch });
+    // Only a preview is announced: full Premium sessions send nothing today (RIN-1722).
+    if (!batch.preview) return;
+    journeyId.current = crypto.randomUUID();
+    captureAnalyticsEvent('quiz_started', {
+      mode: 'full',
+      question_count: batch.totalQuestions,
+      premium_preview: true,
+    });
+  }
 
   function handleStartError(startError: unknown) {
     dispatch({ type: 'startFailed', kind: describeApiError(startError).kind, error: startError });
@@ -65,8 +84,7 @@ export default function PremiumQuizPlayerClient({
   async function begin() {
     dispatch({ type: 'startRequested' });
     try {
-      const batch = await startPremiumSession(quizId);
-      dispatch({ type: 'sessionStarted', batch });
+      startedPlaying(await startPremiumSession(quizId));
     } catch (startError) {
       handleStartError(startError);
     } finally {
@@ -79,7 +97,7 @@ export default function PremiumQuizPlayerClient({
     void startPremiumSession(quizId)
       .then((batch) => {
         if (!active) return;
-        dispatch({ type: 'sessionStarted', batch });
+        startedPlaying(batch);
       })
       .catch((startError: unknown) => {
         if (active) handleStartError(startError);
@@ -95,6 +113,16 @@ export default function PremiumQuizPlayerClient({
   const batchIndex = Math.floor(currentIndex / 3);
   const currentBatch = batches[batchIndex];
   const question = currentBatch?.questions[currentIndex - (currentBatch?.startIndex ?? 0)];
+  // A preview plays `totalQuestions` of a longer quiz; the page's `questionCount` is the full one.
+  const isPreview = currentBatch?.preview !== undefined;
+  const playableCount = isPreview ? (currentBatch?.totalQuestions ?? questionCount) : questionCount;
+
+  // The server refuses a preview past its limit; show that, never the unlock card (RIN-1722).
+  function failureMessage(failure: unknown): string {
+    return isPreview && isUnlockRequired(failure)
+      ? t('premiumPreviewLimitError')
+      : describeError(failure);
+  }
 
   async function loadAdjacent(batch: PremiumBatchViewModel, cursor: string) {
     if (prefetching.current) return prefetching.current;
@@ -130,18 +158,24 @@ export default function PremiumQuizPlayerClient({
         dispatch({ type: 'signInRequired' });
         return;
       }
-      dispatch({ type: 'actionFailed', message: describeError(saveError) });
+      dispatch({ type: 'actionFailed', message: failureMessage(saveError) });
     }
   }
 
   async function move(delta: -1 | 1) {
     const target = currentIndex + delta;
-    if (target < 0 || target >= questionCount || !currentBatch) return;
+    if (target < 0 || target >= playableCount || !currentBatch) return;
     const targetBatchIndex = Math.floor(target / 3);
     if (!batches[targetBatchIndex]) {
       const cursor = delta === 1 ? currentBatch.nextCursor : currentBatch.previousCursor;
       if (!cursor) return;
-      await loadAdjacent(currentBatch, cursor);
+      try {
+        await loadAdjacent(currentBatch, cursor);
+      } catch (loadError) {
+        if (!isPreview) throw loadError;
+        dispatch({ type: 'actionFailed', message: failureMessage(loadError) });
+        return;
+      }
     }
     dispatch({ type: 'moved', index: target });
   }
@@ -167,13 +201,23 @@ export default function PremiumQuizPlayerClient({
     dispatch({ type: 'actionRequested', clearError: false });
     try {
       const submitted = await submitPremiumSession(sessionId);
+      if (submitted.preview) {
+        captureAnalyticsEvent('quiz_completed', {
+          journey_id: journeyId.current ?? crypto.randomUUID(),
+          question_count: submitted.totalQuestions,
+          score: submitted.score,
+          authenticated: true,
+          mode: 'full',
+          premium_preview: true,
+        });
+      }
       push(`${ROUTES.QUIZ.RESULT(slug)}?attemptId=${encodeURIComponent(submitted.attemptId)}`);
     } catch (submitError) {
       if (isAuthRequired(submitError)) {
         dispatch({ type: 'signInRequired' });
         return;
       }
-      dispatch({ type: 'actionFailed', message: describeError(submitError) });
+      dispatch({ type: 'actionFailed', message: failureMessage(submitError) });
     } finally {
       dispatch({ type: 'settled' });
     }
@@ -254,22 +298,17 @@ export default function PremiumQuizPlayerClient({
           }
         }
       `}</style>
-      <header className="relative z-50 mb-6 flex items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-trust">
-            Quiz Premium
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">{title}</h1>
-        </div>
-        <span className="text-sm text-ink-muted">
-          {currentIndex + 1}/{questionCount}
-        </span>
-      </header>
+      <PremiumPreviewHeader
+        title={title}
+        position={currentIndex + 1}
+        playable={playableCount}
+        fullQuestionCount={currentBatch.preview?.fullQuestionCount ?? null}
+      />
       <div className="relative z-50">
         <QuizQuestionCard
           question={question}
           questionIndex={currentIndex}
-          questionCount={questionCount}
+          questionCount={playableCount}
           answer={selected}
           onSelectAnswer={(optionIndex) => {
             if (question.type === 'single') {

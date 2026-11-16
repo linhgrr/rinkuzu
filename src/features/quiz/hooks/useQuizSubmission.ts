@@ -2,7 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
-import { addGuestClaim, createGuestClaimToken } from '@/features/quiz/lib/guest-claims';
+import {
+  addGuestClaim,
+  createGuestClaimToken,
+  guestClaimDisplay,
+} from '@/features/quiz/lib/guest-claims';
 import { withPending } from '@/lib/async/with-pending';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizEntryAttribution } from '@/shared/constants/starter-quiz';
@@ -14,7 +18,10 @@ export type QuizAttemptSubmitter = (input: {
   guestClaimToken: string;
 }) => Promise<{ attemptId: string; score: number }>;
 
-interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestion[] }> {
+interface UseQuizSubmissionParams<
+  TQuestion,
+  TQuiz extends { questions: TQuestion[]; title?: string },
+> {
   slug: string;
   quiz: TQuiz | null;
   userAnswers: QuizAnswer[];
@@ -43,7 +50,10 @@ interface PendingSubmission {
   guestClaimToken: string | null;
 }
 
-export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQuestion>({
+export function useQuizSubmission<
+  TQuiz extends { questions: TQuestion[]; title?: string },
+  TQuestion,
+>({
   slug,
   quiz,
   userAnswers,
@@ -111,6 +121,9 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
         token: pending.guestClaimToken,
         quizSlug: slug,
         takenAt: Date.now(),
+        ...guestClaimDisplay(data.score, quiz.title),
+        // A draft's attempt is claimed with its draft, which is deleted after 24 h.
+        ...(submitAttempt ? { kind: 'draft' as const } : {}),
       });
     }
     idempotencyRef.current = null;

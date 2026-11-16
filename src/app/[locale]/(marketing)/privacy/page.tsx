@@ -37,6 +37,12 @@ const informationWeCollectSections = [
   },
 ];
 
+/** Consent-free first-touch capture (RIN-1761): campaign tags and the referrer type, never the full URL. */
+const SOURCE_NOTE_EN =
+  'We remember where a visit came from (campaign tags and the type of referring site, not the full URL) for 7 days in your browser, and save it with your account if you sign up.';
+const SOURCE_NOTE_VI =
+  'Chúng tôi ghi nhớ nguồn của một lượt truy cập (thẻ chiến dịch và loại trang giới thiệu, không phải đường dẫn đầy đủ) trong 7 ngày trên trình duyệt của bạn, và lưu cùng tài khoản nếu bạn đăng ký.';
+
 const usageItems = [
   'Providing and maintaining your RinKuzu account and personalized learning sessions',
   'Generating personalized quizzes from your uploaded PDF materials using Google Gemini AI',
@@ -167,6 +173,7 @@ function VietnamesePrivacyPage() {
         'Khi bạn tải PDF lên, chúng tôi xử lý nội dung tài liệu, văn bản trích xuất, tên tệp, số trang và thời điểm tải lên. Quiz tạo từ PDF của bạn được công khai theo Điều khoản mục 6; bản thân tệp PDF không được công khai. Bạn vẫn giữ quyền sở hữu tài liệu của mình.',
         'RinKuzu lưu câu trả lời, độ chính xác, thời gian làm bài, tiến độ theo khái niệm và gợi ý học tập để cá nhân hóa phiên luyện tập.',
         'Khi bạn đồng ý với cookie phân tích, chúng tôi có thể thu thập loại trình duyệt, thiết bị, trang đã xem, nguồn truy cập, sự kiện sản phẩm và nhật ký lỗi. Nội dung PDF, mật khẩu và nội dung câu trả lời không được gửi tới dịch vụ phân tích.',
+        SOURCE_NOTE_VI,
       ],
     },
     {
@@ -334,6 +341,7 @@ function InformationWeCollectSection() {
             </Link>
             . You may disable non-essential cookies through your browser settings.
           </p>
+          <p className="mt-3">{SOURCE_NOTE_EN}</p>
         </div>
       </div>
     </PolicySection>

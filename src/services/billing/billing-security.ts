@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import type { NextRequest } from 'next/server';
-import { trustedEdgeClientIp } from '@/lib/client-ip';
+import { resolveClientIp, trustedPlatformIp } from '@/lib/client-ip';
 import { BillingDomainError } from './billing-domain';
 import { billingConfig } from './billing-config';
 
@@ -41,14 +41,7 @@ export function assertBillingMutationRequest(request: NextRequest): void {
  * secret-authenticated `x-rinkuzu-client-ip` comes first (see `client-ip.ts`).
  */
 function requestSourceAddress(request: NextRequest): string | null {
-  const edgeIp = trustedEdgeClientIp(request.headers);
-  if (edgeIp) return edgeIp;
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return (
-    request.headers.get('x-real-ip') ??
-    request.headers.get('cf-connecting-ip') ??
-    (forwarded ? forwarded : null)
-  );
+  return resolveClientIp(request.headers);
 }
 
 /**
@@ -153,10 +146,11 @@ export async function assertInternalBillingRequest(
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  // `x-real-ip` is set by Vercel itself and cannot be forged by the caller.
-  // Behind the edge Worker it holds a Cloudflare address; the Worker's header
-  // gives the same guarantee only because it is gated on EDGE_SHARED_SECRET.
-  const platformIp = trustedEdgeClientIp(request.headers) ?? request.headers.get('x-real-ip');
+  // An allow-list needs an address a caller cannot forge: the edge secret's
+  // header, then `x-real-ip` when CLIENT_IP_HEADER=x-real-ip says the platform
+  // sets it (it replaces `cf-connecting-ip`, forgeable there), else
+  // `cf-connecting-ip` (set by Cloudflare). Never `x-forwarded-for`.
+  const platformIp = trustedPlatformIp(request.headers);
   if (allowedIps.length > 0 && (!platformIp || !allowedIps.includes(platformIp))) {
     throw new BillingDomainError('forbidden', 'Internal request source is not allowed', 403);
   }

@@ -39,18 +39,24 @@ const DEFAULT_RESPONSE = JSON.stringify(
 
 const SEGMENT_ROWS = {
   locale: [
-    { weekStart: W44, segment: 'en', signups: 4, activated: 2 },
-    { weekStart: W44, segment: 'vi', signups: 5, activated: 2 },
-    { weekStart: W44, segment: null, signups: 1, activated: 0 },
-    { weekStart: W45, segment: 'vi', signups: 2, activated: 1 },
+    { weekStart: W44, segment: 'en', signups: 4, activated: 2, startedQuiz: 2 },
+    { weekStart: W44, segment: 'vi', signups: 5, activated: 2, startedQuiz: 2 },
+    { weekStart: W44, segment: null, signups: 1, activated: 0, startedQuiz: 0 },
+    { weekStart: W45, segment: 'vi', signups: 2, activated: 1, startedQuiz: 1 },
   ],
   country: [
-    { weekStart: W44, segment: 'VN', signups: 5, activated: 2 },
-    { weekStart: W44, segment: 'US', signups: 2, activated: 1 },
-    { weekStart: W45, segment: 'US', signups: 1, activated: 0 },
-    { weekStart: W44, segment: 'SG', signups: 1, activated: 1 },
-    { weekStart: W45, segment: 'JP', signups: 1, activated: 0 },
-    { weekStart: W44, segment: null, signups: 2, activated: 0 },
+    { weekStart: W44, segment: 'VN', signups: 5, activated: 2, startedQuiz: 2 },
+    { weekStart: W44, segment: 'US', signups: 2, activated: 1, startedQuiz: 1 },
+    { weekStart: W45, segment: 'US', signups: 1, activated: 0, startedQuiz: 0 },
+    { weekStart: W44, segment: 'SG', signups: 1, activated: 1, startedQuiz: 1 },
+    { weekStart: W45, segment: 'JP', signups: 1, activated: 0, startedQuiz: 0 },
+    { weekStart: W44, segment: null, signups: 2, activated: 0, startedQuiz: 0 },
+  ],
+  source: [
+    { weekStart: W44, segment: 'threads', signups: 3, activated: 1, startedQuiz: 2 },
+    { weekStart: W45, segment: 'threads', signups: 1, activated: 0, startedQuiz: 1 },
+    { weekStart: W44, segment: 'search', signups: 2, activated: 1, startedQuiz: 1 },
+    { weekStart: W44, segment: null, signups: 1, activated: 0, startedQuiz: 0 },
   ],
 };
 
@@ -96,10 +102,11 @@ function makeService() {
     },
     segments: {
       getActivationSegments: vi.fn(
-        async (_from: Date, _to: Date, by: 'locale' | 'country') => SEGMENT_ROWS[by],
+        async (_from: Date, _to: Date, by: 'locale' | 'country' | 'source') => SEGMENT_ROWS[by],
       ),
     },
     activationEmail: { getWeeklySends: vi.fn().mockResolvedValue([]) },
+    guestFunnel: { getWeeklyGuestFunnel: vi.fn().mockResolvedValue([]) },
     audit: { record: vi.fn().mockResolvedValue(undefined) },
     adaptiveEvents: vi.fn().mockResolvedValue([]),
     now: () => NOW,
@@ -167,6 +174,26 @@ describe('GET /api/admin/stats/activation?by= (real service, fake aggregates)', 
           vi: { signups: 2, activated: 1 },
           unknown: { signups: 0, activated: 0 },
         },
+      },
+    ]);
+  });
+
+  it('splits by source with startedQuiz, unknown for accounts without a first touch', async () => {
+    const response = await get('/api/admin/stats/activation?weeks=2&by=source');
+    expect(response.status).toBe(200);
+    const { data } = await response.json();
+    expect(data.by).toBe('source');
+    expect(data.segments).toEqual(['threads', 'search', 'unknown']);
+    expect(data.weeks.map((week: { segments: unknown }) => week.segments)).toEqual([
+      {
+        threads: { signups: 3, activated: 1, startedQuiz: 2 },
+        search: { signups: 2, activated: 1, startedQuiz: 1 },
+        unknown: { signups: 1, activated: 0, startedQuiz: 0 },
+      },
+      {
+        threads: { signups: 1, activated: 0, startedQuiz: 1 },
+        search: { signups: 0, activated: 0, startedQuiz: 0 },
+        unknown: { signups: 0, activated: 0, startedQuiz: 0 },
       },
     ]);
   });

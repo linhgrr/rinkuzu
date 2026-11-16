@@ -73,7 +73,7 @@ class AuthAuditStub implements IAuthAudit {
   record = vi.fn<(input: AuthAuditRecord) => Promise<void>>();
 }
 
-class GuestAttemptClaimStub implements IGuestAttemptClaimService {
+class GuestAttemptClaimStub implements Pick<IGuestAttemptClaimService, 'claimHashed'> {
   claim = vi.fn<(userId: string, tokens: readonly string[]) => Promise<string[]>>();
   claimHashed = vi.fn<(userId: string, hashes: readonly string[]) => Promise<string[]>>();
 }
@@ -221,6 +221,25 @@ describe('AuthAccountService', () => {
     expect(repository.createPending).toHaveBeenCalledWith(
       expect.objectContaining({ signupOrigin: { signupLocale: 'vi', signupCountry: null } }),
     );
+  });
+
+  it('saves the first-touch source on the new account only (RIN-1762)', async () => {
+    const signupSource = {
+      referrer_class: 'direct' as const,
+      entry_path: '/vi',
+      first_seen_at: new Date().toISOString(),
+    };
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+    await service.register({ email: identity.email, password: 'password', signupSource }, context);
+    expect(repository.createPending).toHaveBeenCalledWith(
+      expect.objectContaining({ signupSource }),
+    );
+
+    repository.createPending.mockClear();
+    repository.findByEmail.mockResolvedValue({ ...identity, authProviders: ['credentials'] });
+    await service.register({ email: identity.email, password: 'password', signupSource }, context);
+    expect(repository.createPending).not.toHaveBeenCalled();
   });
 
   it('forwards the sign-up callbackUrl to the verification email', async () => {

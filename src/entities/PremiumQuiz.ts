@@ -97,11 +97,7 @@ export interface CreditWallet {
 }
 
 type CreditLedgerType =
-  | 'submission_reward'
-  | 'quiz_unlock'
-  | 'refund'
-  | 'admin_adjustment'
-  | 'fraud_reversal';
+  'submission_reward' | 'quiz_unlock' | 'refund' | 'admin_adjustment' | 'fraud_reversal';
 
 export interface CreditLedgerEntry {
   id: string;
@@ -140,6 +136,8 @@ export interface PremiumPlaySession {
   currentQuestionIndex: number;
   highestBatch: number;
   sessionCode: string;
+  /** RIN-1722: a preview session plays only the first questions; absent means a full session. */
+  preview?: boolean;
   idleExpiresAt: Date;
   absoluteExpiresAt: Date;
   completedAt?: Date;

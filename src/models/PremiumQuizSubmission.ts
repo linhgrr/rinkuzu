@@ -188,8 +188,7 @@ PremiumQuizSubmissionSchema.index(
 
 const PremiumQuizSubmissionModel =
   (mongoose.models['PremiumQuizSubmission'] as
-    | mongoose.Model<PremiumQuizSubmissionDocument>
-    | undefined) ??
+    mongoose.Model<PremiumQuizSubmissionDocument> | undefined) ??
   mongoose.model<PremiumQuizSubmissionDocument>(
     'PremiumQuizSubmission',
     PremiumQuizSubmissionSchema,

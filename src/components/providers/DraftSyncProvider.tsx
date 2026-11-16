@@ -6,9 +6,8 @@ import useSWR from 'swr';
 import { useDraftStore } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import { listQuizDrafts } from '@/lib/quiz/draftApi';
+import { DRAFT_SYNC_INTERVAL_MS as SYNC_INTERVAL } from '@/lib/quiz/draftSyncInterval';
 import { mapDraftStatus } from '@/lib/quiz/draftStatus';
-
-const SYNC_INTERVAL = 30000; // 30 seconds
 
 function getProcessingDraftIds(ref: MutableRefObject<Set<string> | null>) {
   if (ref.current === null) {

@@ -89,6 +89,14 @@ interface AttemptNextQuizDto {
   quick?: boolean;
 }
 
+/** RIN-1722: set on a Premium preview attempt; the result offers the unlock and a free quiz. */
+interface AttemptPremiumPreviewDto {
+  fullQuestionCount: number;
+  quizId: string;
+  /** A free public quiz to play next; null only when no starter quiz exists. */
+  freeQuiz: { slug: string; title: string } | null;
+}
+
 export interface AttemptDetailDto {
   id: string;
   score: number;
@@ -111,6 +119,8 @@ export interface AttemptDetailDto {
   missedCount: number;
   /** Next eligible starter quiz in the learner's locale they have not attempted, or null. */
   nextQuiz: AttemptNextQuizDto | null;
+  /** Premium preview attempt only (RIN-1722). */
+  premiumPreview?: AttemptPremiumPreviewDto;
   /** Retry-missed attempt only: the source attempt id. */
   retryOfAttemptId?: string;
   /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */

@@ -23,6 +23,12 @@ export interface AttemptDetailViewModel {
   };
   missedCount: number;
   nextQuiz: { slug: string; title: string; quick?: boolean } | null;
+  /** Premium preview attempt only (RIN-1722): the result offers the unlock and a free quiz. */
+  premiumPreview?: {
+    fullQuestionCount: number;
+    quizId: string;
+    freeQuiz: { slug: string; title: string } | null;
+  };
   retryOfAttemptId?: string;
   /** Retry or quick round: `quiz.questions[i]` is quiz question `questionIndices[i]`. */
   questionIndices?: number[];

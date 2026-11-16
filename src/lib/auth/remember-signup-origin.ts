@@ -2,9 +2,14 @@ import 'server-only';
 
 import { cookies, headers } from 'next/headers';
 
-import type { ISignupOriginRepository } from '@/interfaces/repositories/IAuthAccountRepository';
+import type {
+  ISignupOriginRepository,
+  ISignupSourceRepository,
+} from '@/interfaces/repositories/IAuthAccountRepository';
+import { FIRST_TOUCH_COOKIE, parseFirstTouch } from '@/lib/attribution/first-touch';
 import { resolveAccountLocale } from '@/lib/auth/account-locale';
-import { SIGNUP_COUNTRY_HEADER, toSignupOrigin } from '@/lib/auth/signup-origin';
+import { toSignupOrigin } from '@/lib/auth/signup-origin';
+import { resolveClientCountry } from '@/lib/client-ip';
 import { logger } from '@/lib/logger';
 
 /**
@@ -24,9 +29,27 @@ export async function rememberGoogleSignupOrigin(
       referer: headerStore.get('referer'),
       cookies: cookieStore,
     });
-    const origin = toSignupOrigin(locale, headerStore.get(SIGNUP_COUNTRY_HEADER));
+    const origin = toSignupOrigin(locale, resolveClientCountry(headerStore));
     await repository.recordSignupOriginIfMissing(accountId, origin);
   } catch (error) {
     logger.warn({ error }, 'signup origin not recorded');
+  }
+}
+
+/**
+ * Stores a new Google account's first touch (RIN-1762) from the `rk_ft` cookie,
+ * parsed as untrusted input: an absent or invalid cookie stores nothing. Call
+ * it only when the sign-in created the account. Best effort, never throws.
+ */
+export async function rememberGoogleSignupSource(
+  repository: ISignupSourceRepository,
+  accountId: string,
+): Promise<void> {
+  try {
+    const cookieStore = await cookies();
+    const source = parseFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value, new Date());
+    if (source) await repository.recordSignupSourceIfMissing(accountId, source);
+  } catch (error) {
+    logger.warn({ error }, 'signup source not recorded');
   }
 }

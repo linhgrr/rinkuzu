@@ -7,7 +7,10 @@ import { extractRequestContext } from '@/lib/audit';
 import { getAuthSignInRepository, getAuthSignInService } from '@/lib/auth-sign-in-factory';
 import { selectAuthDbUserId } from '@/lib/auth/auth-db-identity';
 import { rememberSignInLocale } from '@/lib/auth/remember-sign-in-locale';
-import { rememberGoogleSignupOrigin } from '@/lib/auth/remember-signup-origin';
+import {
+  rememberGoogleSignupOrigin,
+  rememberGoogleSignupSource,
+} from '@/lib/auth/remember-signup-origin';
 import { applySessionUser, clearSessionUser } from '@/lib/auth/session-projection';
 import { env } from '@/lib/env';
 import { AuthAuditAdapter } from '@/lib/integrations/auth-audit';
@@ -188,6 +191,7 @@ const providers = [
             // Signup origin is written once, on the sign-in that created the account (RIN-1268).
             if (result.isNewAccount) {
               await rememberGoogleSignupOrigin(getAuthSignInRepository(), result.user.id);
+              await rememberGoogleSignupSource(getAuthSignInRepository(), result.user.id);
             }
 
             // Auth core overwrites `id` with randomUUID and uses the returned id as

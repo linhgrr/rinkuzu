@@ -44,21 +44,19 @@ describe('QuizCrudService Premium source publication policy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     quizRepository.findBySourceDraftId.mockResolvedValue(null);
-    quizRepository.create.mockImplementation(
-      async (quizData): Promise<Quiz> => ({
-        id: 'quiz-1',
-        title: quizData.title,
-        slug: quizData.slug,
-        author: quizData.author,
-        questions: quizData.questions.map((question, index) => ({
-          ...question,
-          id: `question-${index + 1}`,
-        })),
-        visibility: quizData.visibility,
-        createdAt: new Date('2026-07-01T00:00:00Z'),
-        updatedAt: new Date('2026-07-01T00:00:00Z'),
-      }),
-    );
+    quizRepository.create.mockImplementation(async (quizData): Promise<Quiz> => ({
+      id: 'quiz-1',
+      title: quizData.title,
+      slug: quizData.slug,
+      author: quizData.author,
+      questions: quizData.questions.map((question, index) => ({
+        ...question,
+        id: `question-${index + 1}`,
+      })),
+      visibility: quizData.visibility,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    }));
   });
 
   it('creates an ordinary quiz as public', async () => {
@@ -86,6 +84,7 @@ describe('QuizCrudService Premium source publication policy', () => {
       id: 'quiz-1',
       author: 'user-1',
       visibility: 'public',
+      slug: 'updated',
     });
     quizRepository.update.mockResolvedValue({
       id: 'quiz-1',

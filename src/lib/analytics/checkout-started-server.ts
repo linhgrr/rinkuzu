@@ -2,9 +2,9 @@ import 'server-only';
 
 import { after, type NextRequest } from 'next/server';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
+import { resolveClientCountry } from '@/lib/client-ip';
+import { isAgentUserAgent } from '@/shared/constants/agent-traffic';
 import { captureAnonymousServerEvent } from './server';
-
-const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 
 function knownLocale(value: string | undefined): Locale | undefined {
   return locales.find((locale) => locale === value);
@@ -30,8 +30,7 @@ function requestLocale(request: NextRequest): Locale {
 }
 
 function requestCountry(request: NextRequest): string | null {
-  const header = request.headers.get('x-vercel-ip-country');
-  return header !== null && COUNTRY_CODE_PATTERN.test(header) ? header : null;
+  return resolveClientCountry(request.headers);
 }
 
 /**
@@ -41,6 +40,8 @@ function requestCountry(request: NextRequest): string | null {
  * Sent after the response, so the order never waits on PostHog.
  */
 export function scheduleCheckoutStartedServerEvent(request: NextRequest, planId: string): void {
+  // Our own agents' orders are not demand (RIN-1760); `after` may not see the request headers.
+  if (isAgentUserAgent(request.headers.get('user-agent'))) return;
   const properties = {
     locale: requestLocale(request),
     plan: planId,

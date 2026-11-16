@@ -1,28 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import { expect, test } from '@playwright/test';
+import { requireCiMongoUri, seedPremiumSubmission } from './support/premium-seed';
 
 /**
  * RIN-747: a guest opening a Premium quiz must see the quiz and a sign-in that
  * returns to it, never a blank page with the server's raw "Unauthorized".
  */
-
-function requireCiMongoUri(): { databaseName: string; uri: string } {
-  const uri = process.env['MONGODB_URI'];
-  if (!uri) throw new Error('MONGODB_URI is required for premium guest E2E');
-  const parsed = new URL(uri);
-  const databaseName = decodeURIComponent(parsed.pathname.replace(/^\/+/, '').split('/')[0] ?? '');
-  if (
-    !['mongodb:', 'mongodb+srv:'].includes(parsed.protocol) ||
-    !['127.0.0.1', 'localhost'].includes(parsed.hostname) ||
-    databaseName !== 'rinkuzu_ci'
-  ) {
-    throw new Error(
-      'Premium guest E2E seed/cleanup is allowed only for mongodb://localhost/rinkuzu_ci',
-    );
-  }
-  return { databaseName, uri };
-}
 
 const VIEWPORTS = [
   { width: 1440, height: 900 },
@@ -31,8 +15,18 @@ const VIEWPORTS = [
 ] as const;
 
 const COPY = {
-  vi: { signIn: 'Đăng nhập', signUp: 'Tạo tài khoản miễn phí', count: '2 câu hỏi' },
-  en: { signIn: 'Sign in', signUp: 'Create a free account', count: '2 questions' },
+  vi: {
+    signIn: 'Đăng nhập',
+    signUp: 'Tạo tài khoản miễn phí',
+    count: '2 câu hỏi',
+    prompt: 'Đăng nhập để làm thử miễn phí 2 câu đầu',
+  },
+  en: {
+    signIn: 'Sign in',
+    signUp: 'Create a free account',
+    count: '2 questions',
+    prompt: 'Sign in to try the first 2 questions free',
+  },
 } as const;
 
 test.describe('premium quiz guest state (RIN-747)', () => {
@@ -50,46 +44,14 @@ test.describe('premium quiz guest state (RIN-747)', () => {
     await client.connect();
     db = client.db(databaseName);
     const runId = `${testInfo.project.name}-${randomUUID()}`.toLowerCase();
-    const now = new Date();
-    submissionId = new ObjectId();
     slug = `e2e-premium-guest-${runId}`;
-    const question = (text: string) => ({
-      _id: new ObjectId(),
-      correctIndex: 0,
-      options: ['Right', 'Wrong'],
-      question: text,
-      type: 'single',
-    });
-    await db.collection('premiumquizsubmissions').insertOne({
-      _id: submissionId,
-      _e2eRun: runId,
-      sourceQuiz: new ObjectId(),
-      author: new ObjectId(),
-      version: 1,
-      status: 'approved',
-      sourceType: 'manual',
-      rightsAttested: true,
-      snapshot: {
-        title,
-        slug,
-        description,
-        questions: [question('First premium question?'), question('Second premium question?')],
-      },
-      snapshotHash: `e2e-${runId}`,
-      questionHashes: [],
-      duplicateReport: {
-        exactDocumentRewarded: false,
-        exactQuiz: false,
-        sharedQuestionCount: 0,
-        highestSimilarity: 0,
-        matches: [],
-      },
-      reviewStatus: 'completed',
-      awardedCredits: 0,
-      active: true,
-      createdAt: now,
-      updatedAt: now,
-    });
+    ({ submissionId } = await seedPremiumSubmission(db, {
+      runId,
+      slug,
+      title,
+      description,
+      questionCount: 2,
+    }));
   });
 
   test.afterAll(async () => {
@@ -108,7 +70,9 @@ test.describe('premium quiz guest state (RIN-747)', () => {
         await page.goto(`/${locale}/quiz/${slug}`);
 
         await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
-        await expect(page.getByText(copy.count)).toBeVisible();
+        await expect(page.getByText(copy.count, { exact: true })).toBeVisible();
+        // RIN-1725: the prompt offers the free preview questions.
+        await expect(page.getByText(copy.prompt, { exact: true })).toBeVisible();
         await expect(page.getByText(description)).toBeVisible();
         await expect(page.getByText('Unauthorized')).toHaveCount(0);
         // The app header has its own Sign in (RIN-958); this is the quiz card one.

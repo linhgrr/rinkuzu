@@ -7,6 +7,7 @@ import AttemptModel from '@/models/Attempt';
 import QuestionProgress from '@/models/QuestionProgress';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
+import type { ClaimedGuestAttemptRef } from '@/entities/QuizAttempt';
 import type {
   IGuestAttemptClaimRepository,
   IQuizAttemptProgressRepository,
@@ -85,6 +86,7 @@ function createSubmissionDigest(data: RecordQuizAttemptProgressData): string {
         answers: data.answers,
         premiumSubmissionId: data.premiumSubmissionId,
         premiumSnapshotHash: data.premiumSnapshotHash,
+        preview: data.preview,
         retryOfAttemptId: data.retryOfAttemptId,
         questionIndices: data.questionIndices,
         mode: data.mode,
@@ -172,6 +174,7 @@ async function createAttempt(
         ...(data.premiumSnapshotHash !== undefined
           ? { premiumSnapshotHash: data.premiumSnapshotHash }
           : {}),
+        ...(data.preview === true ? { preview: true } : {}),
         quizSnapshot: {
           ...data.quizSnapshot,
           questions: data.quizSnapshot.questions.map(({ id, ...question }) => ({
@@ -374,18 +377,18 @@ export class QuizAttemptProgressRepository
     tokenHashes: readonly string[],
     now: Date,
     claimableSince: Date,
-  ): Promise<string[]> {
+  ): Promise<ClaimedGuestAttemptRef[]> {
     if (tokenHashes.length === 0) return [];
     await connectDB();
     const session = await mongoose.startSession();
-    const claimedIds: string[] = [];
+    const claimedIds: ClaimedGuestAttemptRef[] = [];
     try {
       for (const tokenHash of new Set(tokenHashes)) {
         const claimed = await session.withTransaction(async () =>
           claimOneGuestAttempt(userId, tokenHash, now, claimableSince, session),
         );
         if (!claimed) continue;
-        claimedIds.push(claimed.id);
+        claimedIds.push({ attemptId: claimed.id, tokenHash });
         // After the commit, on its own: a failed write here would abort the claim
         // transaction, and the claim must stand without it (RIN-1028 AC5).
         try {

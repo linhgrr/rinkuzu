@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "detector": {
     "name": "jscpd",
-    "version": "5.0.12",
+    "version": "5.4.3",
     "mode": "mild",
     "minLines": 5,
     "minTokens": 50,
@@ -15,12 +15,11 @@
   },
   "minimumAnalyzedSources": 425,
   "limits": {
-    "clones": 6,
-    "duplicatedLines": 65,
+    "clones": 5,
+    "duplicatedLines": 57,
     "percentage": 2.2
   },
   "knownCloneFingerprints": [
-    "4a4f905e12d2c2558ca7e0d5c1e789f4ee5920bc92c3ad98346c08de4f5d24c1",
     "ccda83e8487d4731db02e9b211a97f2da3840fd96f5e21070ac4b6869c27bc16",
     "e1653719b2d4763de3a2ae99971227909073d869310c84e6570db77664ac077d",
     "e7a8bf76f23aa08cadac00eff5be6e2185548a02e57b5f3e0d1399856737a68e",
@@ -28,5 +27,5 @@
     "facedba7b8f892e53f3b151f4a28ee7c6d34195fb4a3302b09d284967b7e67af"
   ],
   "generatedFrom": "working-tree",
-  "configFingerprint": "5003f9cfd6186b111b10a26e30a5aef3d6de30d1972d680345e20da0959a262e"
+  "configFingerprint": "5b3d9d34feaa7a695a75784c8a5dc46b4bb4eec2ab6d381c9cc12bde639bc9ba"
 }

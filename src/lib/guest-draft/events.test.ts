@@ -42,6 +42,29 @@ describe('createGuestDraftEvents', () => {
     }
   });
 
+  it('carries source image and page_count, and nothing about the photos (RIN-1792)', async () => {
+    const capture = vi.fn(async () => true);
+    const events = createGuestDraftEvents(capture);
+    const imageContext = { ...context, source: 'image' as const, pageCount: 3 };
+
+    await events.started(imageContext);
+    await events.firstBatchReady(imageContext, 1200);
+    await events.ready(imageContext);
+    await events.failed(imageContext, 'no_questions');
+    await events.claimed(imageContext);
+
+    const payloads = capture.mock.calls.map((call) => call.at(2) ?? {});
+    expect(payloads).toHaveLength(5);
+    for (const payload of payloads) {
+      expect(payload).toMatchObject({ source: 'image', page_count: 3 });
+      expect(Object.keys(payload).sort()).not.toEqual(expect.arrayContaining(['file', 'name']));
+    }
+    const allKeys = new Set(payloads.flatMap((payload) => Object.keys(payload)));
+    for (const forbidden of ['ip', 'token', 'fileName', 'images', 'text', 'ocr']) {
+      expect(allKeys).not.toContain(forbidden);
+    }
+  });
+
   it('carries source text on every event of a pasted-text draft (RIN-1538)', async () => {
     const capture = vi.fn(async () => true);
     const events = createGuestDraftEvents(capture);
@@ -55,6 +78,24 @@ describe('createGuestDraftEvents', () => {
     expect(capture.mock.calls.map((call) => call.at(2))).toEqual(
       Array.from({ length: 4 }, () => expect.objectContaining({ source: 'text' })),
     );
+  });
+
+  it('adds file_type on every event of a draft made from an office file (RIN-1786)', async () => {
+    const capture = vi.fn(async () => true);
+    const events = createGuestDraftEvents(capture);
+    const officeContext = { ...context, source: 'text' as const, fileType: 'pptx' as const };
+
+    await events.started(officeContext);
+    await events.ready(officeContext);
+    await events.claimed(officeContext);
+    await events.started({ ...context, source: 'text' as const });
+
+    expect(capture.mock.calls.map((call) => call.at(2))).toEqual([
+      expect.objectContaining({ source: 'text', file_type: 'pptx' }),
+      expect.objectContaining({ file_type: 'pptx' }),
+      expect.objectContaining({ file_type: 'pptx' }),
+      expect.not.objectContaining({ file_type: expect.anything() }),
+    ]);
   });
 
   it('sends first_batch_ready with ms_since_submit and no content (RIN-1619)', async () => {

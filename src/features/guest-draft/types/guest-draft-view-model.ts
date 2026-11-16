@@ -18,10 +18,21 @@ export interface GuestDraftProgress {
 }
 
 /**
- * What the page shows when the browser or the server refuses a PDF or a pasted text.
- * `too_large` is a PDF over the limits or a text over the trial length (RIN-1539).
+ * What the page shows when the browser or the server refuses a PDF, a Word or PowerPoint
+ * file or a pasted text. `too_large` is a PDF over the limits or a text over the trial
+ * length (RIN-1539); the last five are the office-file refusals (RIN-1786).
  */
-export type GuestDraftRefusal = 'too_large' | 'too_short' | 'not_pdf' | 'cap' | 'upload_error';
+export type GuestDraftRefusal =
+  | 'too_large'
+  | 'too_short'
+  | 'not_pdf'
+  | 'cap'
+  | 'upload_error'
+  | 'office_too_large'
+  | 'legacy_format'
+  | 'encrypted'
+  | 'corrupt'
+  | 'too_little_text';
 
 /** One submit of a guest-draft attempt (RIN-1448); the draft token is passed beside it. */
 export interface GuestDraftAttemptInput {

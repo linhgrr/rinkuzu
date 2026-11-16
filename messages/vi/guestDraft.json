@@ -7,22 +7,30 @@
     "badge": "Không cần tài khoản",
     "title": "Tạo câu hỏi trắc nghiệm từ PDF, làm ngay",
     "subtitle": "Tối đa {pages} trang và {mb} MB. Rin tạo tối đa 10 câu hỏi, bạn làm luôn, không cần chỉnh sửa.",
-    "dropzoneLabel": "Tài liệu PDF",
+    "dropzoneLabel": "Tệp PDF, Word hoặc PowerPoint",
     "clickToUpload": "Nhấn để tải lên",
     "dragAndDrop": "hoặc kéo và thả",
-    "limitHint": "PDF, tối đa {pages} trang và {mb} MB",
-    "dropHere": "Thả PDF vào đây",
+    "limitHint": "PDF, Word hoặc PowerPoint. PDF tối đa {pages} trang và {mb} MB, Word và PowerPoint tối đa {officeMb} MB",
+    "dropHere": "Thả tệp vào đây",
     "removeFile": "Bỏ tệp",
     "checking": "Đang kiểm tra tệp…",
     "submit": "Tạo quiz",
     "tryAgain": "Thử lại",
     "privacy": "Tệp của bạn chỉ được giữ 24 giờ rồi bị xóa, và chỉ bạn mở được.",
-    "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí"
+    "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí",
+    "truncatedNote": "Chúng tôi đã dùng {max, number} ký tự đầu tiên."
   },
   "alerts": {
     "tooLarge": "PDF này vượt giới hạn dùng thử: tối đa {pages} trang và {mb} MB. Đăng ký miễn phí để dùng giới hạn đầy đủ.",
     "tooLargeLink": "Đăng ký miễn phí",
-    "notPdf": "Chỉ nhận tệp PDF.",
+    "notPdf": "Chỉ nhận tệp PDF, Word hoặc PowerPoint.",
+    "officeTooLarge": "Tệp này lớn hơn {officeMb} MB. Hãy thử tệp nhỏ hơn hoặc bản PDF.",
+    "legacyFormat": "Không đọc được tệp .doc và .ppt cũ. Hãy lưu tệp thành .docx hoặc .pptx, hoặc xuất ra PDF rồi thử lại.",
+    "encrypted": "Tệp này có mật khẩu. Hãy gỡ mật khẩu hoặc xuất ra PDF rồi thử lại.",
+    "corrupt": "Chúng tôi không mở được tệp này. Hãy kiểm tra tệp có bị hỏng không, hoặc xuất ra PDF.",
+    "tooLittleText": "Chúng tôi không tìm thấy đủ chữ trong tệp này. Hãy thử bản PDF hoặc dán văn bản.",
+    "pdfVersionLink": "Dùng bản PDF",
+    "pasteTextLink": "Dán văn bản",
     "uploadError": "Không tải được tệp lên. Kiểm tra kết nối rồi thử lại."
   },
   "cap": {
@@ -95,6 +103,12 @@
     "body": "Lượt này không bị tính. Thử lại, hoặc chỉnh văn bản (nội dung quá chung chung hoặc quá ngắn khó tạo câu hỏi).",
     "retry": "Thử lại",
     "chooseAnother": "Sửa văn bản"
+  },
+  "failedOffice": {
+    "title": "Chưa tạo được quiz từ tệp này",
+    "body": "Lượt này không bị tính. Thử lại, hoặc chọn tệp khác (slide chỉ có hình ảnh thường khó đọc hơn).",
+    "retry": "Thử lại",
+    "chooseAnother": "Chọn tệp khác"
   },
   "seo": {
     "howTitle": "Cách hoạt động",

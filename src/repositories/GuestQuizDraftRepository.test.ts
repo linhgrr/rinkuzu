@@ -44,6 +44,7 @@ describe('GuestQuizDraftRepository', () => {
       status: 'processing',
       title: null,
       questionCount: 0,
+      pageCount: null,
       complete: false,
       completion: null,
       locale: 'en',
@@ -52,6 +53,23 @@ describe('GuestQuizDraftRepository', () => {
       failureReason: null,
       createdAt: new Date('2026-11-10T03:00:00.000Z'),
     });
+  });
+
+  it('stores and reads back the office file type of a text draft (RIN-1786)', async () => {
+    model.create.mockResolvedValue({
+      toObject: () => ({ ...stored, source: 'text', sourceFileType: 'pptx' }),
+    });
+    const record = await repository.create({
+      tokenHash: 'a'.repeat(64),
+      apiDraftId: 'api-draft-1',
+      locale: 'en',
+      entry: 'landing',
+      source: 'text',
+      sourceFileType: 'pptx',
+      expiresAt: new Date(0),
+    });
+    expect(model.create).toHaveBeenCalledWith(expect.objectContaining({ sourceFileType: 'pptx' }));
+    expect(record).toMatchObject({ source: 'text', sourceFileType: 'pptx' });
   });
 
   it('reads a draft stored before RIN-1538 (no source) as a PDF draft', async () => {

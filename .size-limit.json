@@ -42,7 +42,7 @@
       "name": "quiz-adaptive",
       "limit": "345 KiB",
       "patterns": [
-        "^/\\[locale\\]/(?:adaptive(?:/.*)?|(?:signed-out/)?quiz(?:/.*)?|try/(?:pdf|text)/play)$"
+        "^/\\[locale\\]/(?:adaptive(?:/.*)?|(?:signed-out/)?quiz(?:/.*)?|try/(?:pdf|text|photo)/play)$"
       ]
     }
   ],

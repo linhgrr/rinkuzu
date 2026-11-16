@@ -1,10 +1,16 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createFromTextMock } = vi.hoisted(() => ({ createFromTextMock: vi.fn() }));
+const { createFromTextMock, recordOfficeDraftMock } = vi.hoisted(() => ({
+  createFromTextMock: vi.fn(),
+  recordOfficeDraftMock: vi.fn(),
+}));
 
 vi.mock('@/lib/guest-draft-factory', () => ({
   getGuestDraftService: () => ({ createFromText: createFromTextMock }),
+}));
+vi.mock('@/lib/upload-counter-factory', () => ({
+  getUploadCounterService: () => ({ recordOfficeDraft: recordOfficeDraftMock }),
 }));
 
 import { POST } from '@/app/api/guest-drafts/text/route';
@@ -35,7 +41,10 @@ function paste(body: unknown, { token = TOKEN }: { token?: string | null } = {})
 const valid = { text: '  ' + NOTES + '  ', locale: 'vi', entry: 'create' };
 
 describe('POST /api/guest-drafts/text (RIN-1538)', () => {
-  beforeEach(() => createFromTextMock.mockReset());
+  beforeEach(() => {
+    createFromTextMock.mockReset();
+    recordOfficeDraftMock.mockReset();
+  });
 
   it('creates a text draft with the trimmed text, token, locale, entry and caller IP', async () => {
     createFromTextMock.mockResolvedValue({ ok: true, draft: PROCESSING });
@@ -137,6 +146,56 @@ describe('POST /api/guest-drafts/text (RIN-1538)', () => {
     expect((await response.json()).error.meta).toEqual({
       reason: 'guest_text_too_short',
       limit_chars: 200,
+    });
+  });
+
+  describe('a text read from a Word or PowerPoint file (RIN-1786)', () => {
+    it('passes source_file_type to the service and counts the office draft on try_pdf', async () => {
+      createFromTextMock.mockResolvedValue({ ok: true, draft: PROCESSING });
+
+      const response = await POST(paste({ ...valid, source_file_type: 'pptx' }));
+
+      expect(response.status).toBe(201);
+      expect(createFromTextMock).toHaveBeenCalledWith({
+        token: TOKEN,
+        text: NOTES.trim(),
+        locale: 'vi',
+        entry: 'create',
+        sourceFileType: 'pptx',
+        ip: '203.0.113.7',
+      });
+      expect(recordOfficeDraftMock).toHaveBeenCalledWith('try_pdf', 'pptx');
+    });
+
+    it('counts the page named in upload_surface', async () => {
+      createFromTextMock.mockResolvedValue({ ok: true, draft: PROCESSING });
+
+      await POST(paste({ ...valid, source_file_type: 'docx', upload_surface: 'try_slides' }));
+
+      expect(recordOfficeDraftMock).toHaveBeenCalledWith('try_slides', 'docx');
+    });
+
+    it('does not count a pasted text, or an office draft the caps refused', async () => {
+      createFromTextMock.mockResolvedValue({ ok: true, draft: PROCESSING });
+      await POST(paste(valid));
+      createFromTextMock.mockResolvedValue({
+        ok: false,
+        error: 'limit',
+        scope: 'ip',
+        retryAfterSeconds: 30,
+      });
+      await POST(paste({ ...valid, source_file_type: 'docx' }));
+
+      expect(recordOfficeDraftMock).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['an unknown file type', { source_file_type: 'xlsx' }],
+      ['image, which has its own route', { source_file_type: 'image' }],
+      ['an unknown surface', { source_file_type: 'docx', upload_surface: 'create_pdf' }],
+    ])('400s %s', async (_label, extra) => {
+      expect((await POST(paste({ ...valid, ...extra }))).status).toBe(400);
+      expect(createFromTextMock).not.toHaveBeenCalled();
     });
   });
 });

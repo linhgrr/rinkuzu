@@ -14,7 +14,7 @@ const transportDraft: QuizDraftTransportDto = {
   submit_to_premium: false,
   revision: 2,
   question_count: 2,
-  questions_ready: 2,
+  questions_ready: 0,
   pdf: {
     s3_key: 'users/user-1/source.pdf',
     file_name: 'source.pdf',

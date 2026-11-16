@@ -33,6 +33,7 @@ function record(overrides: Partial<GuestDraftRecord> = {}): GuestDraftRecord {
     locale: 'en',
     entry: 'landing',
     source: 'pdf',
+    pageCount: null,
     failureReason: null,
     createdAt: SUBMITTED_AT,
     ...overrides,
@@ -93,6 +94,10 @@ function setup(existing: GuestDraftRecord | null = null) {
       ok: true,
       draft: upstreamDraft({ status: 'queued' }),
     })),
+    createFromImages: vi.fn<GuestDraftUpstream['createFromImages']>(async () => ({
+      ok: true,
+      draft: upstreamDraft({ status: 'queued' }),
+    })),
     get: vi.fn<GuestDraftUpstream['get']>(async () => ({ ok: true, draft: upstreamDraft() })),
     remove: vi.fn(async () => undefined),
   } satisfies GuestDraftUpstream;
@@ -109,6 +114,90 @@ function setup(existing: GuestDraftRecord | null = null) {
 
 const pdf = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
 const createInput = { token: TOKEN, pdf, locale: 'en' as const, entry: 'landing' as const, ip: IP };
+
+describe('GuestDraftService.createFromImages (RIN-1792)', () => {
+  const images = [new Blob(['a']), new Blob(['b']), new Blob(['c'])];
+  const imageInput = {
+    token: TOKEN,
+    images,
+    locale: 'en' as const,
+    entry: 'try_photo' as const,
+    ip: IP,
+  };
+
+  it('stores source image with its page count and emits started with page_count', async () => {
+    const { service, repository, upstream, events } = setup();
+    repository.create.mockResolvedValue(record({ source: 'image', pageCount: 3 }));
+
+    const result = await service.createFromImages(imageInput);
+
+    expect(result).toMatchObject({ ok: true, draft: { status: 'processing' } });
+    expect(upstream.createFromImages).toHaveBeenCalledWith(images);
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'image', pageCount: 3, entry: 'try_photo' }),
+    );
+    expect(events.started).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'image', pageCount: 3 }),
+    );
+  });
+
+  it('gives the daily slot back on an API 503 for photos (kill switch or OCR pool down)', async () => {
+    const { service, limiter, upstream } = setup();
+    upstream.createFromImages.mockResolvedValue({
+      ok: false,
+      status: 503,
+      code: 'service_unavailable',
+      meta: null,
+    });
+
+    await service.createFromImages(imageInput);
+
+    expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+    expect(limiter.refundDaily).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the daily slot when the photo call timed out or the network failed', async () => {
+    const { service, limiter, upstream } = setup();
+    upstream.createFromImages.mockResolvedValue({
+      ok: false,
+      status: 503,
+      code: 'service_unavailable',
+      meta: null,
+      unreachable: true,
+    });
+
+    await service.createFromImages(imageInput);
+
+    expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+    expect(limiter.refundDaily).not.toHaveBeenCalled();
+  });
+
+  it('gives both caps back on a 422 too_little_text and creates no draft', async () => {
+    const { service, repository, limiter, upstream, events } = setup();
+    upstream.createFromImages.mockResolvedValue({
+      ok: false,
+      status: 422,
+      code: 'too_little_text',
+      meta: null,
+    });
+
+    const result = await service.createFromImages(imageInput);
+
+    expect(result).toMatchObject({ ok: false, error: 'upstream', status: 422 });
+    expect(limiter.refundIp).toHaveBeenCalledWith(IP);
+    expect(limiter.refundDaily).toHaveBeenCalled();
+    expect(repository.create).not.toHaveBeenCalled();
+    expect(events.started).not.toHaveBeenCalled();
+  });
+
+  it('refuses before the upstream when a cap is hit', async () => {
+    const { service, limiter, upstream } = setup();
+    limiter.reserve.mockResolvedValue({ ok: false, scope: 'ip', retryAfterSeconds: 60 });
+
+    expect(await service.createFromImages(imageInput)).toMatchObject({ error: 'limit' });
+    expect(upstream.createFromImages).not.toHaveBeenCalled();
+  });
+});
 
 describe('GuestDraftService.create', () => {
   it('stores only the token hash with a 24 h expiry and emits started', async () => {
@@ -208,7 +297,7 @@ describe('GuestDraftService.createFromText (RIN-1538)', () => {
 
     expect(result).toMatchObject({ ok: true, draft: { status: 'processing' } });
     expect(limiter.reserve).toHaveBeenCalledWith(IP);
-    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED);
+    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED, undefined);
     expect(upstream.create).not.toHaveBeenCalled();
     expect(repository.create).toHaveBeenCalledWith({
       tokenHash: hashGuestClaimToken(TOKEN),
@@ -227,6 +316,18 @@ describe('GuestDraftService.createFromText (RIN-1538)', () => {
     const stored = JSON.stringify([repository.create.mock.calls, events.started.mock.calls]);
     expect(stored).not.toContain('Fake notes');
     expect(stored).not.toContain(TOKEN);
+  });
+
+  it('stores the office file type, sends it to the API and puts it on the started event (RIN-1786)', async () => {
+    const { service, repository, upstream, events } = setup();
+
+    await service.createFromText({ ...textInput, sourceFileType: 'docx' });
+
+    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED, 'docx');
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'text', sourceFileType: 'docx' }),
+    );
+    expect(events.started).toHaveBeenCalledWith(expect.objectContaining({ source: 'text' }));
   });
 
   it.each(['ip', 'daily'] as const)(

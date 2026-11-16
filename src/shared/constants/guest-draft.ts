@@ -12,6 +12,7 @@ export const GUEST_DRAFT_ENTRIES = [
   'quiz_landing',
   'seo',
   'try_text',
+  'try_photo',
 ] as const;
 export type GuestDraftEntry = (typeof GUEST_DRAFT_ENTRIES)[number];
 
@@ -62,8 +63,17 @@ export function isGuestDraftSlug(slug: string): boolean {
  */
 export const GUEST_DRAFT_MAX_QUESTIONS = 10;
 
+/**
+ * Guest photo drafts (RIN-1792): the browser prepares each photo as a JPEG (RIN-1790), so
+ * at most 5 of at most 1 MB each and 4.4 MB in all fit the 4.5 MB request-body cap of the
+ * web functions. Checked here before any upstream call; the API enforces its own limits.
+ */
+export const GUEST_DRAFT_MAX_IMAGES = 5;
+export const GUEST_DRAFT_MAX_IMAGE_BYTES = 1024 * 1024;
+export const GUEST_DRAFT_MAX_IMAGES_TOTAL_BYTES = 4.4 * 1024 * 1024;
+
 /** What a guest draft was made from (RIN-1538); carried on every guest_draft_* event. */
-export const GUEST_DRAFT_SOURCES = ['pdf', 'text'] as const;
+export const GUEST_DRAFT_SOURCES = ['pdf', 'text', 'image'] as const;
 export type GuestDraftSource = (typeof GUEST_DRAFT_SOURCES)[number];
 
 /**

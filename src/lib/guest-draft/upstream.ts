@@ -14,6 +14,9 @@ import { logger } from '@/lib/logger';
 
 const GUEST_DRAFTS_PATH = '/quiz/guest-drafts';
 const GUEST_TEXT_DRAFTS_PATH = '/quiz/guest-drafts/text';
+const GUEST_IMAGE_DRAFTS_PATH = '/quiz/guest-drafts/image';
+/** OCR of up to 5 pages runs before the draft exists (RIN-1782): longer than other calls. */
+const IMAGE_DRAFT_TIMEOUT_MS = 50_000;
 
 type Envelope = {
   data?: { draft?: UpstreamGuestDraft };
@@ -44,12 +47,13 @@ async function call(
   path: string,
   init: RequestInit,
   extraHeaders: Record<string, string> = {},
+  timeoutMs: number = resolveAdaptiveProxyTimeoutMs(),
 ): Promise<Response> {
   // Service token only: the API refuses a guest call that carries a user id.
   return fetch(buildAdaptiveUrl(path), {
     ...init,
     headers: { ...buildAdaptiveServiceHeaders(), ...extraHeaders, accept: 'application/json' },
-    signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
+    signal: AbortSignal.timeout(timeoutMs),
     cache: 'no-store',
   });
 }
@@ -86,6 +90,23 @@ export function createGuestDraftUpstream(): GuestDraftUpstream {
       } catch (error) {
         // The error name only: never the text.
         logger.warn({ errorName: (error as Error).name }, 'Guest text draft create call failed');
+        return unavailable;
+      }
+    },
+    async createFromImages(images) {
+      const form = new FormData();
+      images.forEach((image, index) => form.append('images', image, `page-${index + 1}.jpg`));
+      try {
+        const response = await call(
+          GUEST_IMAGE_DRAFTS_PATH,
+          { method: 'POST', body: form },
+          {},
+          IMAGE_DRAFT_TIMEOUT_MS,
+        );
+        return await toResult(response);
+      } catch (error) {
+        // The error name only: never the photos.
+        logger.warn({ errorName: (error as Error).name }, 'Guest photo draft create call failed');
         return unavailable;
       }
     },

@@ -25,6 +25,8 @@ export const UPLOAD_SURFACES = [
   'create_pdf_mobile',
   'adaptive_upload',
   'dashboard_upload',
+  'try_photo',
+  'create_photo',
 ] as const;
 export type UploadSurface = (typeof UPLOAD_SURFACES)[number];
 

@@ -42,6 +42,29 @@ describe('createGuestDraftEvents', () => {
     }
   });
 
+  it('carries source image and page_count, and nothing about the photos (RIN-1792)', async () => {
+    const capture = vi.fn(async () => true);
+    const events = createGuestDraftEvents(capture);
+    const imageContext = { ...context, source: 'image' as const, pageCount: 3 };
+
+    await events.started(imageContext);
+    await events.firstBatchReady(imageContext, 1200);
+    await events.ready(imageContext);
+    await events.failed(imageContext, 'no_questions');
+    await events.claimed(imageContext);
+
+    const payloads = capture.mock.calls.map((call) => call.at(2) ?? {});
+    expect(payloads).toHaveLength(5);
+    for (const payload of payloads) {
+      expect(payload).toMatchObject({ source: 'image', page_count: 3 });
+      expect(Object.keys(payload).sort()).not.toEqual(expect.arrayContaining(['file', 'name']));
+    }
+    const allKeys = new Set(payloads.flatMap((payload) => Object.keys(payload)));
+    for (const forbidden of ['ip', 'token', 'fileName', 'images', 'text', 'ocr']) {
+      expect(allKeys).not.toContain(forbidden);
+    }
+  });
+
   it('carries source text on every event of a pasted-text draft (RIN-1538)', async () => {
     const capture = vi.fn(async () => true);
     const events = createGuestDraftEvents(capture);

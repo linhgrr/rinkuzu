@@ -29,6 +29,7 @@ type StoredGuestDraft = Pick<
   | 'locale'
   | 'entry'
   | 'source'
+  | 'pageCount'
   | 'failureReason'
   | 'createdAt'
 > & { _id: Types.ObjectId };
@@ -43,6 +44,7 @@ const RECORD_PROJECTION = {
   locale: 1,
   entry: 1,
   source: 1,
+  pageCount: 1,
   failureReason: 1,
   createdAt: 1,
 } as const;
@@ -66,6 +68,7 @@ function toRecord(doc: StoredGuestDraft): GuestDraftRecord {
     locale: doc.locale,
     entry: doc.entry,
     source: doc.source ?? 'pdf',
+    pageCount: doc.pageCount ?? null,
     failureReason: doc.failureReason ?? null,
     createdAt: doc.createdAt,
   };
@@ -79,7 +82,7 @@ type StoredReadyDraft = Pick<GuestQuizDraftDocument, 'status' | 'complete' | 'co
 
 type StoredClaimableDraft = Pick<
   GuestQuizDraftDocument,
-  'apiDraftId' | 'title' | 'locale' | 'entry' | 'source' | 'status' | 'complete'
+  'apiDraftId' | 'title' | 'locale' | 'entry' | 'source' | 'pageCount' | 'status' | 'complete'
 > & { _id: Types.ObjectId; questions: QuizQuestionDocument[] };
 
 /** Only the fields a guest question has: no subdocument `_id`, no images. */
@@ -192,6 +195,7 @@ export class GuestQuizDraftRepository
         locale: 1,
         entry: 1,
         source: 1,
+        pageCount: 1,
         status: 1,
         complete: 1,
       },
@@ -208,6 +212,7 @@ export class GuestQuizDraftRepository
       locale: doc.locale,
       entry: doc.entry,
       source: doc.source ?? 'pdf',
+      pageCount: doc.pageCount ?? null,
       complete: completionOf(doc).complete,
     }));
   }

@@ -39,6 +39,8 @@ export interface GuestDraftRecord {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** Photo drafts only (RIN-1792). */
+  pageCount: number | null;
   failureReason: string | null;
   createdAt: Date;
 }
@@ -49,6 +51,8 @@ export interface NewGuestDraft {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** Photo drafts only (RIN-1792); the count, never the photos. */
+  pageCount?: number;
   expiresAt: Date;
 }
 
@@ -100,6 +104,7 @@ export interface ClaimableGuestDraft {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  pageCount: number | null;
   /** False while the API still extracts the rest (RIN-1619). */
   complete: boolean;
 }

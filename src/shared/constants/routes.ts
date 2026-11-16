@@ -16,6 +16,8 @@ export const ROUTES = {
   /** Guest quiz from pasted text (RIN-1539): same progress, play and claim flow as `TRY_PDF`. */
   TRY_TEXT: '/try/text',
   TRY_TEXT_PLAY: '/try/text/play',
+  /** Play page of a guest quiz from photos (RIN-1792); the upload page comes with RIN-1793. */
+  TRY_PHOTO_PLAY: '/try/photo/play',
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',

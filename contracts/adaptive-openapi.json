@@ -1704,6 +1704,126 @@
         }
       }
     },
+    "/api/quiz/drafts/text": {
+      "post": {
+        "tags": ["quiz-drafts"],
+        "summary": "Create Text Quiz Draft",
+        "description": "Create a quiz draft from pasted text (no OCR) and enqueue AI processing.\n\nTrimmed text under 200 characters → 422, over 20,000 → 413, both ``validation_error``\nwith ``meta.reason`` ``text_too_short`` / ``text_too_long`` and ``meta.limit_chars``.",
+        "operationId": "create_text_quiz_draft_api_quiz_drafts_text_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuizTextDraftCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_QuizDraftSingleResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/drafts/image": {
+      "post": {
+        "tags": ["quiz-drafts"],
+        "summary": "Create Image Quiz Draft",
+        "description": "Create a quiz draft from 1-5 photos (RIN-1782): OCR first, then the text path.\n\nParts are checked before any OCR call (400 ``validation_error``, ``meta.reason``\n``image_unsupported`` / ``image_too_large`` / ``too_many_images``). Under 200\nreadable characters → 422 ``too_little_text``; OCR down → 503 ``ocr_unavailable``.\nA failure creates no draft. The photos are never stored.",
+        "operationId": "create_image_quiz_draft_api_quiz_drafts_image_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_image_quiz_draft_api_quiz_drafts_image_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_QuizDraftSingleResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/quiz/drafts/{draft_id}": {
       "get": {
         "tags": ["quiz-drafts"],
@@ -2008,6 +2128,125 @@
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_create_guest_quiz_draft_api_quiz_guest_drafts_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_GuestQuizDraftResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/guest-drafts/text": {
+      "post": {
+        "tags": ["quiz-guest-drafts"],
+        "summary": "Create Guest Text Quiz Draft",
+        "description": "Create a guest draft from pasted text (no OCR) and start extraction (service-only).\n\nTrimmed text under 200 characters → 422, over 20,000 → 413, both ``validation_error``\nwith ``meta.reason`` ``guest_text_too_short`` / ``guest_text_too_long`` and\n``meta.limit_chars``, before any storage or LLM call.",
+        "operationId": "create_guest_text_quiz_draft_api_quiz_guest_drafts_text_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestQuizTextDraftCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_GuestQuizDraftResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quiz/guest-drafts/image": {
+      "post": {
+        "tags": ["quiz-guest-drafts"],
+        "summary": "Create Guest Image Quiz Draft",
+        "description": "Create a guest draft from 1-5 photos (RIN-1782, service-only).\n\nSame checks as the signed-in route, with ``guest_too_little_text`` for short text.\nThe switch ``guest_image_drafts_enabled`` off → 503 ``image_drafts_disabled``.",
+        "operationId": "create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-User-Id"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post"
               }
             }
           }
@@ -5139,6 +5378,229 @@
         }
       }
     },
+    "/api/internal/outage-notify": {
+      "post": {
+        "tags": ["outage-notify"],
+        "summary": "Submit Outage Notify",
+        "description": "Store one email for the current campaign. New and repeat emails answer alike.",
+        "operationId": "submit_outage_notify_api_internal_outage_notify_post",
+        "parameters": [
+          {
+            "name": "x-outage-notify-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Outage-Notify-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutageNotifySubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_OutageNotifySubmitResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/outage-notify/pending": {
+      "get": {
+        "tags": ["outage-notify"],
+        "summary": "List Pending Outage Notify",
+        "description": "Emails not yet notified, oldest first.",
+        "operationId": "list_pending_outage_notify_api_internal_outage_notify_pending_get",
+        "parameters": [
+          {
+            "name": "campaign",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "title": "Campaign"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_OutageNotifyPendingResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/outage-notify/mark-sent": {
+      "post": {
+        "tags": ["outage-notify"],
+        "summary": "Mark Outage Notify Sent",
+        "description": "Set ``notified_at`` and a 30-day ``expire_at``. Idempotent: sent rows keep theirs.",
+        "operationId": "mark_outage_notify_sent_api_internal_outage_notify_mark_sent_post",
+        "parameters": [
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutageNotifyMarkSentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_OutageNotifyMarkSentResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/outage-notify/stats": {
+      "get": {
+        "tags": ["outage-notify"],
+        "summary": "Outage Notify Stats",
+        "description": "Counts only; no list of emails.",
+        "operationId": "outage_notify_stats_api_internal_outage_notify_stats_get",
+        "parameters": [
+          {
+            "name": "campaign",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$",
+              "title": "Campaign"
+            }
+          },
+          {
+            "name": "x-service-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Service-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse_OutageNotifyStatsResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ready": {
       "get": {
         "summary": "Readiness",
@@ -5493,6 +5955,28 @@
         "enum": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
         "title": "BloomLabel"
       },
+      "Body_create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post": {
+        "properties": {
+          "images": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images",
+            "description": "1-5 photos, in page order."
+          }
+        },
+        "type": "object",
+        "title": "Body_create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post"
+      },
       "Body_create_guest_quiz_draft_api_quiz_guest_drafts_post": {
         "properties": {
           "file": {
@@ -5505,6 +5989,75 @@
         "type": "object",
         "required": ["file"],
         "title": "Body_create_guest_quiz_draft_api_quiz_guest_drafts_post"
+      },
+      "Body_create_image_quiz_draft_api_quiz_drafts_image_post": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "images": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images",
+            "description": "1-5 photos, in page order."
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "submit_to_premium": {
+            "type": "boolean",
+            "title": "Submit To Premium",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["title"],
+        "title": "Body_create_image_quiz_draft_api_quiz_drafts_image_post"
       },
       "ConceptDetailResponse": {
         "properties": {
@@ -6337,6 +6890,34 @@
             "title": "Question Count",
             "default": 0
           },
+          "questions_ready": {
+            "type": "integer",
+            "title": "Questions Ready",
+            "default": 0
+          },
+          "completion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "first_batch_only"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
           "questions": {
             "items": {
               "$ref": "#/components/schemas/QuizDraftQuestion"
@@ -6386,7 +6967,7 @@
         "type": "object",
         "required": ["draft_id", "status", "progress", "created_at", "expires_at"],
         "title": "GuestQuizDraftData",
-        "description": "Guest draft (RIN-1444). ``questions`` and ``title`` are set only when completed."
+        "description": "Guest draft (RIN-1444). ``title`` is set only when completed.\n\n``questions`` are set when completed, and while ``processing`` once the first\nbatch is ready (``questions_ready > 0``, RIN-1617); later questions are appended."
       },
       "GuestQuizDraftDeleteResponse": {
         "properties": {
@@ -6412,6 +6993,32 @@
         "type": "object",
         "required": ["draft"],
         "title": "GuestQuizDraftResponse"
+      },
+      "GuestQuizTextDraftCreateRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Source text; 200 to 20,000 characters after trimming."
+          },
+          "source_file_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["docx", "pptx", "image"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File Type",
+            "description": "Set when the browser extracted the text from a Word or PowerPoint file."
+          }
+        },
+        "type": "object",
+        "required": ["text"],
+        "title": "GuestQuizTextDraftCreateRequest",
+        "description": "Guest draft from pasted text (RIN-1537)."
       },
       "HTTPValidationError": {
         "properties": {
@@ -8844,6 +9451,227 @@
         "required": ["correct_order"],
         "title": "OrderingPayload"
       },
+      "OutageNotifyMarkSentRequest": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["ids"],
+        "title": "OutageNotifyMarkSentRequest"
+      },
+      "OutageNotifyMarkSentResponse": {
+        "properties": {
+          "matched": {
+            "type": "integer",
+            "title": "Matched"
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          }
+        },
+        "type": "object",
+        "required": ["matched", "updated"],
+        "title": "OutageNotifyMarkSentResponse"
+      },
+      "OutageNotifyPendingItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "required": ["id", "email", "locale"],
+        "title": "OutageNotifyPendingItem"
+      },
+      "OutageNotifyPendingResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OutageNotifyPendingItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": ["items"],
+        "title": "OutageNotifyPendingResponse"
+      },
+      "OutageNotifyStatsResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "notified": {
+            "type": "integer",
+            "title": "Notified"
+          }
+        },
+        "type": "object",
+        "required": ["total", "pending", "notified"],
+        "title": "OutageNotifyStatsResponse"
+      },
+      "OutageNotifySubmitRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "title": "Email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": ["vi", "en"],
+            "title": "Locale"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Path"
+          },
+          "utm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OutageNotifyUtm"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry"
+          },
+          "consent_text": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Consent Text"
+          },
+          "consent_version": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Consent Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["email", "locale", "path", "consent_text", "consent_version"],
+        "title": "OutageNotifySubmitRequest"
+      },
+      "OutageNotifySubmitResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status",
+            "default": "ok"
+          }
+        },
+        "type": "object",
+        "title": "OutageNotifySubmitResponse"
+      },
+      "OutageNotifyUtm": {
+        "properties": {
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "medium": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medium"
+          },
+          "campaign": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "term": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OutageNotifyUtm"
+      },
       "PersonalLearningBreakdownRow": {
         "properties": {
           "key": {
@@ -10652,7 +11480,7 @@
           },
           "sourceType": {
             "type": "string",
-            "enum": ["pdf", "manual"],
+            "enum": ["pdf", "manual", "text"],
             "title": "Sourcetype"
           },
           "documentFingerprint": {
@@ -11436,8 +12264,31 @@
           },
           "source_type": {
             "type": "string",
-            "enum": ["pdf", "manual"],
+            "enum": ["pdf", "manual", "text"],
             "title": "Source Type"
+          },
+          "source_file_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["docx", "pptx", "image"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File Type"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
           },
           "submit_to_premium": {
             "type": "boolean",
@@ -11450,6 +12301,23 @@
           "question_count": {
             "type": "integer",
             "title": "Question Count"
+          },
+          "questions_ready": {
+            "type": "integer",
+            "title": "Questions Ready",
+            "default": 0
+          },
+          "completion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "first_batch_only"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion"
           },
           "pdf": {
             "$ref": "#/components/schemas/QuizDraftPdfInfo"
@@ -11624,6 +12492,82 @@
         "type": "object",
         "required": ["title"],
         "title": "QuizManualDraftCreateRequest"
+      },
+      "QuizTextDraftCreateRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "description": "Quiz title."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Source text; 200 to 20,000 characters after trimming."
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id",
+            "description": "Optional category identifier."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Optional quiz description."
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Custom AI prompt to guide question generation."
+          },
+          "submit_to_premium": {
+            "type": "boolean",
+            "title": "Submit To Premium",
+            "default": false
+          },
+          "source_file_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["docx", "pptx", "image"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File Type",
+            "description": "Set when the browser extracted the text from a Word or PowerPoint file."
+          }
+        },
+        "type": "object",
+        "required": ["title", "text"],
+        "title": "QuizTextDraftCreateRequest",
+        "description": "Signed-in draft from pasted text (RIN-1537). Length is checked by the service\nso the caller gets ``meta.reason`` and ``limit_chars`` instead of a generic 422."
       },
       "ReadinessResponse": {
         "properties": {
@@ -13120,6 +14064,114 @@
         "type": "object",
         "required": ["data"],
         "title": "StandardResponse[OcrProviderKeyTestResponse]"
+      },
+      "StandardResponse_OutageNotifyMarkSentResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/OutageNotifyMarkSentResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[OutageNotifyMarkSentResponse]"
+      },
+      "StandardResponse_OutageNotifyPendingResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/OutageNotifyPendingResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[OutageNotifyPendingResponse]"
+      },
+      "StandardResponse_OutageNotifyStatsResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/OutageNotifyStatsResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[OutageNotifyStatsResponse]"
+      },
+      "StandardResponse_OutageNotifySubmitResponse_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/OutageNotifySubmitResponse"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": ["data"],
+        "title": "StandardResponse[OutageNotifySubmitResponse]"
       },
       "StandardResponse_PersonalLearningSummaryResponse_": {
         "properties": {

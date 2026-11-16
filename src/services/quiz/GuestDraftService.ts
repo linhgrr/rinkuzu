@@ -14,6 +14,7 @@ import type {
   GuestDraftView,
   IGuestDraftService,
   GuestDraftEventContext,
+  GuestImageDraftCreateInput,
   GuestTextDraftCreateInput,
   UpstreamGuestDraft,
   UpstreamGuestDraftResult,
@@ -29,6 +30,7 @@ type Clock = () => Date;
 type UpstreamQuestion = NonNullable<UpstreamGuestDraft['questions']>[number];
 type UpstreamFailure = Extract<UpstreamGuestDraftResult, { ok: false }>;
 type StartInput = Omit<GuestDraftCreateInput, 'pdf'>;
+type StartExtras = { pageCount?: number };
 type UpstreamStart = () => Promise<UpstreamGuestDraftResult>;
 
 const FAILED_UPSTREAM_STATUSES = new Set(['failed', 'cancelled', 'expired']);
@@ -142,10 +144,18 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
     return this.start(input, 'text', () => this.upstream.createFromText(input.text));
   }
 
+  /** Photos (RIN-1792): OCR runs in the API first, so a refusal costs the visitor no cap. */
+  createFromImages(input: GuestImageDraftCreateInput): Promise<GuestDraftResult> {
+    return this.start(input, 'image', () => this.upstream.createFromImages(input.images), {
+      pageCount: input.images.length,
+    });
+  }
+
   private async start(
     input: StartInput,
     source: GuestDraftSource,
     createUpstream: UpstreamStart,
+    extras: StartExtras = {},
   ): Promise<GuestDraftResult> {
     const tokenHash = hashGuestClaimToken(input.token);
     if (await this.repository.findByTokenHash(tokenHash)) {
@@ -172,6 +182,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       locale: input.locale,
       entry: input.entry,
       source,
+      ...extras,
       expiresAt: new Date(this.now().getTime() + GUEST_DRAFT_TTL_MS),
     });
     await this.events.started(this.context(record));
@@ -354,6 +365,7 @@ export class GuestDraftService implements IGuestDraftService, GuestDraftRefreshe
       locale: record.locale,
       entry: record.entry,
       source: record.source,
+      ...(record.pageCount ? { pageCount: record.pageCount } : {}),
     };
   }
 }

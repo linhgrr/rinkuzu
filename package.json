@@ -192,7 +192,7 @@
     "@next/bundle-analyzer": "16.4.5",
     "@next/env": "16.4.5",
     "@playwright/test": "1.65.0",
-    "@redocly/cli": "^2.30.3",
+    "@redocly/cli": "^2.78.0",
     "@size-limit/preset-app": "^12.1.0",
     "@stryker-mutator/api": "9.6.1",
     "@stryker-mutator/core": "9.6.1",

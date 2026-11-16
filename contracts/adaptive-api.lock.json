@@ -16,7 +16,7 @@
   },
   "toolchain": {
     "openapi-typescript": "7.13.0",
-    "redocly": "2.39.0",
+    "redocly": "2.78.0",
     "prettier": "3.10.1"
   }
 }

@@ -147,6 +147,7 @@
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "esbuild": "0.28.2",
+    "fflate": "0.8.2",
     "framer-motion": "^12.35.0",
     "html-to-text": "^9.0.5",
     "katex": "^0.19.1",

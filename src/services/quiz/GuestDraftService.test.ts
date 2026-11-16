@@ -207,7 +207,7 @@ describe('GuestDraftService.createFromText (RIN-1538)', () => {
 
     expect(result).toMatchObject({ ok: true, draft: { status: 'processing' } });
     expect(limiter.reserve).toHaveBeenCalledWith(IP);
-    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED);
+    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED, undefined);
     expect(upstream.create).not.toHaveBeenCalled();
     expect(repository.create).toHaveBeenCalledWith({
       tokenHash: hashGuestClaimToken(TOKEN),
@@ -226,6 +226,18 @@ describe('GuestDraftService.createFromText (RIN-1538)', () => {
     const stored = JSON.stringify([repository.create.mock.calls, events.started.mock.calls]);
     expect(stored).not.toContain('Fake notes');
     expect(stored).not.toContain(TOKEN);
+  });
+
+  it('stores the office file type, sends it to the API and puts it on the started event (RIN-1786)', async () => {
+    const { service, repository, upstream, events } = setup();
+
+    await service.createFromText({ ...textInput, sourceFileType: 'docx' });
+
+    expect(upstream.createFromText).toHaveBeenCalledWith(PASTED, 'docx');
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'text', sourceFileType: 'docx' }),
+    );
+    expect(events.started).toHaveBeenCalledWith(expect.objectContaining({ source: 'text' }));
   });
 
   it.each(['ip', 'daily'] as const)(

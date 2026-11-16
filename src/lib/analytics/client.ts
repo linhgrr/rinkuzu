@@ -2,6 +2,12 @@
 
 import type { AnalyticsEventName } from './events';
 import { readQuizFirstTouch } from './quiz-first-touch';
+import {
+  classifyReferrer,
+  isLandingReferrerClass,
+  type LandingReferrerClass,
+} from './landing-referrer';
+import { isAgentUserAgent } from '@/shared/constants/agent-traffic';
 import { resolveQuizEntryAttribution } from '@/shared/constants/starter-quiz';
 const ANALYTICS_CONSENT_STORAGE_KEY = 'rinkuzu_analytics_consent_v1';
 const ANALYTICS_CONSENT_CHANGE_EVENT = 'rinkuzu:analytics-consent-change';
@@ -48,7 +54,7 @@ type PostHogClient = typeof import('posthog-js').default;
 type LandingAttribution = {
   landing_id: string;
   landing_path: string;
-  landing_referrer_class: 'direct' | 'internal' | 'search' | 'social' | 'referral';
+  landing_referrer_class: LandingReferrerClass;
   landing_at: string;
   utm_source?: string;
   utm_medium?: string;
@@ -85,40 +91,8 @@ function campaignValue(searchParams: URLSearchParams, key: string): string | und
   return value && CAMPAIGN_VALUE_PATTERN.test(value) ? value : undefined;
 }
 
-function classifyReferrer(
-  referrer: string,
-  currentHost: string,
-): LandingAttribution['landing_referrer_class'] {
-  if (!referrer) return 'direct';
-
-  try {
-    const host = new URL(referrer).hostname.toLowerCase();
-    if (host === currentHost.toLowerCase()) return 'internal';
-    if (/(^|\.)(google|bing|yahoo|duckduckgo|ecosia)\./.test(host)) return 'search';
-    if (/(^|\.)(facebook|instagram|linkedin|threads|tiktok|twitter|x)\.com$/.test(host)) {
-      return 'social';
-    }
-  } catch {
-    return 'direct';
-  }
-
-  return 'referral';
-}
-
-function isLandingReferrerClass(
-  value: unknown,
-): value is LandingAttribution['landing_referrer_class'] {
-  return (
-    value === 'direct' ||
-    value === 'internal' ||
-    value === 'search' ||
-    value === 'social' ||
-    value === 'referral'
-  );
-}
-
 function readLandingAttribution(): LandingAttribution | null {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return null;
+  if (!isBrowser() || !analyticsEnabled()) return null;
   const stored = window.localStorage.getItem(LANDING_ATTRIBUTION_STORAGE_KEY);
   if (!stored) return null;
 
@@ -155,7 +129,7 @@ function readLandingAttribution(): LandingAttribution | null {
 
 function persistLandingAttribution(): LandingAttribution | null {
   const existing = readLandingAttribution();
-  if (existing || !isBrowser() || getAnalyticsConsent() !== 'granted') return existing;
+  if (existing || !isBrowser() || !analyticsEnabled()) return existing;
 
   const landingUrl = new URL(window.location.href);
   const attribution: LandingAttribution = {
@@ -176,6 +150,16 @@ function attributionProperties(): AnalyticsProperties {
   return persistLandingAttribution() ?? {};
 }
 
+/** Our own agents' browsers send nothing to PostHog or GA (RIN-1760), whatever the consent. */
+function isAgentBrowser(): boolean {
+  return isBrowser() && isAgentUserAgent(window.navigator.userAgent);
+}
+
+/** Consent granted and not an agent: the one gate in front of every provider call. */
+function analyticsEnabled(): boolean {
+  return !isAgentBrowser() && getAnalyticsConsent() === 'granted';
+}
+
 export function getAnalyticsConsent(): AnalyticsConsent | null {
   if (!isBrowser()) return null;
   const stored = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
@@ -193,7 +177,7 @@ export function subscribeToAnalyticsConsent(onStoreChange: () => void): () => vo
 }
 
 async function initializePostHog(): Promise<PostHogClient | null> {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted' || !posthogToken) {
+  if (!isBrowser() || !analyticsEnabled() || !posthogToken) {
     return null;
   }
   if (posthogClient) return posthogClient;
@@ -201,7 +185,7 @@ async function initializePostHog(): Promise<PostHogClient | null> {
 
   posthogLoadPromise = import('posthog-js')
     .then(({ default: client }) => {
-      if (getAnalyticsConsent() !== 'granted') return null;
+      if (!analyticsEnabled()) return null;
       client.init(posthogToken, {
         api_host: posthogHost,
         autocapture: false,
@@ -242,7 +226,7 @@ function initializeGoogleAnalytics(): void {
 }
 
 export async function initializeAnalytics(): Promise<boolean> {
-  if (getAnalyticsConsent() !== 'granted') return false;
+  if (!analyticsEnabled()) return false;
   initializeGoogleAnalytics();
   const client = await initializePostHog();
   return Boolean(client) || googleAnalyticsInitialized;
@@ -280,7 +264,7 @@ export function captureAnalyticsEvent(
   event: AnalyticsEventName,
   properties: AnalyticsProperties = {},
 ): void {
-  if (getAnalyticsConsent() !== 'granted') return;
+  if (!analyticsEnabled()) return;
   const sanitized = sanitizeProperties({ ...properties, ...attributionProperties() });
 
   initializeGoogleAnalytics();
@@ -297,7 +281,7 @@ export function captureAnalyticsEventOnce(
   storageKey: string,
   properties: AnalyticsProperties = {},
 ): void {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  if (!isBrowser() || !analyticsEnabled()) return;
   const identityScope = analyticsUserId ?? 'anonymous';
   const key = `rinkuzu_analytics_once_${identityScope}_${storageKey}`;
   if (window.localStorage.getItem(key) === '1') return;
@@ -327,7 +311,7 @@ function normalizePipelineErrorCode(code: string | null | undefined): string {
  * re-renders, repeated polls, reloads and tabs (the dedupe set lives in localStorage).
  */
 export function capturePipelineTerminalEventOnce(event: PipelineTerminalEvent): void {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  if (!isBrowser() || !analyticsEnabled()) return;
   const dedupeKey = `${event.path}:${event.runKey}`;
   const emitted = readPipelineTerminalKeys();
   if (emitted.includes(dedupeKey)) return;
@@ -353,7 +337,7 @@ export function capturePipelineTerminalEventOnce(event: PipelineTerminalEvent): 
 }
 
 export function trackAnalyticsPageView(url: string, title: string): void {
-  if (getAnalyticsConsent() !== 'granted') return;
+  if (!analyticsEnabled()) return;
   const pageUrl = new URL(url);
   const pagePath = normalizeLandingPath(pageUrl.pathname);
   const querylessUrl = `${pageUrl.origin}${pagePath}`;
@@ -382,7 +366,7 @@ export async function identifyAnalyticsUser(
   userId: string,
   properties: AnalyticsProperties = {},
 ): Promise<void> {
-  if (getAnalyticsConsent() !== 'granted') return;
+  if (!analyticsEnabled()) return;
   const sanitized = sanitizeProperties(properties);
   const client = await initializePostHog();
   if (client && getAnalyticsConsent() === 'granted') {
@@ -392,7 +376,7 @@ export async function identifyAnalyticsUser(
 }
 
 export function markAnalyticsSignupPending(method: AnalyticsLoginMethod, locale: string): void {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  if (!isBrowser() || !analyticsEnabled()) return;
   window.localStorage.setItem(
     PENDING_SIGNUP_STORAGE_KEY,
     // The quiz first touch rides along: email verification may finish in another tab.
@@ -406,7 +390,7 @@ export function markAnalyticsSignupPending(method: AnalyticsLoginMethod, locale:
 }
 
 export function capturePendingAnalyticsSignup(): void {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted' || !analyticsUserId) return;
+  if (!isBrowser() || !analyticsEnabled() || !analyticsUserId) return;
   const pending = window.localStorage.getItem(PENDING_SIGNUP_STORAGE_KEY);
   if (!pending) return;
 
@@ -440,7 +424,7 @@ export function capturePendingAnalyticsSignup(): void {
 }
 
 export function markAnalyticsLoginPending(method: AnalyticsLoginMethod, locale: string): void {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  if (!isBrowser() || !analyticsEnabled()) return;
   window.sessionStorage.setItem(PENDING_LOGIN_STORAGE_KEY, JSON.stringify({ method, locale }));
 }
 
@@ -455,7 +439,7 @@ export function markAnalyticsGoogleAuthPending(locale: string): void {
 export function capturePendingAnalyticsLogin({
   isNewAccount = false,
 }: { isNewAccount?: boolean } = {}): void {
-  if (!isBrowser() || getAnalyticsConsent() !== 'granted') return;
+  if (!isBrowser() || !analyticsEnabled()) return;
   const pending = window.sessionStorage.getItem(PENDING_LOGIN_STORAGE_KEY);
   if (!pending) return;
 

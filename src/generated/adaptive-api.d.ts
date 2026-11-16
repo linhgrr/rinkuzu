@@ -478,6 +478,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/quiz/drafts/text': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Text Quiz Draft
+     * @description Create a quiz draft from pasted text (no OCR) and enqueue AI processing.
+     *
+     *     Trimmed text under 200 characters → 422, over 20,000 → 413, both ``validation_error``
+     *     with ``meta.reason`` ``text_too_short`` / ``text_too_long`` and ``meta.limit_chars``.
+     */
+    post: operations['create_text_quiz_draft_api_quiz_drafts_text_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/quiz/drafts/image': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Image Quiz Draft
+     * @description Create a quiz draft from 1-5 photos (RIN-1782): OCR first, then the text path.
+     *
+     *     Parts are checked before any OCR call (400 ``validation_error``, ``meta.reason``
+     *     ``image_unsupported`` / ``image_too_large`` / ``too_many_images``). Under 200
+     *     readable characters → 422 ``too_little_text``; OCR down → 503 ``ocr_unavailable``.
+     *     A failure creates no draft. The photos are never stored.
+     */
+    post: operations['create_image_quiz_draft_api_quiz_drafts_image_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/quiz/drafts/{draft_id}': {
     parameters: {
       query?: never;
@@ -546,6 +594,53 @@ export interface paths {
      *     ``guest_pdf_too_large`` and ``limit_pages`` / ``limit_mb``, before any OCR or LLM call.
      */
     post: operations['create_guest_quiz_draft_api_quiz_guest_drafts_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/quiz/guest-drafts/text': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Guest Text Quiz Draft
+     * @description Create a guest draft from pasted text (no OCR) and start extraction (service-only).
+     *
+     *     Trimmed text under 200 characters → 422, over 20,000 → 413, both ``validation_error``
+     *     with ``meta.reason`` ``guest_text_too_short`` / ``guest_text_too_long`` and
+     *     ``meta.limit_chars``, before any storage or LLM call.
+     */
+    post: operations['create_guest_text_quiz_draft_api_quiz_guest_drafts_text_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/quiz/guest-drafts/image': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Guest Image Quiz Draft
+     * @description Create a guest draft from 1-5 photos (RIN-1782, service-only).
+     *
+     *     Same checks as the signed-in route, with ``guest_too_little_text`` for short text.
+     *     The switch ``guest_image_drafts_enabled`` off → 503 ``image_drafts_disabled``.
+     */
+    post: operations['create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1125,6 +1220,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/internal/outage-notify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit Outage Notify
+     * @description Store one email for the current campaign. New and repeat emails answer alike.
+     */
+    post: operations['submit_outage_notify_api_internal_outage_notify_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/internal/outage-notify/pending': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Pending Outage Notify
+     * @description Emails not yet notified, oldest first.
+     */
+    get: operations['list_pending_outage_notify_api_internal_outage_notify_pending_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/internal/outage-notify/mark-sent': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark Outage Notify Sent
+     * @description Set ``notified_at`` and a 30-day ``expire_at``. Idempotent: sent rows keep theirs.
+     */
+    post: operations['mark_outage_notify_sent_api_internal_outage_notify_mark_sent_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/internal/outage-notify/stats': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Outage Notify Stats
+     * @description Counts only; no list of emails.
+     */
+    get: operations['outage_notify_stats_api_internal_outage_notify_stats_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/ready': {
     parameters: {
       query?: never;
@@ -1306,6 +1481,14 @@ export interface components {
      * @enum {string}
      */
     BloomLabel: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
+    /** Body_create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post */
+    Body_create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post: {
+      /**
+       * Images
+       * @description 1-5 photos, in page order.
+       */
+      images?: string[] | null;
+    };
     /** Body_create_guest_quiz_draft_api_quiz_guest_drafts_post */
     Body_create_guest_quiz_draft_api_quiz_guest_drafts_post: {
       /**
@@ -1313,6 +1496,27 @@ export interface components {
        * @description Source PDF.
        */
       file: string;
+    };
+    /** Body_create_image_quiz_draft_api_quiz_drafts_image_post */
+    Body_create_image_quiz_draft_api_quiz_drafts_image_post: {
+      /** Title */
+      title: string;
+      /**
+       * Images
+       * @description 1-5 photos, in page order.
+       */
+      images?: string[] | null;
+      /** Category Id */
+      category_id?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Prompt */
+      prompt?: string | null;
+      /**
+       * Submit To Premium
+       * @default false
+       */
+      submit_to_premium: boolean;
     };
     /** ConceptDetailResponse */
     ConceptDetailResponse: {
@@ -1651,7 +1855,10 @@ export interface components {
     };
     /**
      * GuestQuizDraftData
-     * @description Guest draft (RIN-1444). ``questions`` and ``title`` are set only when completed.
+     * @description Guest draft (RIN-1444). ``title`` is set only when completed.
+     *
+     *     ``questions`` are set when completed, and while ``processing`` once the first
+     *     batch is ready (``questions_ready > 0``, RIN-1617); later questions are appended.
      */
     GuestQuizDraftData: {
       /** Draft Id */
@@ -1669,6 +1876,15 @@ export interface components {
        * @default 0
        */
       question_count: number;
+      /**
+       * Questions Ready
+       * @default 0
+       */
+      questions_ready: number;
+      /** Completion */
+      completion?: 'first_batch_only' | null;
+      /** Page Count */
+      page_count?: number | null;
       /** Questions */
       questions?: components['schemas']['QuizDraftQuestion'][];
       /** Failure Reason */
@@ -1702,6 +1918,22 @@ export interface components {
     /** GuestQuizDraftResponse */
     GuestQuizDraftResponse: {
       draft: components['schemas']['GuestQuizDraftData'];
+    };
+    /**
+     * GuestQuizTextDraftCreateRequest
+     * @description Guest draft from pasted text (RIN-1537).
+     */
+    GuestQuizTextDraftCreateRequest: {
+      /**
+       * Text
+       * @description Source text; 200 to 20,000 characters after trimming.
+       */
+      text: string;
+      /**
+       * Source File Type
+       * @description Set when the browser extracted the text from a Word or PowerPoint file.
+       */
+      source_file_type?: ('docx' | 'pptx' | 'image') | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -2725,6 +2957,82 @@ export interface components {
       /** Correct Order */
       correct_order: string[];
     };
+    /** OutageNotifyMarkSentRequest */
+    OutageNotifyMarkSentRequest: {
+      /** Ids */
+      ids: string[];
+    };
+    /** OutageNotifyMarkSentResponse */
+    OutageNotifyMarkSentResponse: {
+      /** Matched */
+      matched: number;
+      /** Updated */
+      updated: number;
+    };
+    /** OutageNotifyPendingItem */
+    OutageNotifyPendingItem: {
+      /** Id */
+      id: string;
+      /** Email */
+      email: string;
+      /** Locale */
+      locale: string;
+    };
+    /** OutageNotifyPendingResponse */
+    OutageNotifyPendingResponse: {
+      /** Items */
+      items: components['schemas']['OutageNotifyPendingItem'][];
+    };
+    /** OutageNotifyStatsResponse */
+    OutageNotifyStatsResponse: {
+      /** Total */
+      total: number;
+      /** Pending */
+      pending: number;
+      /** Notified */
+      notified: number;
+    };
+    /** OutageNotifySubmitRequest */
+    OutageNotifySubmitRequest: {
+      /** Email */
+      email: string;
+      /**
+       * Locale
+       * @enum {string}
+       */
+      locale: 'vi' | 'en';
+      /** Path */
+      path: string;
+      utm?: components['schemas']['OutageNotifyUtm'] | null;
+      /** Entry */
+      entry?: string | null;
+      /** Consent Text */
+      consent_text: string;
+      /** Consent Version */
+      consent_version: string;
+    };
+    /** OutageNotifySubmitResponse */
+    OutageNotifySubmitResponse: {
+      /**
+       * Status
+       * @default ok
+       * @constant
+       */
+      status: 'ok';
+    };
+    /** OutageNotifyUtm */
+    OutageNotifyUtm: {
+      /** Source */
+      source?: string | null;
+      /** Medium */
+      medium?: string | null;
+      /** Campaign */
+      campaign?: string | null;
+      /** Content */
+      content?: string | null;
+      /** Term */
+      term?: string | null;
+    };
     /** PersonalLearningBreakdownRow */
     PersonalLearningBreakdownRow: {
       /** Key */
@@ -3680,7 +3988,7 @@ export interface components {
        * Sourcetype
        * @enum {string}
        */
-      sourceType: 'pdf' | 'manual';
+      sourceType: 'pdf' | 'manual' | 'text';
       /** Documentfingerprint */
       documentFingerprint?: string | null;
       snapshot: components['schemas']['PremiumSnapshotInput'];
@@ -3960,13 +4268,24 @@ export interface components {
        * Source Type
        * @enum {string}
        */
-      source_type: 'pdf' | 'manual';
+      source_type: 'pdf' | 'manual' | 'text';
+      /** Source File Type */
+      source_file_type?: ('docx' | 'pptx' | 'image') | null;
+      /** Page Count */
+      page_count?: number | null;
       /** Submit To Premium */
       submit_to_premium: boolean;
       /** Revision */
       revision: number;
       /** Question Count */
       question_count: number;
+      /**
+       * Questions Ready
+       * @default 0
+       */
+      questions_ready: number;
+      /** Completion */
+      completion?: 'first_batch_only' | null;
       pdf: components['schemas']['QuizDraftPdfInfo'];
       /**
        * Status
@@ -4030,6 +4349,48 @@ export interface components {
        * @default false
        */
       submit_to_premium: boolean;
+    };
+    /**
+     * QuizTextDraftCreateRequest
+     * @description Signed-in draft from pasted text (RIN-1537). Length is checked by the service
+     *     so the caller gets ``meta.reason`` and ``limit_chars`` instead of a generic 422.
+     */
+    QuizTextDraftCreateRequest: {
+      /**
+       * Title
+       * @description Quiz title.
+       */
+      title: string;
+      /**
+       * Text
+       * @description Source text; 200 to 20,000 characters after trimming.
+       */
+      text: string;
+      /**
+       * Category Id
+       * @description Optional category identifier.
+       */
+      category_id?: string | null;
+      /**
+       * Description
+       * @description Optional quiz description.
+       */
+      description?: string | null;
+      /**
+       * Prompt
+       * @description Custom AI prompt to guide question generation.
+       */
+      prompt?: string | null;
+      /**
+       * Submit To Premium
+       * @default false
+       */
+      submit_to_premium: boolean;
+      /**
+       * Source File Type
+       * @description Set when the browser extracted the text from a Word or PowerPoint file.
+       */
+      source_file_type?: ('docx' | 'pptx' | 'image') | null;
     };
     /** ReadinessResponse */
     ReadinessResponse: {
@@ -4674,6 +5035,58 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['OcrProviderKeyTestResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OutageNotifyMarkSentResponse] */
+    StandardResponse_OutageNotifyMarkSentResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OutageNotifyMarkSentResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OutageNotifyPendingResponse] */
+    StandardResponse_OutageNotifyPendingResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OutageNotifyPendingResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OutageNotifyStatsResponse] */
+    StandardResponse_OutageNotifyStatsResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OutageNotifyStatsResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OutageNotifySubmitResponse] */
+    StandardResponse_OutageNotifySubmitResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OutageNotifySubmitResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -6377,6 +6790,78 @@ export interface operations {
       };
     };
   };
+  create_text_quiz_draft_api_quiz_drafts_text_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['QuizTextDraftCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_image_quiz_draft_api_quiz_drafts_image_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_create_image_quiz_draft_api_quiz_drafts_image_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_quiz_draft_api_quiz_drafts__draft_id__get: {
     parameters: {
       query?: never;
@@ -6538,6 +7023,78 @@ export interface operations {
     requestBody: {
       content: {
         'multipart/form-data': components['schemas']['Body_create_guest_quiz_draft_api_quiz_guest_drafts_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_GuestQuizDraftResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_guest_text_quiz_draft_api_quiz_guest_drafts_text_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GuestQuizTextDraftCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_GuestQuizDraftResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-user-id': string;
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_create_guest_image_quiz_draft_api_quiz_guest_drafts_image_post'];
       };
     };
     responses: {
@@ -7960,6 +8517,143 @@ export interface operations {
         };
         content: {
           'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  submit_outage_notify_api_internal_outage_notify_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-outage-notify-token'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OutageNotifySubmitRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OutageNotifySubmitResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_pending_outage_notify_api_internal_outage_notify_pending_get: {
+    parameters: {
+      query: {
+        campaign: string;
+        limit?: number;
+      };
+      header: {
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OutageNotifyPendingResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  mark_outage_notify_sent_api_internal_outage_notify_mark_sent_post: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OutageNotifyMarkSentRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OutageNotifyMarkSentResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  outage_notify_stats_api_internal_outage_notify_stats_get: {
+    parameters: {
+      query: {
+        campaign: string;
+      };
+      header: {
+        'x-service-token': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OutageNotifyStatsResponse_'];
         };
       };
       /** @description Validation Error */

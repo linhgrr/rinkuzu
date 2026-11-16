@@ -176,7 +176,7 @@ export const adminActivationQuerySchema = z.object({
     .max(ADMIN_ACTIVATION_MAX_WEEKS)
     .default(ADMIN_ACTIVATION_DEFAULT_WEEKS),
   /** Split by signup locale or country (RIN-1268); absent = today's response. */
-  by: z.enum(['locale', 'country']).optional(),
+  by: z.enum(['locale', 'country', 'source']).optional(),
 });
 
 const isoInstantSchema = z.iso.datetime();
@@ -342,10 +342,13 @@ export type AdminReviewEmailStatsDto = z.infer<typeof adminReviewEmailStatsSchem
  * country, `unknown` (no signup value recorded) or `other` (countries with
  * fewer signups than the fold threshold). Nothing else can be a key.
  */
-const activationSegmentKeySchema = z.string().regex(/^(?:[A-Z]{2}|en|vi|unknown|other)$/);
+const activationSegmentKeySchema = z
+  .string()
+  .regex(/^(?:[A-Z]{2}|en|vi|unknown|other|[a-z0-9._~-]{1,64})$/);
 
+/** `startedQuiz` is present for `by=source` only (RIN-1763); locale and country keep two counts. */
 const activationSegmentCountsSchema = z
-  .object({ signups: countSchema, activated: countSchema })
+  .object({ signups: countSchema, activated: countSchema, startedQuiz: countSchema.optional() })
   .strict();
 
 const adminActivationBreakdownWeekSchema = z
@@ -366,7 +369,7 @@ export const adminActivationBreakdownSchema = z
   .object({
     generatedAt: isoInstantSchema,
     timezone: z.literal('UTC'),
-    by: z.enum(['locale', 'country']),
+    by: z.enum(['locale', 'country', 'source']),
     definitions: z
       .object({
         segments: z.string(),

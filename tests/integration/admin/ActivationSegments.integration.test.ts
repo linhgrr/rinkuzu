@@ -18,10 +18,12 @@ const plus = (date: Date, ms: number) => new Date(date.getTime() + ms);
 const W10 = at('2002-03-04T00:00:00.000Z'); // Monday of 2002-W10
 const W11 = at('2002-03-11T00:00:00.000Z');
 const END = at('2002-03-18T00:00:00.000Z');
+const W12 = END;
+const END12 = at('2002-03-25T00:00:00.000Z');
 
 describe('activation segments integration', () => {
   const runId = `segments-${randomUUID()}`;
-  const ids = Array.from({ length: 7 }, () => new Types.ObjectId());
+  const ids = Array.from({ length: 11 }, () => new Types.ObjectId());
   const quiz = new Types.ObjectId();
   const idAt = (index: number): Types.ObjectId => {
     const value = ids[index];
@@ -39,6 +41,15 @@ describe('activation segments integration', () => {
       authVersion: 0,
       createdAt,
       ...extra,
+    };
+  }
+
+  function touch(utm: string | undefined, referrerClass: string) {
+    return {
+      ...(utm ? { utm_source: utm } : {}),
+      referrer_class: referrerClass,
+      entry_path: '/',
+      first_seen_at: W12,
     };
   }
 
@@ -62,6 +73,11 @@ describe('activation segments integration', () => {
       user(5, plus(W11, DAY), { signupLocale: 'en', signupCountry: 'VN' }),
       // Excluded (admin): never counted in any segment.
       user(6, day1, { role: 'admin', signupLocale: 'en', signupCountry: 'VN' }),
+      // W12 (RIN-1763 by=source): utm wins over referrer_class; referrer-only; none; excluded.
+      user(7, plus(W12, DAY), { signupSource: touch('threads', 'social') }),
+      user(8, plus(W12, DAY), { signupSource: touch(undefined, 'search') }),
+      user(9, plus(W12, DAY), {}),
+      user(10, plus(W12, DAY), { role: 'admin', signupSource: touch('threads', 'social') }),
     ]);
     await db
       .collection('attempts')
@@ -71,6 +87,8 @@ describe('activation segments integration', () => {
         attempt(3, plus(day1, 3 * DAY)),
         attempt(5, plus(plus(W11, DAY), 7 * DAY)),
         attempt(6, plus(day1, DAY)),
+        attempt(7, plus(W12, 2 * DAY)),
+        attempt(10, plus(W12, 2 * DAY)),
       ]);
   });
 
@@ -108,10 +126,10 @@ describe('activation segments integration', () => {
       adaptive(),
     );
     expect(byWeek(rows)).toEqual([
-      { weekStart: W10.toISOString(), segment: null, signups: 1, activated: 1 },
-      { weekStart: W10.toISOString(), segment: 'en', signups: 2, activated: 1 },
-      { weekStart: W10.toISOString(), segment: 'vi', signups: 2, activated: 2 },
-      { weekStart: W11.toISOString(), segment: 'en', signups: 1, activated: 0 },
+      { weekStart: W10.toISOString(), segment: null, signups: 1, activated: 1, startedQuiz: 1 },
+      { weekStart: W10.toISOString(), segment: 'en', signups: 2, activated: 1, startedQuiz: 1 },
+      { weekStart: W10.toISOString(), segment: 'vi', signups: 2, activated: 2, startedQuiz: 2 },
+      { weekStart: W11.toISOString(), segment: 'en', signups: 1, activated: 0, startedQuiz: 0 },
     ]);
   });
 
@@ -121,15 +139,38 @@ describe('activation segments integration', () => {
       new AdminStatsRepository().getActivationAggregates(W10, END, adaptive()),
     ]);
     expect(byWeek(rows)).toEqual([
-      { weekStart: W10.toISOString(), segment: null, signups: 2, activated: 2 },
-      { weekStart: W10.toISOString(), segment: 'US', signups: 1, activated: 0 },
-      { weekStart: W10.toISOString(), segment: 'VN', signups: 2, activated: 2 },
-      { weekStart: W11.toISOString(), segment: 'VN', signups: 1, activated: 0 },
+      { weekStart: W10.toISOString(), segment: null, signups: 2, activated: 2, startedQuiz: 2 },
+      { weekStart: W10.toISOString(), segment: 'US', signups: 1, activated: 0, startedQuiz: 0 },
+      { weekStart: W10.toISOString(), segment: 'VN', signups: 2, activated: 2, startedQuiz: 2 },
+      { weekStart: W11.toISOString(), segment: 'VN', signups: 1, activated: 0, startedQuiz: 0 },
     ]);
     for (const cohort of aggregates.cohorts) {
       const week = rows.filter((row) => row.weekStart.getTime() === cohort.weekStart.getTime());
       expect(week.reduce((sum, row) => sum + row.signups, 0)).toBe(cohort.signups);
       expect(week.reduce((sum, row) => sum + row.activated, 0)).toBe(cohort.activated);
     }
+  });
+
+  it('splits the cohort by signup source: utm_source, else referrer_class, else null', async () => {
+    const [rows, aggregates] = await Promise.all([
+      new ActivationSegmentStatsRepository().getActivationSegments(W12, END12, 'source'),
+      new AdminStatsRepository().getActivationAggregates(W12, END12, []),
+    ]);
+    // The excluded admin with utm threads is in no bucket.
+    expect(byWeek(rows)).toEqual([
+      { weekStart: W12.toISOString(), segment: null, signups: 1, activated: 0, startedQuiz: 0 },
+      { weekStart: W12.toISOString(), segment: 'search', signups: 1, activated: 0, startedQuiz: 0 },
+      {
+        weekStart: W12.toISOString(),
+        segment: 'threads',
+        signups: 1,
+        activated: 1,
+        startedQuiz: 1,
+      },
+    ]);
+    const [cohort] = aggregates.cohorts;
+    expect(rows.reduce((sum, row) => sum + row.signups, 0)).toBe(cohort?.signups);
+    expect(rows.reduce((sum, row) => sum + row.activated, 0)).toBe(cohort?.activated);
+    expect(rows.reduce((sum, row) => sum + row.startedQuiz, 0)).toBe(cohort?.startedQuiz);
   });
 });

@@ -11,12 +11,12 @@
     },
     "typescript": {
       "path": "src/generated/adaptive-api.d.ts",
-      "sha256": "de145f3a92e9c9069369ddbb91b7cac8df810ed70abc665ac1d13f686a591a85"
+      "sha256": "25c8e4bbd6d3bad208d1d44d3cddb5ffa35aca576eda569865df5d33e6a8e01a"
     }
   },
   "toolchain": {
     "openapi-typescript": "7.13.0",
     "redocly": "2.39.0",
-    "prettier": "3.8.3"
+    "prettier": "3.10.1"
   }
 }

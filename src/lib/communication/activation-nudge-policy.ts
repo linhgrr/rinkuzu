@@ -89,8 +89,7 @@ export interface ActivationNudgeFacts {
 }
 
 export type ActivationNudgeDecision =
-  | { decision: 'send' }
-  | { decision: 'skip'; reason: ActivationNudgeSkipReason };
+  { decision: 'send' } | { decision: 'skip'; reason: ActivationNudgeSkipReason };
 
 /**
  * Eligibility, applied when the sweep or the backfill enqueues and again when

@@ -56,12 +56,7 @@ export type AttemptEscalationReason =
  * unknown provider status is an escalation input, never a status we adopt.
  */
 export type ObservedCollection =
-  | 'pending'
-  | 'partial'
-  | 'paid'
-  | 'cancelled'
-  | 'expired'
-  | 'unrecognized';
+  'pending' | 'partial' | 'paid' | 'cancelled' | 'expired' | 'unrecognized';
 
 /** Everything the provider can tell us that we are willing to adopt as state. */
 type ObservedAttemptState = Exclude<ObservedCollection, 'unrecognized'>;

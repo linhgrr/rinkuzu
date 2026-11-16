@@ -109,22 +109,18 @@ export class ReviewEmailStatsRepository implements IReviewEmailStatsRepository {
       WebhookEvent.exists({ eventType: 'email.opened' }),
     ]);
     return {
-      sends: sends.map(
-        (row): ReviewEmailSendWeek => ({
-          weekStart: row._id,
-          sent: row.sent,
-          opened: row.opened,
-          sentD5: row.sentD5,
-          openedD5: row.openedD5,
-        }),
-      ),
-      consents: consents.map(
-        (row): ReviewEmailConsentWeek => ({
-          weekStart: row._id,
-          optIns: row.optIns,
-          unsubscribed: row.unsubscribed,
-        }),
-      ),
+      sends: sends.map((row): ReviewEmailSendWeek => ({
+        weekStart: row._id,
+        sent: row.sent,
+        opened: row.opened,
+        sentD5: row.sentD5,
+        openedD5: row.openedD5,
+      })),
+      consents: consents.map((row): ReviewEmailConsentWeek => ({
+        weekStart: row._id,
+        optIns: row.optIns,
+        unsubscribed: row.unsubscribed,
+      })),
       opensTracked: openEvent !== null,
     };
   }

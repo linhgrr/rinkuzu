@@ -73,8 +73,7 @@ export type StatsModalActivityItemViewModel =
     };
 
 export type StatsModalItemViewModel =
-  | StatsModalCreatorItemViewModel
-  | StatsModalActivityItemViewModel;
+  StatsModalCreatorItemViewModel | StatsModalActivityItemViewModel;
 
 export interface StatsModalResultViewModel {
   items: StatsModalItemViewModel[];

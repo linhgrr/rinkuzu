@@ -10,14 +10,7 @@ const GUEST_DRAFT_TIMEOUT_MS = 120_000;
 const GUEST_DRAFT_MAX_POLL_ERRORS = 3;
 
 type GuestUploadPhase =
-  | 'idle'
-  | 'checking'
-  | 'chosen'
-  | 'uploading'
-  | 'processing'
-  | 'ready'
-  | 'failed'
-  | 'cap';
+  'idle' | 'checking' | 'chosen' | 'uploading' | 'processing' | 'ready' | 'failed' | 'cap';
 
 type GuestUploadAlert = Exclude<GuestDraftRefusal, 'cap'>;
 

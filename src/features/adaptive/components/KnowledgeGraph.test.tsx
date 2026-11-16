@@ -152,8 +152,7 @@ type ConceptNodeProps = {
 
 function renderConceptNode(data: ConceptNodeProps['data']) {
   const nodeTypes = reactFlowProps.current?.['nodeTypes'] as
-    | Record<string, ComponentType<ConceptNodeProps>>
-    | undefined;
+    Record<string, ComponentType<ConceptNodeProps>> | undefined;
   const ConceptNode = nodeTypes?.['concept'];
   if (!ConceptNode) throw new Error('concept node type missing');
   return render(<ConceptNode data={data} />);

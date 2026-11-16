@@ -40,8 +40,7 @@ export type CredentialsSignInFailure =
   | { success: false; code: 'rate_limit_exceeded'; retryAfterSeconds: number };
 
 export type CredentialsSignInResult =
-  | { success: true; user: AuthenticatedUser }
-  | CredentialsSignInFailure;
+  { success: true; user: AuthenticatedUser } | CredentialsSignInFailure;
 
 export type GoogleSignInResult =
   | { success: true; user: AuthenticatedUser; isNewAccount: boolean }

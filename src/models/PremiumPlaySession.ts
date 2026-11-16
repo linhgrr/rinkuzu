@@ -86,8 +86,7 @@ PremiumPlaySessionSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 const PremiumPlaySessionModel =
   (mongoose.models['PremiumPlaySession'] as
-    | mongoose.Model<PremiumPlaySessionDocument>
-    | undefined) ??
+    mongoose.Model<PremiumPlaySessionDocument> | undefined) ??
   mongoose.model<PremiumPlaySessionDocument>('PremiumPlaySession', PremiumPlaySessionSchema);
 
 export default PremiumPlaySessionModel;

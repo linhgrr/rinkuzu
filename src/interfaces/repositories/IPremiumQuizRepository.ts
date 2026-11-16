@@ -159,8 +159,7 @@ type PremiumSessionSubmissionClaim = 'claimed' | 'replay' | 'conflict' | 'expire
  * approved publication is on sale, so nothing was written.
  */
 export type MakeQuizPublicResult =
-  | { outcome: 'made_public'; withdrawnSubmissions: number }
-  | { outcome: 'premium_published' };
+  { outcome: 'made_public'; withdrawnSubmissions: number } | { outcome: 'premium_published' };
 
 /**
  * RIN-1346: kept apart from IPremiumQuizRepository so the quiz editor depends on

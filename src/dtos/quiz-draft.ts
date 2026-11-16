@@ -45,7 +45,7 @@ export const createTextQuizDraftRequestSchema = z.strictObject({
 });
 
 /** Where an office-file text draft was picked (RIN-1787). */
-export type OfficeDraftSurface = 'create_pdf' | 'create_pdf_mobile';
+type OfficeDraftSurface = 'create_pdf' | 'create_pdf_mobile';
 
 export interface CreateTextQuizDraftInputDto {
   title: string;

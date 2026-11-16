@@ -46,6 +46,7 @@ function upstreamDraft(overrides: Partial<UpstreamGuestDraft> = {}): UpstreamGue
     progress: { processed: 1, total: 4, percent: 25 },
     title: null,
     question_count: 0,
+    questions_ready: 0,
     questions: [],
     failure_reason: null,
     created_at: NOW.toISOString(),

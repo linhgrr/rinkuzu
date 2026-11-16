@@ -6,16 +6,11 @@ import type {
 } from '@/shared/constants/guest-draft';
 
 /**
- * The API's guest draft. `questions_ready` and `completion` come from RIN-1617 (API #71),
- * whose committed `openapi.json` predates them: drop the intersection once a re-vendored
- * contract carries them.
+ * The API's guest draft. `questions_ready` is the questions readable now (the first batch while
+ * `processing`, all once `completed`) and `completion` is `first_batch_only` when the full
+ * extraction failed and the first batch was kept (RIN-1617); the re-vendored contract carries both.
  */
-export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'] & {
-  /** Questions readable now: the first batch while `processing`, all once `completed`. */
-  questions_ready?: number;
-  /** `first_batch_only` when the full extraction failed and the first batch was kept. */
-  completion?: 'first_batch_only' | null;
-};
+export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'];
 
 export type GuestDraftReservation =
   { ok: true } | { ok: false; scope: 'ip' | 'daily'; retryAfterSeconds: number };

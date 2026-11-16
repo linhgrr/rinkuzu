@@ -35,7 +35,7 @@
       "name": "dashboard-admin",
       "limit": "340 KiB",
       "patterns": [
-        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|checkout|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|feedback(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|premium-quizzes|profile(?:/.*)?|review|start|subscription|support(?:/.*)?|test-image-upload|users(?:/.*)?)$"
+        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|checkout|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|feedback(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|(?:signed-out/)?premium-quizzes|profile(?:/.*)?|review|start|subscription|support(?:/.*)?|test-image-upload|users(?:/.*)?)$"
       ]
     },
     {

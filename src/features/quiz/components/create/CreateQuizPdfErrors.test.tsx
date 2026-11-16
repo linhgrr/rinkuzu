@@ -24,8 +24,18 @@ vi.mock('next-auth/react', () => ({
 }));
 
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
+  Link: ({
+    children,
+    href,
+    className,
+  }: {
+    children: React.ReactNode;
+    href: string;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
   ),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
@@ -135,6 +145,75 @@ describe('CreateQuizPage (desktop) file and submit errors', () => {
     expect(alert.nextElementSibling).toContainElement(submit);
     await waitFor(() => expect(alert).toHaveFocus());
     expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  // RIN-1732: the file error sat above the card, off-screen once the form was filled.
+  it('shows a file error inside the card above the dropzone and focuses it', async () => {
+    const { container } = render(<CreateQuizPage />);
+
+    pick(container, textFile());
+
+    const alert = await screen.findByRole('alert');
+    const dropzone = screen.getByLabelText('pdfDocument');
+    expect(alert.closest('form')).not.toBeNull();
+    expect(alert.nextElementSibling).toContainElement(dropzone);
+    await waitFor(() => expect(alert).toHaveFocus());
+  });
+
+  it('keeps submit enabled and says what is missing when the form is incomplete', async () => {
+    render(<CreateQuizPage />);
+    const submit = screen.getByRole('button', { name: /createQuizBackground/ });
+    expect(submit).toBeEnabled();
+
+    fireEvent.click(submit);
+    expect(await screen.findByRole('alert')).toHaveTextContent('titleRequired');
+
+    fireEvent.change(screen.getByLabelText('quizTitle'), { target: { value: 'Chapter 1' } });
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+
+    fireEvent.click(submit);
+    expect(await screen.findByRole('alert')).toHaveTextContent('uploadOnePDF');
+    expect(uploadPdfViaPresignedUrl).not.toHaveBeenCalled();
+  });
+
+  it('replaces a stale submit message with the file error: one alert only', async () => {
+    const { container } = render(<CreateQuizPage />);
+    fireEvent.change(screen.getByLabelText('quizTitle'), { target: { value: 'Chapter 1' } });
+    fireEvent.click(screen.getByRole('button', { name: /createQuizBackground/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('uploadOnePDF');
+
+    pick(container, textFile());
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('pdfWrongType'));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('replaces a stale file error with the submit message: one alert only', async () => {
+    const { container } = render(<CreateQuizPage />);
+    fireEvent.change(screen.getByLabelText('quizTitle'), { target: { value: 'Chapter 1' } });
+    pick(container, textFile());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('pdfWrongType'));
+
+    fireEvent.click(screen.getByRole('button', { name: /createQuizBackground/ }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('uploadOnePDF'));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('cancels with one link to the create hub, no button nested in an anchor', () => {
+    const { container } = render(<CreateQuizPage />);
+
+    const cancel = screen.getByRole('link', { name: /cancel/ });
+    expect(cancel).toHaveAttribute('href', '/create');
+    expect(container.querySelectorAll('a button')).toHaveLength(0);
+  });
+
+  it('has a 44px preview toggle', async () => {
+    const { container } = render(<CreateQuizPage />);
+    pick(container, pdfFile());
+
+    const toggle = await screen.findByRole('button', { name: /showPDFPreview/ });
+    expect(toggle).toHaveClass('min-h-11');
   });
 
   it('has one page heading', () => {

@@ -13,9 +13,15 @@ export {
   type IndexNowResult,
 } from '@/lib/seo/indexnow-core';
 
-/** Only the production deployment pings; preview, development, test and the gate's e2e never do. */
-export function isIndexNowEnabled(vercelEnv: string | undefined = env.VERCEL_ENV): boolean {
-  return vercelEnv === 'production';
+/**
+ * IndexNow pings only from the live site: Vercel production, or any host that sets
+ * `INDEXNOW_ENABLED=true` (the self-hosted web has no `VERCEL_ENV`, RIN-1754).
+ * Preview, development, test and the gate's e2e leave both unset, so they never ping.
+ */
+export function isIndexNowEnabled(
+  source: Pick<typeof env, 'VERCEL_ENV' | 'INDEXNOW_ENABLED'> = env,
+): boolean {
+  return source.INDEXNOW_ENABLED === 'true' || source.VERCEL_ENV === 'production';
 }
 
 export interface IndexNowClientDeps {

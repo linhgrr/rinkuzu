@@ -121,7 +121,7 @@ export default function QuizMetaForm({
       <div>
         <label
           htmlFor="quiz-meta-folder"
-          className="mb-3 block text-sm font-semibold text-neutral-700"
+          className="mb-4 block text-sm font-semibold text-neutral-700"
         >
           {labels.folder}
         </label>

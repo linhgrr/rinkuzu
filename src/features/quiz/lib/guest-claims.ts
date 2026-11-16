@@ -31,6 +31,11 @@ export interface GuestClaim {
   score?: number;
   /** Trimmed, at most 120 chars. */
   quizTitle?: string;
+  /**
+   * The guest tapped "Remind me with Google" on the result card for this attempt (RIN-1712):
+   * the claim after sign-in also opts the learner in to the 2-day review email.
+   */
+  reviewOptIn?: boolean;
 }
 
 const QUIZ_TITLE_MAX = 120;
@@ -72,7 +77,8 @@ function isGuestClaim(value: unknown): value is GuestClaim {
     typeof entry.takenAt === 'number' &&
     (entry.kind === undefined || entry.kind === 'draft') &&
     (entry.score === undefined || typeof entry.score === 'number') &&
-    (entry.quizTitle === undefined || typeof entry.quizTitle === 'string')
+    (entry.quizTitle === undefined || typeof entry.quizTitle === 'string') &&
+    (entry.reviewOptIn === undefined || typeof entry.reviewOptIn === 'boolean')
   );
 }
 
@@ -116,6 +122,30 @@ export function addGuestClaim(claim: GuestClaim, now: number = Date.now()): void
     setPendingClaimCookie(GUEST_CLAIM_MAX_AGE_SECONDS);
   } catch {
     // Quota or disabled storage: the result page falls back to the score in the URL.
+  }
+}
+
+/**
+ * Mark this attempt's stored claim as a review-reminder opt-in (RIN-1712). It lives in the
+ * claim entry, so it survives the Google flow falling back to email sign-in. No entry for
+ * the attempt (another device, cleared storage) means nothing to mark.
+ */
+export function markGuestClaimReviewOptIn(attemptId: string, now: number = Date.now()): void {
+  const storage = getStorage();
+  if (!storage) return;
+  const claims = readGuestClaims(now);
+  if (!claims.some((claim) => claim.attemptId === attemptId)) return;
+  try {
+    storage.setItem(
+      GUEST_CLAIMS_STORAGE_KEY,
+      JSON.stringify(
+        claims.map((claim) =>
+          claim.attemptId === attemptId ? { ...claim, reviewOptIn: true } : claim,
+        ),
+      ),
+    );
+  } catch {
+    // Quota or disabled storage: the claim still goes through, without the opt-in.
   }
 }
 

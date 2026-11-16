@@ -145,3 +145,17 @@ export interface ActivationFunnelViewModel {
   /** Same weeks by send week, newest first. */
   emailWeeks: ActivationEmailWeekViewModel[];
 }
+
+/** One source's counts inside one signup week of the source breakdown (RIN-1761). */
+export interface ActivationSourceRowViewModel {
+  isoWeek: string;
+  /** Monday of the week, `YYYY-MM-DD` (UTC). */
+  monday: string;
+  /** A channel key such as `google`, or `unknown` / `other`. */
+  source: string;
+  signups: number;
+  startedQuiz: number;
+  activated: number;
+  /** The week is not complete yet. */
+  inProgress: boolean;
+}

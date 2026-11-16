@@ -14,6 +14,8 @@ import {
   GUEST_DRAFT_PLAY_SLUG,
   GUEST_DRAFT_TOKEN_HEADER,
   type GuestDraftEntry,
+  type GuestDraftFileType,
+  type GuestDraftOfficeSurface,
 } from '@/shared/constants/guest-draft';
 
 interface CreateGuestDraftInput {
@@ -89,12 +91,17 @@ interface CreateGuestTextDraftInput {
   token: string;
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
+  /** Set when the text was read from a .docx or .pptx in the browser (RIN-1786). */
+  sourceFileType?: GuestDraftFileType;
+  /** The page the file was dropped on, for the daily office counter; with `sourceFileType`. */
+  surface?: GuestDraftOfficeSurface;
 }
 
 /**
  * `POST /api/guest-drafts/text` (RIN-1538): pasted text instead of a PDF, same token header,
  * caps and progress as `createGuestDraft`. Refusals: 422 `guest_text_too_short` and 413
- * `guest_text_too_long`, each with `meta.limit_chars`.
+ * `guest_text_too_long`, each with `meta.limit_chars`. The text of a Word or PowerPoint
+ * file goes the same way with `source_file_type` (RIN-1786): the file never leaves the browser.
  *
  * @public consumed by the /try/text page (RIN-1536 part C).
  */
@@ -103,11 +110,18 @@ export async function createGuestTextDraft({
   token,
   locale,
   entry,
+  sourceFileType,
+  surface,
 }: CreateGuestTextDraftInput): Promise<GuestDraftProgress> {
   const dto = await fetchApiData<GuestDraftStatusDto>('/api/guest-drafts/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', [GUEST_DRAFT_TOKEN_HEADER]: token },
-    body: JSON.stringify({ text, locale, entry }),
+    body: JSON.stringify({
+      text,
+      locale,
+      entry,
+      ...(sourceFileType ? { source_file_type: sourceFileType, upload_surface: surface } : {}),
+    }),
   });
   return toProgress(dto);
 }

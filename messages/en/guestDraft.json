@@ -7,22 +7,30 @@
     "badge": "No account needed",
     "title": "PDF to quiz generator: turn your PDF into a quiz now",
     "subtitle": "Up to {pages} pages and {mb} MB. Rin writes up to 10 questions and you play them straight away, no editing.",
-    "dropzoneLabel": "PDF document",
+    "dropzoneLabel": "PDF, Word or PowerPoint file",
     "clickToUpload": "Click to upload",
     "dragAndDrop": "or drag and drop",
-    "limitHint": "PDF, up to {pages} pages and {mb} MB",
-    "dropHere": "Drop PDF here",
+    "limitHint": "PDF, Word or PowerPoint. PDF up to {pages} pages and {mb} MB, Word and PowerPoint up to {officeMb} MB",
+    "dropHere": "Drop your file here",
     "removeFile": "Remove file",
     "checking": "Checking your file…",
     "submit": "Create quiz",
     "tryAgain": "Try again",
     "privacy": "We keep your file for 24 hours, then delete it. Only you can open it.",
-    "higherLimits": "Need higher limits? Sign up free"
+    "higherLimits": "Need higher limits? Sign up free",
+    "truncatedNote": "We used the first {max, number} characters."
   },
   "alerts": {
     "tooLarge": "This PDF is over the trial limit: up to {pages} pages and {mb} MB. Sign up free for the full limits.",
     "tooLargeLink": "Sign up free",
-    "notPdf": "Only PDF files are accepted.",
+    "notPdf": "Only PDF, Word or PowerPoint files are accepted.",
+    "officeTooLarge": "This file is over {officeMb} MB. Try a smaller file or the PDF version.",
+    "legacyFormat": "Old .doc and .ppt files can't be read. Save the file as .docx or .pptx, or export it as a PDF, then try again.",
+    "encrypted": "This file is password protected. Remove the password or export it as a PDF, then try again.",
+    "corrupt": "We couldn't open this file. Check that it isn't damaged, or export it as a PDF.",
+    "tooLittleText": "We couldn't find enough text in this file. Try the PDF version or paste the text.",
+    "pdfVersionLink": "Use the PDF version",
+    "pasteTextLink": "Paste the text",
     "uploadError": "We couldn't upload your file. Check your connection and try again."
   },
   "cap": {
@@ -95,6 +103,12 @@
     "body": "This try doesn't count. Try again, or edit your text (very generic or very short text is harder to turn into questions).",
     "retry": "Try again",
     "chooseAnother": "Edit text"
+  },
+  "failedOffice": {
+    "title": "We couldn't make a quiz from this file",
+    "body": "This try doesn't count. Try again, or pick another file (slides with only pictures are harder to read).",
+    "retry": "Try again",
+    "chooseAnother": "Choose another file"
   },
   "seo": {
     "howTitle": "How it works",

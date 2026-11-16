@@ -98,7 +98,9 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Tạo câu hỏi trắc nghiệm từ PDF, làm ngay',
     );
-    expect(screen.getByText('PDF, tối đa 10 trang và 4 MB')).toBeInTheDocument();
+    expect(
+      screen.getByText(/PDF tối đa 10 trang và 4 MB, Word và PowerPoint tối đa 20 MB/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tạo quiz' })).toBeDisabled();
   });
 
@@ -141,7 +143,9 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
   it('refuses a file that is not a PDF', async () => {
     renderPage('vi');
     await choose(pdf('photo.png', 10, 'image/png'));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chỉ nhận tệp PDF.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Chỉ nhận tệp PDF, Word hoặc PowerPoint.',
+    );
     expect(reportUploadRejectionMock).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'wrong_type', surface: 'try_pdf' }),
     );

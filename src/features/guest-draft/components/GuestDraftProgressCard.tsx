@@ -125,6 +125,8 @@ interface GuestDraftFailedCardProps {
   /** "Choose another file", or "Edit text" for a pasted text. */
   onChooseAnother: () => void;
   source?: GuestDraftSource;
+  /** A Word or PowerPoint file: its own copy, "choose another file" (RIN-1786). */
+  office?: boolean;
 }
 
 /** Failed extraction (RIN-1448 AC8): the try does not count; retry with the same file or text. */
@@ -132,8 +134,15 @@ export function GuestDraftFailedCard({
   onRetry,
   onChooseAnother,
   source = 'pdf',
+  office = false,
 }: GuestDraftFailedCardProps) {
-  const t = useTranslations(source === 'text' ? 'guestDraft.failedText' : 'guestDraft.failed');
+  const t = useTranslations(
+    office
+      ? 'guestDraft.failedOffice'
+      : source === 'text'
+        ? 'guestDraft.failedText'
+        : 'guestDraft.failed',
+  );
   return (
     <Card variant="bordered" role="alert" className="space-y-4 border-red-200 bg-red-50 p-5 sm:p-6">
       <div className="flex items-start gap-3 text-red-700">

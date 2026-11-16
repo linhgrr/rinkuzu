@@ -89,7 +89,7 @@ const CDN_NO_STORE = 'no-store';
 // Pages every visitor sees alike when signed out. `/quiz/<slug>` joins once
 // RIN-1647 makes it a signed-out twin.
 const PUBLIC_PAGE_PATH =
-  /^\/(?:vi|en)(?:\/(?:(?:about|faq|contact|pricing|privacy|terms|cookies|try|explore|premium-quizzes)|try\/(?:pdf|text)|blog(?:\/.*)?|explore\/[^/]+))?\/?$/;
+  /^\/(?:vi|en)(?:\/(?:(?:about|faq|contact|pricing|privacy|terms|cookies|try|explore|premium-quizzes)|try\/(?:pdf|text|slides)|blog(?:\/.*)?|explore\/[^/]+))?\/?$/;
 
 export interface CdnCacheInput {
   method: string;

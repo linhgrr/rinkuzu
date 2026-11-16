@@ -26,6 +26,19 @@ describe('guest draft entry (RIN-1497)', () => {
     expect(createGuestDraftFieldsSchema.shape.entry.safeParse('try_text').success).toBe(true);
   });
 
+  it('knows try_slides, the /try/slides default (RIN-1788)', () => {
+    expect(guestDraftEntryFromSearch('?entry=try_slides')).toBe('try_slides');
+    expect(createGuestDraftFieldsSchema.shape.entry.safeParse('try_slides').success).toBe(true);
+  });
+
+  it('uses the page entry over any referrer, but never over a known param', () => {
+    expect(resolveGuestDraftEntry(undefined, 'https://www.google.com/', 'try_slides')).toBe(
+      'try_slides',
+    );
+    expect(resolveGuestDraftEntry(undefined, '', 'try_slides')).toBe('try_slides');
+    expect(resolveGuestDraftEntry('blog', '', 'try_slides')).toBe('blog');
+  });
+
   it('lets the param win over a search referrer', () => {
     expect(resolveGuestDraftEntry('blog', 'https://www.google.com/')).toBe('blog');
   });

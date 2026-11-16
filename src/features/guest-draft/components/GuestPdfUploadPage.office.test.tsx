@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -153,6 +153,54 @@ describe('GuestPdfUploadPage with Word and PowerPoint files (RIN-1786)', () => {
     expect(createGuestTextDraft).toHaveBeenCalledWith(
       expect.objectContaining({ surface: 'try_slides' }),
     );
+  });
+
+  it('leads the /try/slides copy with PowerPoint and Word in both locales (RIN-1788)', () => {
+    renderPage('en', 'try_slides');
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Make a multiple-choice quiz from PowerPoint slides',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'PowerPoint (.pptx) or Word (.docx) up to 20 MB. PDF up to 10 pages and 4 MB',
+      ),
+    ).toBeInTheDocument();
+    cleanup();
+    renderPage('vi', 'try_slides');
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Tạo câu hỏi trắc nghiệm từ slide PowerPoint',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('tags a /try/slides draft try_slides when no known ?entry= is given, whatever the referrer', async () => {
+    vi.spyOn(document, 'referrer', 'get').mockReturnValue('https://www.google.com/');
+    extractOfficeText.mockResolvedValue(extracted);
+    createGuestTextDraft.mockResolvedValue(processing);
+    renderPage('en', 'try_slides', '');
+    await choose(file('lecture.pptx'));
+    await submit();
+
+    await screen.findByText('40% done • 3 questions');
+    expect(createGuestTextDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ entry: 'try_slides', surface: 'try_slides' }),
+    );
+  });
+
+  it('keeps a known ?entry= on /try/slides', async () => {
+    extractOfficeText.mockResolvedValue(extracted);
+    createGuestTextDraft.mockResolvedValue(processing);
+    renderPage('en', 'try_slides', '?entry=blog');
+    await choose(file('lecture.pptx'));
+    await submit();
+
+    await screen.findByText('40% done • 3 questions');
+    expect(createGuestTextDraft).toHaveBeenCalledWith(expect.objectContaining({ entry: 'blog' }));
   });
 
   it('accepts a file a phone sends with a Word type and no extension', async () => {

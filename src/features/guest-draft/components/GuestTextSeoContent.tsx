@@ -34,6 +34,11 @@ export async function GuestTextSeoContent({ locale }: { locale: string }) {
           q: t(`textSeo.faq.${key}.q`, values),
           a: t(`textSeo.faq.${key}.a`, values),
         })),
+        moreLink: {
+          lead: t('textSeo.slidesLink.lead'),
+          label: t('textSeo.slidesLink.label'),
+          href: ROUTES.TRY_SLIDES,
+        },
         crossLink: {
           lead: t('textSeo.crossLink.lead'),
           label: t('textSeo.crossLink.label'),

@@ -33,6 +33,11 @@ export async function GuestPdfSeoContent({ locale }: { locale: string }) {
           q: t(`seo.faq.${key}.q`, values),
           a: t(`seo.faq.${key}.a`, values),
         })),
+        moreLink: {
+          lead: t('seo.slidesLink.lead'),
+          label: t('seo.slidesLink.label'),
+          href: ROUTES.TRY_SLIDES,
+        },
         crossLink: {
           lead: t('seo.crossLink.lead'),
           label: t('seo.crossLink.label'),

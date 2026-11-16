@@ -16,6 +16,8 @@ interface GuestPdfDropZoneProps {
   disabled: boolean;
   onChoose: (file: File | undefined) => void;
   onRemove: () => void;
+  /** `/try/slides` (RIN-1788): the hint names PowerPoint and Word first. */
+  slides?: boolean;
 }
 
 function ChosenFileRow({
@@ -23,7 +25,7 @@ function ChosenFileRow({
   checking,
   disabled,
   onRemove,
-}: Omit<GuestPdfDropZoneProps, 'onChoose' | 'file'> & { file: File }) {
+}: Omit<GuestPdfDropZoneProps, 'onChoose' | 'file' | 'slides'> & { file: File }) {
   const t = useTranslations('guestDraft.upload');
   return (
     <Card variant="bordered" className="p-4">
@@ -68,6 +70,7 @@ export function GuestPdfDropZone({
   disabled,
   onChoose,
   onRemove,
+  slides = false,
 }: GuestPdfDropZoneProps) {
   const t = useTranslations('guestDraft.upload');
   // No `accept` filter on the dropzone: any other file reaches `onChoose`, which says which
@@ -114,7 +117,9 @@ export function GuestPdfDropZone({
             <p className="mb-2 text-lg font-semibold text-neutral-700">
               <span className="text-brand-action">{t('clickToUpload')}</span> {t('dragAndDrop')}
             </p>
-            <p className="text-sm text-neutral-500">{t('limitHint', GUEST_DRAFT_LIMIT_COPY)}</p>
+            <p className="text-sm text-neutral-500">
+              {t(slides ? 'slidesLimitHint' : 'limitHint', GUEST_DRAFT_LIMIT_COPY)}
+            </p>
           </div>
         )}
       </div>

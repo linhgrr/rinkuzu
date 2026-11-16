@@ -28,6 +28,7 @@ import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { trackAdaptivePipelineJob } from '@/features/adaptive/lib/pipeline-analytics';
 import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 import { captureAnalyticsEvent, fileSizeBucket } from '@/lib/analytics/client';
+import { reportDropzoneRejection, reportUploadRejection } from '@/lib/upload-rejection-client';
 import { withPending } from '@/lib/async/with-pending';
 import { getPdfPageCount } from '@/lib/pdf';
 import { MAX_PDF_UPLOAD_MB } from '@/lib/pdf-upload-policy';
@@ -106,6 +107,7 @@ export default function AdaptiveLearningUpload() {
   };
 
   const onDropRejected = (rejections: FileRejection[]) => {
+    reportDropzoneRejection(rejections, 'adaptive_upload');
     const firstError = rejections[0]?.errors[0];
     if (!firstError) {
       const message = t('uploadPage.uploadFailed');
@@ -204,6 +206,7 @@ export default function AdaptiveLearningUpload() {
       try {
         const pageCount = await getPdfPageCount(file);
         if (pageCount > uploadPolicy.maxPages) {
+          reportUploadRejection({ file, reason: 'too_many_pages', surface: 'adaptive_upload' });
           setError(
             t('uploadPage.errors.tooManyPages', {
               pages: pageCount,
@@ -215,6 +218,7 @@ export default function AdaptiveLearningUpload() {
         setSelectedFile(file);
         setError(null);
       } catch {
+        reportUploadRejection({ file, reason: 'unreadable', surface: 'adaptive_upload' });
         setError(t('uploadPage.errors.unreadablePdf'));
       }
     }

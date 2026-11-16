@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import enCreate from '../../../../messages/en/create.json';
@@ -9,6 +9,16 @@ import enDashboard from '../../../../messages/en/dashboard.json';
 import viCreate from '../../../../messages/vi/create.json';
 import viDashboard from '../../../../messages/vi/dashboard.json';
 import { QuizUploadDropzone } from './QuizUploadDropzone';
+
+const { reportUploadRejectionMock, reportDropzoneRejectionMock } = vi.hoisted(() => ({
+  reportUploadRejectionMock: vi.fn(),
+  reportDropzoneRejectionMock: vi.fn(),
+}));
+// RIN-1785: refusals are counted with the surface they happened on.
+vi.mock('@/lib/upload-rejection-client', () => ({
+  reportUploadRejection: reportUploadRejectionMock,
+  reportDropzoneRejection: reportDropzoneRejectionMock,
+}));
 
 vi.mock('next/image', () => ({
   // The test double keeps the img contract without the Next optimizer.
@@ -35,6 +45,24 @@ function renderDropzone(locale: 'en' | 'vi') {
     </NextIntlClientProvider>,
   );
 }
+
+describe('QuizUploadDropzone refusals (RIN-1785)', () => {
+  it('counts a file that is not a PDF on the dashboard_upload surface', async () => {
+    const { container } = renderDropzone('en');
+    const input = container.querySelector('input[type="file"]');
+    if (!input) throw new Error('file input missing');
+
+    fireEvent.change(input, {
+      target: { files: [new File(['x'], 'notes.docx', { type: 'application/msword' })] },
+    });
+
+    await waitFor(() =>
+      expect(reportUploadRejectionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'wrong_type', surface: 'dashboard_upload' }),
+      ),
+    );
+  });
+});
 
 // RIN-1339 (spec RIN-1336 Part 1, AC 3): the dashboard and profile upload area
 // says, in one line under it, that created quizzes are public.

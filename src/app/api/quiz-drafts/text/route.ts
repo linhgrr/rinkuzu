@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/api/auth';
 import { apiErr } from '@/lib/api/response';
 import { quizDraftJobLinkFromEnvelope } from '@/lib/quiz/draft-usage';
 import { quizTextLengthRefusal, readQuizTextBody } from '@/lib/quiz/text-source-request';
+import { getUploadCounterService } from '@/lib/upload-counter-factory';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,9 @@ export const dynamic = 'force-dynamic';
  * Signed-in quiz draft from pasted text (RIN-1538). Validated here so a bad request never
  * reaches the API, then metered like a PDF draft: one `quiz_extract` unit, linked to the
  * draft so a failed extraction refunds it. The draft lands in the normal draft review.
- * The text goes to the API only and is never logged.
+ * The text goes to the API only and is never logged. A text read from a Word or PowerPoint
+ * file in the browser (RIN-1787) says so in `source_file_type`: it is forwarded to the API,
+ * which stores it on the draft, and a created draft is counted on `office_draft_created`.
  */
 export const POST = withAuth(async (request, { userId, session }) => {
   const read = await readQuizTextBody(request, '');
@@ -25,16 +28,24 @@ export const POST = withAuth(async (request, { userId, session }) => {
     );
   }
 
-  return proxyAdaptiveRequest(
+  const { upload_surface: surface, ...forwarded } = parsed.data;
+  const response = await proxyAdaptiveRequest(
     request,
     '/quiz/drafts/text',
     { userId, userRole: session.user.role },
     {
       method: 'POST',
-      body: JSON.stringify(parsed.data),
+      body: JSON.stringify(forwarded),
       contentType: 'application/json',
       llmAction: 'quiz_extract',
       llmJobLink: quizDraftJobLinkFromEnvelope,
     },
   );
+  if (response.ok && forwarded.source_file_type) {
+    await getUploadCounterService().recordOfficeDraft(
+      surface ?? 'create_pdf',
+      forwarded.source_file_type,
+    );
+  }
+  return response;
 });

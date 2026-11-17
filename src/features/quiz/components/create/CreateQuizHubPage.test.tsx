@@ -32,6 +32,7 @@ interface FakeDraft {
   id: string;
   title: string;
   sourceType: string;
+  sourceFileType?: string | null;
   status: string;
   questionCount: number;
   updatedAt: string;
@@ -360,6 +361,18 @@ describe('CreateQuizHubPage', () => {
         '/create/text',
       );
     });
+
+    it.each(['docx', 'pptx'])(
+      'sends a failed %s draft back to /create/pdf, where the file was picked (RIN-1787)',
+      (sourceFileType) => {
+        renderWith({ status: 'failed', sourceType: 'text', sourceFileType, errorCode: null });
+
+        expect(screen.getByRole('link', { name: 'draftTryAgain' })).toHaveAttribute(
+          'href',
+          '/create/pdf',
+        );
+      },
+    );
 
     it('falls back to the generic reason when the failure has no code', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => undefined);

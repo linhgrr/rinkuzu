@@ -25,19 +25,29 @@ import {
   shouldCleanupPendingPdfUpload,
   uploadPdfViaPresignedUrl,
 } from '@/lib/pdf';
-import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { createQuizDraft, createTextQuizDraft } from '@/lib/quiz/draftApi';
 import { getCreateQuizDraftErrorMessage } from '@/features/quiz/components/create/create-quiz-draft-error';
 import { MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { usePdfUploadPolicy } from '@/hooks/usePdfUploadPolicy';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import { ROUTES } from '@/shared/constants/routes';
-import { toCreateQuizDraftInput } from '@/features/quiz/components/create/create-quiz-draft-input';
-import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
 import {
-  getPdfRejectionMessage,
-  isPdfFile,
-} from '@/features/quiz/components/create/pdf-file-error';
+  toCreateQuizDraftInput,
+  toOfficeTextDraftInput,
+} from '@/features/quiz/components/create/create-quiz-draft-input';
+import { CreateQuizErrorAlert } from '@/features/quiz/components/create/CreateQuizErrorAlert';
+import { getPdfRejectionMessage } from '@/features/quiz/components/create/pdf-file-error';
+import {
+  CREATE_FILE_ACCEPT,
+  OFFICE_MAX_FILE_MB,
+  createFileKind,
+  getOfficeRefusalMessage,
+  readOfficeFile,
+  titleFromFileName,
+  type OfficeSource,
+} from '@/features/quiz/components/create/office-source';
+import { QUIZ_TEXT_MAX_CHARS } from '@/shared/constants/quiz-text-source';
 import { reportDropzoneRejection, reportUploadRejection } from '@/lib/upload-rejection-client';
 import {
   HiOutlineArrowRight,
@@ -59,6 +69,8 @@ interface CreateQuizState {
   submitToPremium: boolean;
   rightsAttested: boolean;
   pdfFile: File | null;
+  /** The text of a Word or PowerPoint file, read in the browser when it was picked (RIN-1787). */
+  office: OfficeSource | null;
   showPDFViewer: boolean;
   extracting: boolean;
   /** File-level errors (type, size, pages), shown in the card above the dropzone. */
@@ -68,7 +80,8 @@ interface CreateQuizState {
 }
 
 type CreateQuizAction =
-  { type: 'patch'; value: Partial<CreateQuizState> } | { type: 'setPdfFile'; file: File | null };
+  | { type: 'patch'; value: Partial<CreateQuizState> }
+  | { type: 'setPdfFile'; file: File | null; office?: OfficeSource };
 
 interface PdfPreviewData {
   pdfUrl: string;
@@ -86,6 +99,7 @@ const initialCreateQuizState: CreateQuizState = {
   submitToPremium: false,
   rightsAttested: false,
   pdfFile: null,
+  office: null,
   showPDFViewer: false,
   extracting: false,
   error: '',
@@ -100,9 +114,10 @@ function createQuizReducer(state: CreateQuizState, action: CreateQuizAction): Cr
       return {
         ...state,
         pdfFile: action.file,
+        office: action.office ?? null,
         title:
           action.file && !state.title.trim()
-            ? action.file.name.replace(/\.pdf$/i, '')
+            ? titleFromFileName(action.file.name)
             : action.file
               ? state.title
               : '',
@@ -246,6 +261,7 @@ interface UploadSectionProps {
   getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
   onRemoveFile: () => void;
   pdfFile: File | null;
+  office: OfficeSource | null;
   maxPages: number;
   t: Translator;
 }
@@ -257,6 +273,7 @@ function UploadSection({
   isDragActive,
   onRemoveFile,
   pdfFile,
+  office,
   maxPages,
   t,
 }: UploadSectionProps) {
@@ -277,6 +294,11 @@ function UploadSection({
                 <p className="text-xs text-neutral-500">
                   {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
+                {office?.truncated ? (
+                  <p className="mt-1 text-xs text-neutral-600">
+                    {t('officeTruncatedNote', { max: QUIZ_TEXT_MAX_CHARS })}
+                  </p>
+                ) : null}
               </div>
             </div>
             <Button
@@ -322,8 +344,11 @@ function UploadSection({
                   <p className="text-sm text-neutral-500">
                     {t('pdfLimitHint', { pages: maxPages })}
                   </p>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {t('pdfTechnicalLimit', { size: MAX_QUIZ_PDF_MB })}
+                  <p className="mt-1 text-pretty text-xs leading-5 text-neutral-500">
+                    {t('pdfTechnicalLimit', {
+                      size: MAX_QUIZ_PDF_MB,
+                      officeSize: OFFICE_MAX_FILE_MB,
+                    })}
                   </p>
                 </div>
               )}
@@ -360,6 +385,7 @@ interface FormCardProps {
   onTitleChange: (value: string) => void;
   onTogglePreview: () => void;
   pdfFile: File | null;
+  office: OfficeSource | null;
   selectedFolderId: string | null;
   title: string;
   description: string;
@@ -385,6 +411,7 @@ function CreateQuizFormCard({
   onTitleChange,
   onTogglePreview,
   pdfFile,
+  office,
   privacyControl,
   selectedFolderId,
   t,
@@ -460,13 +487,14 @@ function CreateQuizFormCard({
                 isDragActive={isDragActive}
                 onRemoveFile={onRemoveFile}
                 pdfFile={pdfFile}
+                office={office}
                 maxPages={maxPages}
                 t={t}
               />
             </div>
 
             <div className="flex flex-col gap-4">
-              {pdfFile && (
+              {pdfFile && !office && (
                 <div className="flex justify-center">
                   <Button
                     type="button"
@@ -573,9 +601,22 @@ export function CreateQuizPage() {
 
   const selectPdf = useCallback(
     async (file: File) => {
-      if (!isPdfFile(file)) {
-        reportUploadRejection({ file, reason: 'wrong_type', surface: 'create_pdf' });
-        dispatch({ type: 'patch', value: { error: t('pdfWrongType'), submitError: '' } });
+      if (createFileKind(file) !== 'pdf') {
+        // Word and PowerPoint are read here, in the browser; anything else is refused.
+        const read = await readOfficeFile(file);
+        if (!read.ok) {
+          reportUploadRejection({ file, reason: read.reason, surface: 'create_pdf' });
+          dispatch({
+            type: 'patch',
+            value: {
+              error: getOfficeRefusalMessage(read.reason, t, OFFICE_MAX_FILE_MB),
+              submitError: '',
+            },
+          });
+          return;
+        }
+        dispatch({ type: 'patch', value: { error: '', submitError: '' } });
+        dispatch({ type: 'setPdfFile', file, office: read.source });
         return;
       }
       try {
@@ -630,7 +671,7 @@ export function CreateQuizPage() {
         value: { error: getPdfRejectionMessage(rejections, t, MAX_QUIZ_PDF_MB), submitError: '' },
       });
     },
-    accept: { 'application/pdf': ['.pdf'] },
+    accept: CREATE_FILE_ACCEPT,
     maxFiles: 1,
     maxSize: uploadPolicy.maxBytes,
     multiple: false,
@@ -659,13 +700,20 @@ export function CreateQuizPage() {
 
     let pendingS3Key: string | null = null;
     try {
-      const uploadFile = state.pdfFile;
-      const { s3Key } = await uploadPdfViaPresignedUrl(uploadFile);
-      pendingS3Key = s3Key;
       const trimmedTitle = state.title.trim();
-
-      const draft = await createQuizDraft(toCreateQuizDraftInput(state, uploadFile, s3Key));
-      pendingS3Key = null;
+      let draft;
+      if (state.office) {
+        // A Word or PowerPoint file was read in the browser: only its text is sent, as a text draft.
+        draft = await createTextQuizDraft(
+          toOfficeTextDraftInput(state, state.office, 'create_pdf'),
+        );
+      } else {
+        const uploadFile = state.pdfFile;
+        const { s3Key } = await uploadPdfViaPresignedUrl(uploadFile);
+        pendingS3Key = s3Key;
+        draft = await createQuizDraft(toCreateQuizDraftInput(state, uploadFile, s3Key));
+        pendingS3Key = null;
+      }
 
       addDraft({
         id: draft.id,
@@ -738,6 +786,7 @@ export function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
               pdfFile={state.pdfFile}
+              office={state.office}
               privacyControl={{
                 submitToPremium: state.submitToPremium,
                 eligible: session?.user?.emailVerified === true,

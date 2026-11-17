@@ -51,6 +51,7 @@ function draft(sourceType: QuizDraft['sourceType']): QuizDraft {
     folderId: null,
     prompt: null,
     sourceType,
+    sourceFileType: null,
     submitToPremium: false,
     revision: 1,
     questionCount: 0,

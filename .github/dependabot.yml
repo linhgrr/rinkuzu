@@ -40,11 +40,31 @@ updates:
           - patch
       production-minor-patch:
         dependency-type: production
+        exclude-patterns:
+          # Gate-pinned tools only ever come in the gate-pinned-tools group:
+          # Dependabot does not keep a dependency out of a later group on
+          # group order alone (#530 was folded into #560 and #570, RIN-1829).
+          - jscpd
+          - '@redocly/cli'
+          - prettier
+          - react-doctor
+          - knip
+          - '@lhci/cli'
         update-types:
           - minor
           - patch
       development-minor-patch:
         dependency-type: development
+        exclude-patterns:
+          # Gate-pinned tools only ever come in the gate-pinned-tools group:
+          # Dependabot does not keep a dependency out of a later group on
+          # group order alone (#530 was folded into #560 and #570, RIN-1829).
+          - jscpd
+          - '@redocly/cli'
+          - prettier
+          - react-doctor
+          - knip
+          - '@lhci/cli'
         update-types:
           - minor
           - patch

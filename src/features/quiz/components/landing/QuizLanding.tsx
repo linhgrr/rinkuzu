@@ -30,7 +30,7 @@ const LONG_QUESTION_LENGTH = 600;
 const PRIMARY_CTA =
   'btn btn-primary h-auto min-h-12 w-full whitespace-normal px-4 text-center text-base bg-brand-action-strong text-white hover:bg-brand-action-strong-hover sm:w-auto sm:px-8';
 
-const SECONDARY_CTA = 'btn btn-secondary h-auto min-h-12 whitespace-normal text-center';
+const SECONDARY_CTA = 'btn btn-secondary h-auto min-h-12 whitespace-normal py-3 text-center';
 
 /** The CTAs' attribution: `entry=quiz_landing`, or the hub's `entry=hub&topic=` the visitor came with (RIN-1469). */
 function landingEntryQuery(hubEntry: QuizLandingViewModel['hubEntry']): string {

@@ -74,7 +74,7 @@ function TextForm({ flow, text, onTextChange }: TextFormProps) {
       >
         {state.alert === 'upload_error' ? t('tryAgain') : t('submit')}
       </Button>
-      <p className="text-xs text-neutral-500">{t('privacy')}</p>
+      <p className="text-xs leading-relaxed text-neutral-500">{t('privacy')}</p>
     </>
   );
 }

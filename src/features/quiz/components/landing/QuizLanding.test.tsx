@@ -81,7 +81,7 @@ describe('QuizLanding (RIN-1247)', () => {
     expect(html).toContain('Làm toàn bộ bài (20 câu)');
     expect(html).toContain('10 câu, khoảng 3 phút');
     expect(html).toContain('Còn 15 câu nữa');
-    expect(html).toContain('Xem đáp án và làm tiếp – không cần tài khoản');
+    expect(html).toContain('Xem đáp án – không cần tài khoản');
     expect(html).not.toContain('Chơi nhanh');
   });
 

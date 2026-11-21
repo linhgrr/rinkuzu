@@ -212,19 +212,16 @@ describe.each(CASES)('$tool SEO content in $locale ($issue)', (c) => {
     for (const body of bodies) expect(body?.className).toMatch(/\btext-base\b/);
   });
 
-  it.skipIf(c.tool !== 'photo')(
-    'states the photo privacy line without a provider retention claim (RIN-1835)',
-    async () => {
-      const doc = await serverHtml();
-      const text = doc.body.textContent ?? '';
-      expect(text).toContain(
-        c.locale === 'vi'
-          ? 'Rinkuzu không lưu ảnh của bạn. Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản.'
-          : "We don't store your photos. They go to our text-recognition provider only to read the text.",
-      );
-      expect(text).not.toMatch(/deleted right after|xóa ngay sau/i);
-    },
-  );
+  it('states the photo privacy line without a provider retention claim (RIN-1835)', async () => {
+    const doc = await serverHtml();
+    const text = doc.body.textContent ?? '';
+    const photoLine =
+      c.locale === 'vi'
+        ? 'Rinkuzu không lưu ảnh của bạn. Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản.'
+        : "We don't store your photos. They go to our text-recognition provider only to read the text.";
+    expect(text.includes(photoLine)).toBe(c.tool === 'photo');
+    expect(text).not.toMatch(/deleted right after|xóa ngay sau/i);
+  });
 
   it('uses the personalized wording, never adaptive', async () => {
     const doc = await serverHtml();

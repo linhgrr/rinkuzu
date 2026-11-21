@@ -42,7 +42,8 @@
     "bodyText": "Lượt dùng thử không cần tài khoản hôm nay đã hết. Đăng ký miễn phí để tạo quiz từ văn bản.",
     "google": "Tiếp tục với Google",
     "signInEmail": "Đăng nhập bằng email",
-    "createAccount": "Tạo tài khoản"
+    "createAccount": "Tạo tài khoản",
+    "bodyPhoto": "Lượt dùng thử không cần tài khoản hôm nay đã hết. Đăng ký miễn phí để tạo quiz từ ảnh của bạn."
   },
   "progress": {
     "uploading": "Đang tải lên…",
@@ -53,7 +54,9 @@
     "ready": "Quiz sẵn sàng • {count} câu hỏi",
     "readyFirstBatch": "{count} câu đầu tiên đã sẵn sàng • còn nữa đang được tạo",
     "playNow": "Làm quiz ngay",
-    "pollError": "Không kiểm tra được tiến trình. Đang thử lại…"
+    "pollError": "Không kiểm tra được tiến trình. Đang thử lại…",
+    "reading": "Đang đọc chữ trong ảnh…",
+    "readingHint": "Có thể mất tới 20 giây. Giữ trang này mở."
   },
   "failed": {
     "title": "Chưa tạo được quiz từ PDF này",
@@ -70,7 +73,9 @@
     "makeAgain": "Tạo lại",
     "goToLibrary": "Tới thư viện của tôi",
     "loading": "Đang tải quiz…",
-    "pendingMore": "Đang tạo thêm câu hỏi."
+    "pendingMore": "Đang tạo thêm câu hỏi.",
+    "noticePhoto": "Quiz từ ảnh của bạn. Được giữ 24 giờ: <link>đăng ký</link> để giữ lại.",
+    "expiredBodyPhoto": "Quiz dùng thử được giữ 24 giờ. Hãy tạo lại từ ảnh của bạn."
   },
   "result": {
     "moreTitle": "Còn câu hỏi nữa đang được tạo",
@@ -290,5 +295,29 @@
     "save": "Lưu với Google",
     "see": "Xem lại",
     "dismiss": "Đóng thông báo kết quả"
+  },
+  "photoMeta": {
+    "title": "Tạo quiz từ ảnh chụp sách, vở, slide | RinKuzu",
+    "description": "Chụp hoặc chọn 1–5 ảnh trang sách, ghi chú hay slide. Rin đọc chữ trong ảnh, tạo tối đa 10 câu hỏi trắc nghiệm cá nhân hóa và bạn làm ngay. Không cần tài khoản."
+  },
+  "photo": {
+    "badge": "Không cần tài khoản",
+    "title": "Tạo quiz từ ảnh chụp sách, vở, slide",
+    "subtitle": "Chụp 1–5 trang. Rin đọc chữ trong ảnh, tạo tối đa {questions} câu hỏi và bạn làm ngay.",
+    "submit": "Tạo quiz",
+    "tryAgain": "Thử lại",
+    "higherLimits": "Cần giới hạn lớn hơn? Đăng ký miễn phí",
+    "tooLittleText": "Chúng tôi chưa đọc đủ chữ. Hãy thử ảnh nét hơn, đủ sáng, hoặc dán văn bản.",
+    "pasteTextLink": "Dán văn bản thay thế",
+    "sendError": "Không gửi được ảnh. Kiểm tra kết nối rồi thử lại.",
+    "progressLabel": "{count} ảnh · {size} MB",
+    "unavailableTitle": "Tính năng tạo quiz từ ảnh đang tạm nghỉ",
+    "unavailableBody": "Hãy dán văn bản của bạn, Rin sẽ tạo quiz từ đó. Lượt dùng thử không bị tính."
+  },
+  "failedPhoto": {
+    "title": "Chúng tôi chưa tạo được quiz từ các ảnh này",
+    "body": "Lượt này không bị tính. Thử lại hoặc đổi ảnh khác.",
+    "retry": "Thử lại",
+    "chooseAnother": "Đổi ảnh"
   }
 }

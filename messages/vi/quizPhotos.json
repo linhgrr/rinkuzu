@@ -1,0 +1,33 @@
+{
+  "zoneLabel": "Ảnh chụp sách, vở hoặc slide",
+  "takePhoto": "Chụp ảnh",
+  "chooseFromGallery": "Chọn từ thư viện",
+  "choosePhotos": "Chọn ảnh",
+  "dragHint": "hoặc kéo và thả ảnh vào đây",
+  "dropHere": "Thả ảnh vào đây",
+  "limitHint": "1–{max} ảnh, JPEG, PNG, HEIC hoặc WebP, mỗi ảnh tối đa {mb} MB",
+  "handwriting": "Chữ viết tay đọc được ở mức tốt nhất có thể.",
+  "privacy": "Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản và bị xóa ngay sau đó.",
+  "counter": "{count}/{max} ảnh · {size} MB",
+  "listLabel": "Các ảnh của bạn, theo thứ tự trang",
+  "pageLabel": "Trang {page}",
+  "preparing": "Đang chuẩn bị ảnh…",
+  "size": "{size} MB",
+  "moveUp": "Chuyển ảnh trang {page} lên",
+  "moveDown": "Chuyển ảnh trang {page} xuống",
+  "remove": "Bỏ ảnh trang {page}",
+  "removeFailed": "Bỏ ảnh lỗi",
+  "announceMoved": "Trang {page} chuyển sang vị trí {position}",
+  "announceRemoved": "Đã bỏ ảnh",
+  "addAnother": "Thêm ảnh ({count}/{max})",
+  "takeAnother": "Chụp thêm",
+  "gallery": "Thư viện",
+  "blockedByFailed": "Bỏ ảnh lỗi để tiếp tục",
+  "errors": {
+    "unsupported_type": "Chỉ nhận ảnh JPEG, PNG, HEIC hoặc WebP.",
+    "too_large": "Ảnh này lớn hơn {mb} MB. Chụp lại hoặc chọn ảnh nhỏ hơn.",
+    "undecodable": "Trình duyệt không đọc được ảnh này. Hãy lưu thành JPEG rồi chọn lại.",
+    "total_too_large": "Không còn chỗ cho ảnh này. Hãy bỏ bớt một ảnh hoặc chụp lại với độ phân giải thấp hơn.",
+    "too_many": "Chỉ thêm được {free} ảnh nữa (tối đa {max}). Đã thêm {added} ảnh đầu tiên."
+  }
+}

@@ -42,7 +42,8 @@
     "bodyText": "Today's no-account trials are used up. Sign up free to make a quiz from your text.",
     "google": "Continue with Google",
     "signInEmail": "Sign in with email",
-    "createAccount": "Create an account"
+    "createAccount": "Create an account",
+    "bodyPhoto": "Today's no-account trials are used up. Sign up free to make a quiz from your photos."
   },
   "progress": {
     "uploading": "Uploading…",
@@ -53,7 +54,9 @@
     "ready": "Quiz ready • {count, plural, one {# question} other {# questions}}",
     "readyFirstBatch": "First {count, plural, one {question} other {# questions}} ready • more on the way",
     "playNow": "Play now",
-    "pollError": "We can't check progress. Retrying…"
+    "pollError": "We can't check progress. Retrying…",
+    "reading": "Reading the text in your photos…",
+    "readingHint": "Can take up to 20 seconds. Keep this page open."
   },
   "failed": {
     "title": "We couldn't make a quiz from this PDF",
@@ -70,7 +73,9 @@
     "makeAgain": "Make it again",
     "goToLibrary": "Go to my library",
     "loading": "Loading your quiz…",
-    "pendingMore": "More questions are being made."
+    "pendingMore": "More questions are being made.",
+    "noticePhoto": "Quiz from your photos. Kept for 24 hours: <link>sign up</link> to keep it.",
+    "expiredBodyPhoto": "Trial quizzes are kept for 24 hours. Make it again from your photos."
   },
   "result": {
     "moreTitle": "More questions are on the way",
@@ -290,5 +295,29 @@
     "save": "Save with Google",
     "see": "See it",
     "dismiss": "Dismiss saved result notice"
+  },
+  "photoMeta": {
+    "title": "Make a Quiz from Photos of Your Notes | RinKuzu",
+    "description": "Take or choose 1–5 photos of a textbook page, notes or slides. Rin reads the text, writes up to 10 personalized multiple-choice questions and you play them right away. No account needed."
+  },
+  "photo": {
+    "badge": "No account needed",
+    "title": "Turn photos of your book, notes or slides into a quiz",
+    "subtitle": "Snap 1–5 pages. Rin reads the text in your photos, writes up to {questions} questions and you play them right away.",
+    "submit": "Make quiz",
+    "tryAgain": "Try again",
+    "higherLimits": "Need higher limits? Sign up free",
+    "tooLittleText": "We couldn't read enough text. Try a sharper photo in good light, or paste the text.",
+    "pasteTextLink": "Paste text instead",
+    "sendError": "We couldn't send your photos. Check your connection and try again.",
+    "progressLabel": "{count, plural, one {# photo} other {# photos}} · {size} MB",
+    "unavailableTitle": "Quiz from photos is paused right now",
+    "unavailableBody": "Paste your text and Rin will make the quiz from it. This try doesn't count."
+  },
+  "failedPhoto": {
+    "title": "We couldn't make a quiz from these photos",
+    "body": "This try doesn't count. Try again, or change your photos.",
+    "retry": "Try again",
+    "chooseAnother": "Change photos"
   }
 }

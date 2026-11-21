@@ -504,6 +504,12 @@ const GUEST_UPLOAD_COPY = {
   },
 } as const;
 
+/** A 64x48 grey JPEG (fake data): decodable in the browser, so photo preparation runs for real. */
+const PHOTO_CREATE_NAME = { en: 'Make quiz', vi: 'Tạo quiz' } as const;
+
+const E2E_PHOTO_JPEG_BASE64 =
+  '/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAwAEADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKkAAAAAAAAAAAAAAAAAAAAAAAH/2Q==';
+
 /** The upload answer when the draft is ready at once (no OCR in e2e). */
 const READY_GUEST_DRAFT_BODY = JSON.stringify({
   success: true,
@@ -2026,6 +2032,66 @@ test.describe('production critical paths', () => {
           await expect(page.getByRole('heading', { name: copy.saveTitle })).toBeVisible();
           const stored = await page.evaluate(() => JSON.stringify({ ...window.localStorage }));
           expect(stored).not.toContain('Fake e2e notes');
+        } finally {
+          if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
+        }
+      });
+    });
+  }
+
+  for (const locale of ['en', 'vi'] as const) {
+    test(`picks two photos signed out, sends them in order and plays the quiz (${locale}) @critical-quiz-guest-draft-upload`, async ({
+      page,
+    }, testInfo) => {
+      // RIN-1793: the photos are prepared in the browser and posted as multipart to the image
+      // route, which is answered with a seeded ready draft (no OCR in e2e); play is real.
+      await withDatabaseFixture(testInfo, async (fixture) => {
+        const copy = GUEST_UPLOAD_COPY[locale];
+        const seeded: { draft?: SeededGuestDraft; body?: string; contentType?: string } = {};
+        await page.addInitScript(() => {
+          window.localStorage.setItem('rinkuzu_analytics_consent_v1', 'denied');
+        });
+        await page.route('**/api/guest-drafts/image', async (route) => {
+          const token = route.request().headers()['x-guest-draft-token'] ?? '';
+          seeded.contentType = route.request().headers()['content-type'] ?? '';
+          seeded.body = route.request().postData() ?? '';
+          seeded.draft = await seedReadyGuestDraft(fixture.db, token);
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: READY_GUEST_DRAFT_BODY,
+          });
+        });
+        try {
+          await page.goto(`/${locale}/try/photo`);
+          await expect(page).toHaveURL(new RegExp(`/${locale}/try/photo$`));
+          const gallery = page.locator('[data-photo-input="gallery"]');
+          await expect
+            .poll(() =>
+              gallery.evaluate((node) =>
+                Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+              ),
+            )
+            .toBe(true);
+          await gallery.setInputFiles(
+            ['page-1.jpg', 'page-2.jpg'].map((name) => ({
+              name,
+              mimeType: 'image/jpeg',
+              buffer: Buffer.from(E2E_PHOTO_JPEG_BASE64, 'base64'),
+            })),
+          );
+          const create = page.getByRole('button', { name: PHOTO_CREATE_NAME[locale], exact: true });
+          await expect(create).toBeEnabled();
+          await create.click();
+
+          await page.waitForURL(new RegExp(`/${locale}/try/photo/play$`));
+          expect(seeded.contentType).toContain('multipart/form-data');
+          expect(seeded.body).toContain('try_photo');
+          expect(page.url()).not.toContain('page-1');
+          await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
+          await finishOneQuestionQuiz(page, copy);
+          await page.waitForURL(new RegExp(`/${locale}/quiz/guest-draft-play/result\\?attemptId=`));
+          await expect(page.getByRole('heading', { name: copy.saveTitle })).toBeVisible();
         } finally {
           if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);
         }

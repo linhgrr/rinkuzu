@@ -39,6 +39,7 @@ const ALERT_MESSAGE = {
   encrypted: 'encrypted',
   corrupt: 'corrupt',
   too_little_text: 'tooLittleText',
+  service_unavailable: 'uploadError',
 } as const satisfies Record<UploadAlertKey, string>;
 
 /** Links under the message: sign up for a PDF over the limit, another way in for no text. */

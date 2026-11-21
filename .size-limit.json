@@ -19,7 +19,7 @@
     {
       "name": "guest-try-pdf",
       "limit": "340 KiB",
-      "patterns": ["^/\\[locale\\]/try/(?:pdf|text|slides)$"]
+      "patterns": ["^/\\[locale\\]/try/(?:pdf|text|slides|photo)$"]
     },
     {
       "name": "auth-recovery",

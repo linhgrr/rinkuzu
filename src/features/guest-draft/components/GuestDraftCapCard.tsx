@@ -21,8 +21,7 @@ interface GuestDraftCapCardProps {
 const CAP_NEXT: Record<GuestDraftSource, string> = {
   pdf: ROUTES.CREATE_QUIZ_PDF,
   text: ROUTES.CREATE_QUIZ_TEXT,
-  // Placeholder until RIN-1793 adds the signed-in photo page.
-  image: ROUTES.CREATE_QUIZ_PDF,
+  image: ROUTES.CREATE_QUIZ_PHOTO,
 };
 
 /**
@@ -46,7 +45,7 @@ export function GuestDraftCapCard({ source = 'pdf' }: GuestDraftCapCardProps) {
         {t('title')}
       </h2>
       <p className="mt-1 text-sm text-neutral-700">
-        {source === 'text' ? t('bodyText') : t('body')}
+        {source === 'text' ? t('bodyText') : source === 'image' ? t('bodyPhoto') : t('body')}
       </p>
       <div className="mx-auto mt-4 w-full sm:max-w-xs">
         <GoogleAuthButton

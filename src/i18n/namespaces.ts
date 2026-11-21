@@ -16,6 +16,7 @@ export const MARKETING_MESSAGE_NAMESPACES = [
   'landing',
   'nav',
   'pwa',
+  'quizPhotos',
 ] as const;
 
 export const APP_MESSAGE_NAMESPACES = [
@@ -42,6 +43,7 @@ export const APP_MESSAGE_NAMESPACES = [
   'profile',
   'pwa',
   'quiz',
+  'quizPhotos',
   'quizPreview',
   'quizzes',
   'report',

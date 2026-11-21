@@ -86,8 +86,8 @@ async function mockTextDrafts(page: Page): Promise<DraftsMock> {
 
 /**
  * Per method card: the button sits at least 16 px below the description (spacing
- * checklist) and, in the 3-column layout, the description never runs under the
- * illustration. Empty when all is well.
+ * checklist) and, where a card has an illustration, no line of the description runs
+ * under it. Empty when all is well.
  */
 async function cardSpacingProblems(page: Page, checkArt: boolean): Promise<string[]> {
   return page.getByRole('region', { name: enCreate.chooseMethod }).evaluate(
@@ -102,12 +102,21 @@ async function cardSpacingProblems(page: Page, checkArt: boolean): Promise<strin
         if (button.top - copy.bottom < 16) {
           problems.push(`${heading.textContent}: button ${button.top - copy.bottom}px below copy`);
         }
+        // The paragraph box is wider than its text: compare the lines the text really fills.
+        const lines = (() => {
+          const range = document.createRange();
+          range.selectNodeContents(heading.parentElement?.querySelector('p') as Node);
+          return Array.from(range.getClientRects());
+        })();
         const overlaps = (r: DOMRect) =>
           r.width > 0 &&
-          r.left < copy.right &&
-          copy.left < r.right &&
-          r.top < copy.bottom &&
-          copy.top < r.bottom;
+          lines.some(
+            (line) =>
+              r.left < line.right &&
+              line.left < r.right &&
+              r.top < line.bottom &&
+              line.top < r.bottom,
+          );
         if (withArt && art && overlaps(art)) {
           problems.push(`${heading.textContent}: copy under the art`);
         }

@@ -508,7 +508,7 @@ const GUEST_UPLOAD_COPY = {
 const PHOTO_CREATE_NAME = { en: 'Make quiz', vi: 'Tạo quiz' } as const;
 
 const E2E_PHOTO_JPEG_BASE64 =
-  '/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAwAEADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKkAAAAAAAAAAAAAAAAAAAAAAAH/2Q==';
+  '/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAwAEADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKkAAAAAAAAAAAAAAAAAAAAAAAH/2Q==';
 
 /** The upload answer when the draft is ready at once (no OCR in e2e). */
 const READY_GUEST_DRAFT_BODY = JSON.stringify({
@@ -2090,7 +2090,7 @@ test.describe('production critical paths', () => {
           expect(page.url()).not.toContain('page-1');
           await expect(page.getByText(E2E_GUEST_DRAFT_QUESTION)).toBeVisible();
           await finishOneQuestionQuiz(page, copy);
-          await page.waitForURL(new RegExp(`/${locale}/quiz/guest-draft-play/result\?attemptId=`));
+          await page.waitForURL(new RegExp(`/${locale}/quiz/guest-draft-play/result\\?attemptId=`));
           await expect(page.getByRole('heading', { name: copy.saveTitle })).toBeVisible();
         } finally {
           if (seeded.draft) await cleanupGuestDraft(fixture.db, seeded.draft);

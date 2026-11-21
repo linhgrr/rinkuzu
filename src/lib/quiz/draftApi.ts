@@ -4,6 +4,7 @@
 import { fetchApiData } from '@/lib/api/client';
 import type {
   CreateQuizDraftInputDto,
+  CreateImageQuizDraftInputDto,
   CreateManualQuizDraftInputDto,
   CreateTextQuizDraftInputDto,
   PatchQuizDraftInputDto,
@@ -59,6 +60,28 @@ export async function createTextQuizDraft(input: CreateTextQuizDraftInputDto): P
         ? { source_file_type: input.office.fileType, upload_surface: input.office.surface }
         : {}),
     }),
+  });
+  return QuizDraftMapper.toViewModel(draft);
+}
+
+/**
+ * `POST /api/quiz-drafts/image` (RIN-1792): a draft from 1-5 prepared JPEGs (RIN-1790) as
+ * multipart `images`, in page order. The API reads the text in the photos before it creates
+ * the draft, so the call can take up to ~20 s; pass `signal` to let the learner cancel it.
+ * Refusals: 422 `too_little_text` (nothing created, no quota used), 503 (paused or down).
+ * The photos are forwarded once and never stored.
+ */
+export async function createImageQuizDraft(
+  input: CreateImageQuizDraftInputDto,
+  init?: QuizDraftRequestInit,
+): Promise<QuizDraft> {
+  const body = new FormData();
+  body.append('title', input.title);
+  input.images.forEach((image, index) => body.append('images', image, `page-${index + 1}.jpg`));
+  const { draft } = await fetchApiData<QuizDraftSingleResponseDto>('/api/quiz-drafts/image', {
+    method: 'POST',
+    body,
+    ...(init?.signal ? { signal: init.signal } : {}),
   });
   return QuizDraftMapper.toViewModel(draft);
 }

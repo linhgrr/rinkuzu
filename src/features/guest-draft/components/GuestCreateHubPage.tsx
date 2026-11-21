@@ -84,6 +84,13 @@ export function GuestCreateHubPage() {
                 {t('guestHub.orPasteText')}
                 <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
               </Link>
+              <Link
+                href={`${ROUTES.TRY_PHOTO}?entry=create`}
+                className={cn(TEXT_LINK_CLASS, 'gap-1.5')}
+              >
+                {t('guestHub.orTakePhotos')}
+                <HiOutlineArrowRight className="size-4 shrink-0" aria-hidden="true" />
+              </Link>
             </div>
           </HubCard>
 

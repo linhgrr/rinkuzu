@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { QuizDraftTransportDto } from '@/dtos/quiz-draft';
 import { QuizDraftMapper } from '@/mappers/quiz/QuizDraftMapper';
 import { mapDraftStatus } from '@/lib/quiz/draftStatus';
-import { createTextQuizDraft } from '@/lib/quiz/draftApi';
+import { createImageQuizDraft, createTextQuizDraft } from '@/lib/quiz/draftApi';
 
 const transportDraft: QuizDraftTransportDto = {
   draft_id: 'draft-1',
@@ -201,5 +201,42 @@ describe('createTextQuizDraft (RIN-1538)', () => {
       source_file_type: 'pptx',
       upload_surface: 'create_pdf_mobile',
     });
+  });
+});
+
+describe('createImageQuizDraft (RIN-1794)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('posts the title and the photos, in order, as multipart to the image draft route', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ success: true, data: { draft: transportDraft } }, { status: 201 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const controller = new AbortController();
+
+    const draft = await createImageQuizDraft(
+      {
+        title: 'Fake photos',
+        images: [
+          new Blob(['one'], { type: 'image/jpeg' }),
+          new Blob(['two'], { type: 'image/jpeg' }),
+        ],
+      },
+      { signal: controller.signal },
+    );
+
+    expect(draft.id).toBe('draft-1');
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(String(url)).toBe('/api/quiz-drafts/image');
+    expect(init?.method).toBe('POST');
+    expect(init?.signal).toBe(controller.signal);
+    // No JSON content type: fetch sets the multipart boundary itself.
+    expect(init?.headers).toBeUndefined();
+    const body = init?.body as FormData;
+    expect(body.get('title')).toBe('Fake photos');
+    expect(body.getAll('images').map((file) => (file as File).name)).toEqual([
+      'page-1.jpg',
+      'page-2.jpg',
+    ]);
   });
 });

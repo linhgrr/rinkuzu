@@ -73,6 +73,12 @@ export interface CreateTextQuizDraftInputDto {
   office?: { fileType: 'docx' | 'pptx'; surface: OfficeDraftSurface };
 }
 
+export interface CreateImageQuizDraftInputDto {
+  title: string;
+  /** The prepared JPEGs (RIN-1790), in page order. */
+  images: readonly Blob[];
+}
+
 export interface CreateManualQuizDraftInputDto {
   title: AdaptiveSchemas['QuizManualDraftCreateRequest']['title'];
   description?: AdaptiveSchemas['QuizManualDraftCreateRequest']['description'];

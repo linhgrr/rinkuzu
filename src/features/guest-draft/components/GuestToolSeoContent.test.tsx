@@ -6,6 +6,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import enGuest from '../../../../messages/en/guestDraft.json';
 import viGuest from '../../../../messages/vi/guestDraft.json';
+import {
+  QUIZ_IMAGE_MAX_COUNT,
+  QUIZ_IMAGE_MAX_INPUT_BYTES,
+} from '@/features/quiz-images/lib/prepare-quiz-image';
 import { OFFICE_MAX_FILE_BYTES } from '@/lib/office-text/types';
 import {
   GUEST_DRAFT_MAX_PAGES,
@@ -29,6 +33,7 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 import { GuestPdfSeoContent } from './GuestPdfSeoContent';
+import { GuestPhotoSeoContent } from './GuestPhotoSeoContent';
 import { GuestSlidesSeoContent } from './GuestSlidesSeoContent';
 import { GuestTextSeoContent } from './GuestTextSeoContent';
 
@@ -50,6 +55,7 @@ const TOOLS = [
     otherTool: '/try/text',
     moreTool: '/try/slides',
     moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).seo.slidesLink.label,
+    extraLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).seo.photoLink.label,
   },
   {
     tool: 'text',
@@ -66,6 +72,7 @@ const TOOLS = [
     otherTool: '/try/pdf',
     moreTool: '/try/slides',
     moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).textSeo.slidesLink.label,
+    extraLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).textSeo.photoLink.label,
   },
   {
     tool: 'slides',
@@ -82,8 +89,34 @@ const TOOLS = [
     otherTool: '/try/pdf',
     moreTool: '/try/text',
     moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).slidesSeo.textLink.label,
+    extraLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).slidesSeo.photoLink.label,
+  },
+  {
+    tool: 'photo',
+    issue: 'RIN-1795',
+    Component: GuestPhotoSeoContent,
+    seo: (l: Locale) => (l === 'vi' ? viGuest : enGuest).photoSeo,
+    // Up to 5 photos of up to 10 MB each, 10 questions, kept 24 hours.
+    limits: () => [
+      String(QUIZ_IMAGE_MAX_COUNT),
+      String(QUIZ_IMAGE_MAX_INPUT_BYTES / (1024 * 1024)),
+      String(GUEST_DRAFT_MAX_QUESTIONS),
+      String(GUEST_DRAFT_TTL_MS / 3_600_000),
+    ],
+    otherTool: '/try/pdf',
+    moreTool: '/try/text',
+    moreLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).photoSeo.textLink.label,
+    extraLabel: (l: Locale) => (l === 'vi' ? viGuest : enGuest).photoSeo.slidesLink.label,
   },
 ] as const;
+
+/** The sibling every tool links to as its third sentence: the photo tool, or slides from it (RIN-1795). */
+const EXTRA_TOOL: Record<string, string> = {
+  pdf: '/try/photo',
+  text: '/try/photo',
+  slides: '/try/photo',
+  photo: '/try/slides',
+};
 
 const CASES = TOOLS.flatMap((tool) => LOCALES.map((locale) => ({ ...tool, locale })));
 
@@ -122,7 +155,7 @@ describe.each(CASES)('$tool SEO content in $locale ($issue)', (c) => {
     for (const value of c.limits(c.locale)) {
       expect(limits).toMatch(new RegExp(`(^|[^\\d.,])${value.replace('.', '\\.')}($|[^\\d.,])`));
     }
-    expect(doc.body.innerHTML).not.toMatch(/\{(pages|mb|questions|hours|min|max)[,}]/);
+    expect(doc.body.innerHTML).not.toMatch(/\{(pages|mb|questions|hours|min|max|count)[,}]/);
   });
 
   it('links to the other guest tool (RIN-1540)', async () => {
@@ -137,6 +170,13 @@ describe.each(CASES)('$tool SEO content in $locale ($issue)', (c) => {
     const link = doc.querySelector(`[data-testid="${id('cross-link-more')}"] a`);
     expect(link?.getAttribute('href')).toBe(c.moreTool);
     expect(link?.textContent).toBe(c.moreLabel(c.locale));
+  });
+
+  it('links to the photo tool, or from it to slides, in its own sentence (RIN-1795)', async () => {
+    const doc = await serverHtml();
+    const link = doc.querySelector(`[data-testid="${id('cross-link-extra')}"] a`);
+    expect(link?.getAttribute('href')).toBe(EXTRA_TOOL[c.tool]);
+    expect(link?.textContent).toBe(c.extraLabel(c.locale));
   });
 
   it('emits FAQPage JSON-LD equal to the visible Q&A', async () => {
@@ -167,9 +207,24 @@ describe.each(CASES)('$tool SEO content in $locale ($issue)', (c) => {
       doc.querySelector(`[data-testid="${id('limits')}"]`),
       doc.querySelector(`[data-testid="${id('cross-link')}"]`),
       doc.querySelector(`[data-testid="${id('cross-link-more')}"]`),
+      doc.querySelector(`[data-testid="${id('cross-link-extra')}"]`),
     ];
     for (const body of bodies) expect(body?.className).toMatch(/\btext-base\b/);
   });
+
+  it.skipIf(c.tool !== 'photo')(
+    'states the photo privacy line without a provider retention claim (RIN-1835)',
+    async () => {
+      const doc = await serverHtml();
+      const text = doc.body.textContent ?? '';
+      expect(text).toContain(
+        c.locale === 'vi'
+          ? 'Rinkuzu không lưu ảnh của bạn. Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản.'
+          : "We don't store your photos. They go to our text-recognition provider only to read the text.",
+      );
+      expect(text).not.toMatch(/deleted right after|xóa ngay sau/i);
+    },
+  );
 
   it('uses the personalized wording, never adaptive', async () => {
     const doc = await serverHtml();

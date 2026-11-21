@@ -336,11 +336,12 @@ describe('sitemap', () => {
     });
   });
 
-  // RIN-1497, RIN-1540, RIN-1788: the guest tools are indexable with a constant lastmod; their players are not.
+  // RIN-1497, RIN-1540, RIN-1788, RIN-1795: the guest tools are indexable with a constant lastmod; their players are not.
   it.each([
     ['pdf', '2026-11-11'],
     ['text', '2026-11-11'],
-    ['slides', '2026-11-17'],
+    ['slides', '2026-11-21'],
+    ['photo', '2026-11-21'],
   ])(
     'lists /try/%s in both locales with a stable lastmod and never its player',
     async (tool, lastmod) => {

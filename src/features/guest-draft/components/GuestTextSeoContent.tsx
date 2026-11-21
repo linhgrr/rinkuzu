@@ -44,6 +44,11 @@ export async function GuestTextSeoContent({ locale }: { locale: string }) {
           label: t('textSeo.crossLink.label'),
           href: ROUTES.TRY_PDF,
         },
+        extraLink: {
+          lead: t('textSeo.photoLink.lead'),
+          label: t('textSeo.photoLink.label'),
+          href: ROUTES.TRY_PHOTO,
+        },
       }}
     />
   );

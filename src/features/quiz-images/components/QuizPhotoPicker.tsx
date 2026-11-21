@@ -471,7 +471,7 @@ export function QuizPhotoPicker({
           </div>
         </>
       )}
-      <div className="space-y-2 text-xs text-neutral-500">
+      <div className="space-y-2 text-xs leading-5 text-neutral-500">
         <p>{t('handwriting')}</p>
         <p className="flex items-start gap-1.5">
           <HiOutlineLockClosed className="mt-0.5 size-3.5 flex-shrink-0" aria-hidden="true" />

@@ -25,6 +25,8 @@ export interface QuizDraft {
   folderId: QuizDraftTransportContract['category_id'];
   prompt: QuizDraftTransportContract['prompt'];
   sourceType: 'pdf' | 'text' | 'manual';
+  /** Set on a text draft read from a file in the browser; null for a PDF or pasted text. */
+  sourceFileType: QuizDraftTransportContract['source_file_type'] | null;
   submitToPremium: boolean;
   revision: number;
   questionCount: number;

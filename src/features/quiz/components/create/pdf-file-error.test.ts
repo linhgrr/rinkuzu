@@ -26,7 +26,7 @@ describe('getPdfRejectionMessage', () => {
     const rejections = [rejection('notes.txt', 'text/plain', 'file-invalid-type')];
 
     expect(getPdfRejectionMessage(rejections, translatorFor(enCreate), 100)).toBe(
-      'Only PDF files are supported. Choose a .pdf file.',
+      'Only PDF, Word or PowerPoint files are supported. Choose a .pdf, .docx or .pptx file.',
     );
     expect(getPdfRejectionMessage(rejections, translatorFor(viCreate), 100)).toBe(
       viCreate.pdfWrongType,

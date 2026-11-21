@@ -84,6 +84,21 @@ describe('QuizDraftMapper', () => {
     expect(draft).not.toHaveProperty('submitted_quiz_id');
   });
 
+  // RIN-1787: a text draft read from a Word or PowerPoint file says which.
+  it('maps source_file_type to sourceFileType, null when the API leaves it out', () => {
+    expect(QuizDraftMapper.toViewModel(transportDraft).sourceFileType).toBeNull();
+    expect(
+      QuizDraftMapper.toViewModel({
+        ...transportDraft,
+        source_type: 'text',
+        source_file_type: 'pptx',
+      }).sourceFileType,
+    ).toBe('pptx');
+    expect(
+      QuizDraftMapper.toViewModel({ ...transportDraft, source_file_type: null }).sourceFileType,
+    ).toBeNull();
+  });
+
   // RIN-1272: the API sends naive UTC timestamps; without a Z the browser reads them as local.
   it('marks naive API timestamps as UTC and keeps offset-bearing ones as sent', () => {
     const draft = QuizDraftMapper.toViewModel({
@@ -164,6 +179,27 @@ describe('createTextQuizDraft (RIN-1538)', () => {
       text: 'Fake pasted text',
       category_id: 'folder-1',
       submit_to_premium: false,
+    });
+  });
+
+  it('adds source_file_type and upload_surface for a text read from an office file (RIN-1787)', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ success: true, data: { draft: transportDraft } }, { status: 201 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createTextQuizDraft({
+      title: 'Fake slides',
+      text: 'Fake slide text',
+      office: { fileType: 'pptx', surface: 'create_pdf_mobile' },
+    });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      title: 'Fake slides',
+      text: 'Fake slide text',
+      submit_to_premium: false,
+      source_file_type: 'pptx',
+      upload_surface: 'create_pdf_mobile',
     });
   });
 });

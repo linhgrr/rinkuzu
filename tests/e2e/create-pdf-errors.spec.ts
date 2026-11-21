@@ -1,3 +1,4 @@
+import { strToU8, zipSync } from 'fflate';
 import { expect, test, type Page } from '@playwright/test';
 import enCreate from '../../messages/en/create.json';
 import { login, withAccounts } from './support/admin-accounts';
@@ -9,6 +10,59 @@ import { login, withAccounts } from './support/admin-accounts';
  * submit put its error ~1000px above the Create Quiz button, so the tap looked
  * like it did nothing.
  */
+
+/** A one-paragraph .docx with enough fake text for the browser extraction (RIN-1787). */
+function fakeWordDocument(): Buffer {
+  const text = 'Fake e2e notes about the cell and its organelles. '.repeat(8);
+  const document =
+    '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    `<w:body><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:body></w:document>`;
+  return Buffer.from(zipSync({ 'word/document.xml': strToU8(document) }, { level: 1 }));
+}
+
+/** A one-slide .pptx with enough fake text for the browser extraction (RIN-1787). */
+function fakeSlideDeck(): Buffer {
+  const text = 'Fake e2e slide about mitochondria and the cell. '.repeat(8);
+  const slide =
+    '<?xml version="1.0"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>' +
+    '<p:sp><p:nvSpPr><p:cNvPr id="1" name="s"/><p:cNvSpPr/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr>' +
+    `<p:txBody><a:p><a:r><a:t>${text}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`;
+  return Buffer.from(zipSync({ 'ppt/slides/slide1.xml': strToU8(slide) }, { level: 1 }));
+}
+
+/** What `POST /api/quiz-drafts/text` returns for a created text draft (fake, mapped by the page). */
+function fakeTextDraft(sourceFileType: 'docx' | 'pptx') {
+  return {
+    draft_id: 'e2e-draft-1',
+    title: 'Fake draft',
+    description: '',
+    category_id: null,
+    prompt: null,
+    source_type: 'text',
+    source_file_type: sourceFileType,
+    submit_to_premium: false,
+    revision: 1,
+    question_count: 0,
+    questions_ready: 0,
+    pdf: {
+      s3_key: '',
+      file_name: '',
+      file_size: 0,
+      page_count: 0,
+      file_hash: null,
+      retained_for_premium: false,
+    },
+    status: 'queued',
+    progress: { processed: 0, total: 1, percent: 0 },
+    questions: [],
+    error: null,
+    submitted_quiz_id: null,
+    created_at: '2026-11-16T00:00:00Z',
+    updated_at: '2026-11-16T00:00:00Z',
+    expires_at: '2026-11-23T00:00:00Z',
+  };
+}
 
 async function singlePagePdf(): Promise<Buffer> {
   const { PDFDocument } = await import('pdf-lib');
@@ -194,6 +248,113 @@ test.describe('create from PDF error states (RIN-991)', () => {
         () => document.documentElement.scrollWidth - window.innerWidth,
       );
       expect(overflow).toBeLessThanOrEqual(0);
+    });
+  });
+  // RIN-1787: Word and PowerPoint are read in the browser and sent as a text draft; the file
+  // is never uploaded. The text route is answered with a fake draft (no generation in e2e).
+  for (const { label, width, surface, file } of [
+    {
+      label: '.docx at 1440px',
+      width: 1440,
+      surface: 'create_pdf',
+      file: {
+        name: 'Chapter 1 notes.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        type: 'docx',
+      },
+    },
+    {
+      label: '.pptx at 375px',
+      width: 375,
+      surface: 'create_pdf_mobile',
+      file: {
+        name: 'Week 3 slides.pptx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        type: 'pptx',
+      },
+    },
+  ] as const) {
+    test(`a ${label} is read in the browser and sent as a text draft, nothing uploaded (RIN-1787)`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width, height: 900 });
+      await withAccounts(testInfo, async ({ regular }) => {
+        await login(page, regular);
+        let textBody = '';
+        const otherDraftRequests: string[] = [];
+        await page.route('**/api/quiz-drafts/text', async (route) => {
+          textBody = route.request().postData() ?? '';
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify({ success: true, data: { draft: fakeTextDraft(file.type) } }),
+          });
+        });
+        page.on('request', (request) => {
+          const url = new URL(request.url());
+          if (
+            request.method() === 'POST' &&
+            /\/api\/(storage|quiz-drafts)(\/|$)/.test(url.pathname) &&
+            !url.pathname.endsWith('/text')
+          ) {
+            otherDraftRequests.push(url.pathname);
+          }
+        });
+        const input = await openReadyDropzone(page);
+
+        await input.setInputFiles({
+          name: file.name,
+          mimeType: file.mimeType,
+          buffer: file.type === 'docx' ? fakeWordDocument() : fakeSlideDeck(),
+        });
+        const title = page.getByLabel(enCreate.quizTitle);
+        await expect(title).toHaveValue(file.name.replace(/\.(docx|pptx)$/, ''));
+        // No PDF preview for a Word or PowerPoint file; the page does not overflow at 375px.
+        await expect(page.getByRole('button', { name: enCreate.showPDFPreview })).toHaveCount(0);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+
+        await page.getByRole('button', { name: enCreate.createQuiz, exact: true }).click();
+        await expect(page).toHaveURL(/\/en\/create$/);
+
+        expect(JSON.parse(textBody)).toMatchObject({
+          title: file.name.replace(/\.(docx|pptx)$/, ''),
+          source_file_type: file.type,
+          upload_surface: surface,
+          submit_to_premium: false,
+        });
+        expect(JSON.parse(textBody).text).toContain('Fake e2e');
+        expect(otherDraftRequests).toEqual([]);
+      });
+    });
+  }
+
+  test('a legacy .ppt gets its own message and no request is made (RIN-1787)', async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await withAccounts(testInfo, async ({ regular }) => {
+      await login(page, regular);
+      let draftRequests = 0;
+      page.on('request', (request) => {
+        if (request.method() === 'POST' && request.url().includes('/api/quiz-drafts')) {
+          draftRequests += 1;
+        }
+      });
+      const input = await openReadyDropzone(page);
+
+      await input.setInputFiles({
+        name: 'old-lecture.ppt',
+        mimeType: 'application/vnd.ms-powerpoint',
+        buffer: Buffer.from('fake legacy powerpoint'),
+      });
+
+      await expect(
+        page.getByRole('alert').filter({ hasText: enCreate.officeLegacyFormat }),
+      ).toBeVisible();
+      expect(draftRequests).toBe(0);
     });
   });
 });

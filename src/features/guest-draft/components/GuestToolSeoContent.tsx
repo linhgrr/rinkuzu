@@ -30,10 +30,12 @@ interface GuestToolSeoCopy {
   crossLink: CrossLink;
   /** Another sibling, as its own sentence: every tool links to `/try/slides` (RIN-1788). */
   moreLink?: CrossLink;
+  /** The photo tool, as a third sentence: every tool links to `/try/photo` (RIN-1795). */
+  extraLink?: CrossLink;
 }
 
 interface GuestToolSeoContentProps {
-  /** `pdf`, `text` or `slides`: prefixes the section ids, test ids and the JSON-LD id. */
+  /** `pdf`, `text`, `slides` or `photo`: prefixes the section ids, test ids and the JSON-LD id. */
   tool: string;
   copy: GuestToolSeoCopy;
 }
@@ -51,7 +53,7 @@ function CrossLinkLine({ testId, link }: { testId: string; link: CrossLink }) {
 
 /**
  * Crawlable copy under a guest tool widget (`/try/pdf` RIN-1498, `/try/text` RIN-1540,
- * `/try/slides` RIN-1788):
+ * `/try/slides` RIN-1788, `/try/photo` RIN-1795):
  * how it works, the trial limits, a link to the other tool and an FAQ. Rendered on the
  * server, so it is in the initial HTML; the `FAQPage` JSON-LD is built from the same
  * strings as the visible answers.
@@ -87,6 +89,9 @@ export function GuestToolSeoContent({ tool, copy }: GuestToolSeoContentProps) {
         <CrossLinkLine testId={id('cross-link')} link={copy.crossLink} />
         {copy.moreLink ? (
           <CrossLinkLine testId={id('cross-link-more')} link={copy.moreLink} />
+        ) : null}
+        {copy.extraLink ? (
+          <CrossLinkLine testId={id('cross-link-extra')} link={copy.extraLink} />
         ) : null}
       </section>
 

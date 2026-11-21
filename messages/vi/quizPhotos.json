@@ -7,7 +7,7 @@
   "dropHere": "Thả ảnh vào đây",
   "limitHint": "1–{max} ảnh, JPEG, PNG, HEIC hoặc WebP, mỗi ảnh tối đa {mb} MB",
   "handwriting": "Chữ viết tay đọc được ở mức tốt nhất có thể.",
-  "privacy": "Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản và bị xóa ngay sau đó.",
+  "privacy": "Rinkuzu không lưu ảnh của bạn. Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản.",
   "counter": "{count}/{max} ảnh · {size} MB",
   "listLabel": "Các ảnh của bạn, theo thứ tự trang",
   "pageLabel": "Trang {page}",

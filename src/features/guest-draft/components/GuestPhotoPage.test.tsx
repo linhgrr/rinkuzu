@@ -141,7 +141,9 @@ describe('GuestPhotoPage (RIN-1793)', () => {
     expect(screen.getByText('1–5 photos, JPEG, PNG, HEIC or WebP, up to 10 MB each')).toBeVisible();
     expect(screen.getByText('Handwriting is read on a best-effort basis.')).toBeInTheDocument();
     expect(
-      screen.getByText(/only to read the text and are deleted right after/),
+      screen.getByText(
+        "We don't store your photos. They go to our text-recognition provider only to read the text.",
+      ),
     ).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('24 hours');
   });
@@ -430,7 +432,7 @@ describe('GuestPhotoPage (RIN-1793)', () => {
   it('has vi copy for the empty page', () => {
     renderPage('vi');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Tạo quiz từ ảnh chụp sách, vở, slide',
+      'Tạo câu hỏi trắc nghiệm từ ảnh chụp sách, vở, slide',
     );
     expect(screen.getByText(/Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ/)).toBeInTheDocument();
   });

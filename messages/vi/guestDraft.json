@@ -175,6 +175,10 @@
     "slidesLink": {
       "lead": "Bạn học từ slide PowerPoint?",
       "label": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint"
+    },
+    "photoLink": {
+      "lead": "Chỉ có ảnh chụp sách, vở?",
+      "label": "Tạo câu hỏi trắc nghiệm từ ảnh"
     }
   },
   "textSeo": {
@@ -229,6 +233,10 @@
     "slidesLink": {
       "lead": "Bạn học từ slide PowerPoint?",
       "label": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint"
+    },
+    "photoLink": {
+      "lead": "Chỉ có ảnh chụp sách, vở?",
+      "label": "Tạo câu hỏi trắc nghiệm từ ảnh"
     }
   },
   "slidesSeo": {
@@ -284,6 +292,10 @@
         "q": "Làm sao để giữ quiz của tôi?",
         "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
       }
+    },
+    "photoLink": {
+      "lead": "Chỉ có ảnh chụp sách, vở?",
+      "label": "Tạo câu hỏi trắc nghiệm từ ảnh"
     }
   },
   "resumeBanner": {
@@ -297,12 +309,12 @@
     "dismiss": "Đóng thông báo kết quả"
   },
   "photoMeta": {
-    "title": "Tạo quiz từ ảnh chụp sách, vở, slide | RinKuzu",
-    "description": "Chụp hoặc chọn 1–5 ảnh trang sách, ghi chú hay slide. Rin đọc chữ trong ảnh, tạo tối đa 10 câu hỏi trắc nghiệm cá nhân hóa và bạn làm ngay. Không cần tài khoản."
+    "title": "Tạo câu hỏi trắc nghiệm từ ảnh chụp sách, vở | RinKuzu",
+    "description": "Tạo câu hỏi trắc nghiệm từ ảnh: chụp hoặc chọn 1–5 ảnh trang sách, ghi chú hay slide. Rin đọc chữ trong ảnh, tạo tối đa 10 câu hỏi trắc nghiệm cá nhân hóa và bạn làm ngay. Không cần tài khoản."
   },
   "photo": {
     "badge": "Không cần tài khoản",
-    "title": "Tạo quiz từ ảnh chụp sách, vở, slide",
+    "title": "Tạo câu hỏi trắc nghiệm từ ảnh chụp sách, vở, slide",
     "subtitle": "Chụp 1–5 trang. Rin đọc chữ trong ảnh, tạo tối đa {questions} câu hỏi và bạn làm ngay.",
     "submit": "Tạo quiz",
     "tryAgain": "Thử lại",
@@ -313,6 +325,69 @@
     "progressLabel": "{count} ảnh · {size} MB",
     "unavailableTitle": "Tính năng tạo quiz từ ảnh đang tạm nghỉ",
     "unavailableBody": "Hãy dán văn bản của bạn, Rin sẽ tạo quiz từ đó. Lượt dùng thử không bị tính."
+  },
+  "photoSeo": {
+    "howTitle": "Cách hoạt động",
+    "steps": {
+      "snap": {
+        "title": "Chụp hoặc chọn ảnh",
+        "body": "Chụp 1–{count} trang sách, vở ghi hoặc slide, hoặc chọn ảnh có sẵn trong máy. Hỗ trợ JPEG, PNG, HEIC và WebP, tối đa {mb} MB mỗi ảnh."
+      },
+      "generate": {
+        "title": "Rinkuzu đọc chữ và soạn câu hỏi",
+        "body": "Rin đọc chữ trong ảnh rồi viết tối đa {questions} câu hỏi trắc nghiệm cá nhân hóa, thường mất khoảng một phút."
+      },
+      "play": {
+        "title": "Làm quiz, đăng ký để lưu lại",
+        "body": "Làm quiz ngay. Đăng ký miễn phí để giữ quiz; nếu không, quiz sẽ bị xóa sau {hours} giờ."
+      }
+    },
+    "crossLink": {
+      "lead": "Tài liệu của bạn là tệp PDF?",
+      "label": "Tạo quiz từ PDF"
+    },
+    "textLink": {
+      "lead": "Đã có sẵn văn bản?",
+      "label": "Dán văn bản để tạo câu hỏi trắc nghiệm"
+    },
+    "slidesLink": {
+      "lead": "Bạn học từ slide PowerPoint?",
+      "label": "Tạo câu hỏi trắc nghiệm từ slide PowerPoint"
+    },
+    "limitsTitle": "Giới hạn khi dùng thử miễn phí",
+    "limits": {
+      "count": "1–{count} ảnh mỗi quiz",
+      "size": "Tối đa {mb} MB mỗi ảnh",
+      "questions": "Tối đa {questions} câu hỏi mỗi quiz",
+      "kept": "Lưu {hours} giờ nếu bạn chưa đăng ký"
+    },
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": {
+      "free": {
+        "q": "Tạo câu hỏi trắc nghiệm từ ảnh có miễn phí không?",
+        "a": "Có. Tạo và làm quiz từ ảnh của bạn hoàn toàn miễn phí. Số lượt dùng không cần tài khoản mỗi ngày có giới hạn, và đăng ký cũng miễn phí."
+      },
+      "account": {
+        "q": "Tôi có cần tài khoản không?",
+        "a": "Không. Bạn chụp hoặc chọn ảnh rồi làm quiz mà không cần đăng ký hay nhập email."
+      },
+      "best": {
+        "q": "Ảnh như thế nào thì Rin đọc tốt nhất?",
+        "a": "Ảnh nét, đủ sáng, chụp thẳng trang in, mỗi ảnh một trang. Bạn thêm tối đa {count} ảnh theo thứ tự trang. Ảnh chụp màn hình hoặc slide cũng dùng được."
+      },
+      "handwriting": {
+        "q": "Rin có đọc được chữ viết tay không?",
+        "a": "Đôi khi. Chữ viết tay chỉ được đọc ở mức cố gắng, rõ nhất khi viết đậm, đều trên giấy trơn. Nếu Rin không đọc đủ chữ, lượt này không bị tính: hãy thử ảnh nét hơn hoặc dán văn bản."
+      },
+      "privacy": {
+        "q": "Rinkuzu có lưu ảnh của tôi không?",
+        "a": "Rinkuzu không lưu ảnh của bạn. Ảnh chỉ được gửi cho nhà cung cấp nhận dạng chữ để đọc văn bản. Quiz và phần văn bản đọc được từ ảnh sẽ bị xóa {hours} giờ sau khi tạo nếu bạn chưa đăng ký."
+      },
+      "keep": {
+        "q": "Làm sao để giữ quiz của tôi?",
+        "a": "Đăng ký miễn phí từ trang quiz trong vòng {hours} giờ. Quiz được lưu vào thư viện của bạn để làm lại bất cứ lúc nào."
+      }
+    }
   },
   "failedPhoto": {
     "title": "Chúng tôi chưa tạo được quiz từ các ảnh này",

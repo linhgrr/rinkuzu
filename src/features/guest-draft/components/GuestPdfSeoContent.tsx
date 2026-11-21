@@ -43,6 +43,11 @@ export async function GuestPdfSeoContent({ locale }: { locale: string }) {
           label: t('seo.crossLink.label'),
           href: ROUTES.TRY_TEXT,
         },
+        extraLink: {
+          lead: t('seo.photoLink.lead'),
+          label: t('seo.photoLink.label'),
+          href: ROUTES.TRY_PHOTO,
+        },
       }}
     />
   );

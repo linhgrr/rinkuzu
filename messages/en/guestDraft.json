@@ -175,6 +175,10 @@
     "slidesLink": {
       "lead": "Studying from PowerPoint slides?",
       "label": "Make a quiz from PowerPoint slides"
+    },
+    "photoLink": {
+      "lead": "Only have photos of your book or notes?",
+      "label": "Make a quiz from photos"
     }
   },
   "textSeo": {
@@ -229,6 +233,10 @@
     "slidesLink": {
       "lead": "Studying from PowerPoint slides?",
       "label": "Make a quiz from PowerPoint slides"
+    },
+    "photoLink": {
+      "lead": "Only have photos of your book or notes?",
+      "label": "Make a quiz from photos"
     }
   },
   "slidesSeo": {
@@ -284,6 +292,10 @@
         "q": "How do I keep my quiz?",
         "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
       }
+    },
+    "photoLink": {
+      "lead": "Only have photos of your book or notes?",
+      "label": "Make a quiz from photos"
     }
   },
   "resumeBanner": {
@@ -297,8 +309,8 @@
     "dismiss": "Dismiss saved result notice"
   },
   "photoMeta": {
-    "title": "Make a Quiz from Photos of Your Notes | RinKuzu",
-    "description": "Take or choose 1–5 photos of a textbook page, notes or slides. Rin reads the text, writes up to 10 personalized multiple-choice questions and you play them right away. No account needed."
+    "title": "Make a Quiz from Photos of Your Notes or Book | RinKuzu",
+    "description": "Make a quiz from photos: take or choose 1–5 photos of a textbook page, notes or slides. Rin reads the text, writes up to 10 personalized multiple-choice questions and you play them right away. No account needed."
   },
   "photo": {
     "badge": "No account needed",
@@ -313,6 +325,69 @@
     "progressLabel": "{count, plural, one {# photo} other {# photos}} · {size} MB",
     "unavailableTitle": "Quiz from photos is paused right now",
     "unavailableBody": "Paste your text and Rin will make the quiz from it. This try doesn't count."
+  },
+  "photoSeo": {
+    "howTitle": "How it works",
+    "steps": {
+      "snap": {
+        "title": "Take or choose photos",
+        "body": "Snap 1–{count} pages of a textbook, your notes or slides, or pick photos from your gallery. JPEG, PNG, HEIC and WebP work, up to {mb} MB each."
+      },
+      "generate": {
+        "title": "Rinkuzu reads the text and writes the questions",
+        "body": "Rin reads the text in your photos and writes up to {questions} personalized multiple-choice questions, usually in about a minute."
+      },
+      "play": {
+        "title": "Play the quiz, sign up to save it",
+        "body": "Play the quiz straight away. Sign up free to keep it; otherwise it is deleted after {hours} hours."
+      }
+    },
+    "crossLink": {
+      "lead": "Is your material a PDF?",
+      "label": "Make a quiz from a PDF"
+    },
+    "textLink": {
+      "lead": "Already have the text?",
+      "label": "Paste text to make a quiz"
+    },
+    "slidesLink": {
+      "lead": "Studying from PowerPoint slides?",
+      "label": "Make a quiz from PowerPoint slides"
+    },
+    "limitsTitle": "Free trial limits",
+    "limits": {
+      "count": "1–{count} photos per quiz",
+      "size": "Up to {mb} MB per photo",
+      "questions": "Up to {questions} questions per quiz",
+      "kept": "Kept for {hours} hours unless you sign up"
+    },
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "free": {
+        "q": "Is the photo to quiz generator free?",
+        "a": "Yes. Making and playing a quiz from your photos costs nothing. The number of no-account tries per day is limited, and signing up is free too."
+      },
+      "account": {
+        "q": "Do I need an account?",
+        "a": "No. Take or choose your photos and play the quiz without signing up or giving an email address."
+      },
+      "best": {
+        "q": "Which photos work best?",
+        "a": "Sharp, well-lit photos of printed pages, taken straight on, one page per photo. Add up to {count} photos in page order. Photos of a screen or of slides work too."
+      },
+      "handwriting": {
+        "q": "Can Rin read handwriting?",
+        "a": "Sometimes. Handwriting is read on a best-effort basis, and neat, dark writing on plain paper works best. If Rin cannot read enough text, the try does not count: use a sharper photo or paste the text."
+      },
+      "privacy": {
+        "q": "Do you keep my photos?",
+        "a": "We don't store your photos. They go to our text-recognition provider only to read the text. The quiz and the text read from them are deleted {hours} hours after you make them, unless you sign up."
+      },
+      "keep": {
+        "q": "How do I keep my quiz?",
+        "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
+      }
+    }
   },
   "failedPhoto": {
     "title": "We couldn't make a quiz from these photos",

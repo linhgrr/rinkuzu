@@ -7,7 +7,7 @@
   "dropHere": "Drop photos here",
   "limitHint": "1–{max} photos, JPEG, PNG, HEIC or WebP, up to {mb} MB each",
   "handwriting": "Handwriting is read on a best-effort basis.",
-  "privacy": "Photos go to our text-recognition provider only to read the text and are deleted right after.",
+  "privacy": "We don't store your photos. They go to our text-recognition provider only to read the text.",
   "counter": "{count}/{max} photos · {size} MB",
   "listLabel": "Your photos, in page order",
   "pageLabel": "Page {page}",

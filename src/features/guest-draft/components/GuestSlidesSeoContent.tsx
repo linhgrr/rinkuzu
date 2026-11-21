@@ -44,6 +44,11 @@ export async function GuestSlidesSeoContent({ locale }: { locale: string }) {
           label: t('slidesSeo.textLink.label'),
           href: ROUTES.TRY_TEXT,
         },
+        extraLink: {
+          lead: t('slidesSeo.photoLink.lead'),
+          label: t('slidesSeo.photoLink.label'),
+          href: ROUTES.TRY_PHOTO,
+        },
       }}
     />
   );

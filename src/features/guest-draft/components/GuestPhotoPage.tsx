@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, type ReactNode } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { Card } from '@/components/ui/Card';
@@ -80,12 +80,10 @@ function FlowBody({ flow, photos }: FlowBodyProps) {
   const unavailable = phase === 'idle' && alert === 'service_unavailable';
 
   // A paused feature keeps nothing: the photos are dropped, not just hidden.
-  const { clear } = photos;
+  const dropPhotos = useEffectEvent(photos.clear);
   const holdsPhotos = photos.photos.length > 0;
   useEffect(() => {
-    if (unavailable && holdsPhotos) clear();
-    // `clear` is recreated every render; it only needs to run when there is something to drop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (unavailable && holdsPhotos) dropPhotos();
   }, [unavailable, holdsPhotos]);
 
   if (phase === 'cap') return <GuestDraftCapCard source="image" />;

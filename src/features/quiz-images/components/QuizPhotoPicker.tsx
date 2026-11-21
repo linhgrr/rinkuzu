@@ -80,12 +80,12 @@ function EmptyZone({
           )}
         >
           <HiOutlineCamera
-            className={cn('size-8', dragging ? 'text-brand-action' : 'text-neutral-400')}
+            className={cn('size-8', dragging ? 'text-brand-trust' : 'text-neutral-400')}
             aria-hidden="true"
           />
         </div>
         {dragging ? (
-          <p className="text-lg font-semibold text-brand-action">{t('dropHere')}</p>
+          <p className="text-lg font-semibold text-brand-trust">{t('dropHere')}</p>
         ) : touch ? (
           <div className="flex flex-col gap-2">
             <Button
@@ -255,7 +255,7 @@ function PhotoRow(props: PhotoRowProps) {
   );
 }
 
-const ADD_BUTTON = 'min-h-12 border-dashed text-brand-action';
+const ADD_BUTTON = 'min-h-12 border-dashed text-brand-trust';
 
 function AddAnother({ state, actions }: { state: QuizPhotosState; actions: PickerActions }) {
   const t = useTranslations('quizPhotos');

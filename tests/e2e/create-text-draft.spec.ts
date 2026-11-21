@@ -68,6 +68,19 @@ async function mockTextDrafts(page: Page): Promise<DraftsMock> {
     drafts.unshift(draft);
     return ok(route, { draft }, 201);
   });
+  await page.route('**/api/quiz-drafts/image', (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    const buffer = route.request().postDataBuffer();
+    // Multipart: keep only what the test asserts (the title field, the count and order of the
+    // photo parts), never the bytes.
+    const body = buffer?.toString('latin1') ?? '';
+    const title = /name="title"\r\n\r\n([^\r]*)/.exec(body)?.[1] ?? '';
+    const files = Array.from(body.matchAll(/name="images"; filename="([^"]+)"/g), (m) => m[1]);
+    mock.posted.push({ title, files, contentType: route.request().headers()['content-type'] });
+    const draft = transportTextDraft('e2e-photo-draft', title);
+    drafts.unshift(draft);
+    return ok(route, { draft }, 201);
+  });
   return mock;
 }
 
@@ -104,6 +117,10 @@ async function cardSpacingProblems(page: Page, checkArt: boolean): Promise<strin
   );
 }
 
+/** A 64x48 grey JPEG (fake data): decodable in the browser, so photo preparation runs for real. */
+const E2E_PHOTO_JPEG_BASE64 =
+  '/9j/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAwAEADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKkAAAAAAAAAAAAAAAAAAAAAAAH/2Q==';
+
 test.describe('signed-in paste text (RIN-1542)', () => {
   test('goes from the Paste text card to a processing draft in the draft review', async ({
     page,
@@ -119,6 +136,7 @@ test.describe('signed-in paste text (RIN-1542)', () => {
         enCreate.manualMethodTitle,
         enCreate.pdfMethodTitle,
         enCreate.textMethodTitle,
+        enCreate.photoMethodTitle,
       ]);
       await methods.getByRole('button', { name: enCreate.pasteText, exact: true }).click();
       // Client-side navigations: no load event, so wait on the URL itself.
@@ -154,15 +172,67 @@ test.describe('signed-in paste text (RIN-1542)', () => {
     });
   });
 
-  test('shows the hub as 3 cards at 1280 and stacked at 375, copy clear of art and buttons', async ({
+  test('goes from the photo card to a processing draft with two photos sent in order (RIN-1794)', async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await withAccounts(testInfo, async ({ regular }) => {
+      const mock = await mockTextDrafts(page);
+      await login(page, regular);
+      await page.goto('/en/create');
+
+      await page
+        .getByRole('region', { name: enCreate.chooseMethod })
+        .getByRole('button', { name: enCreate.choosePhotos, exact: true })
+        .click();
+      await expect(page).toHaveURL(/\/en\/create\/photo$/);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(enCreate.photo.title);
+
+      const gallery = page.locator('[data-photo-input="gallery"]');
+      await expect
+        .poll(() =>
+          gallery.evaluate((node) =>
+            Object.keys(node).some((key) => key.startsWith('__reactProps$')),
+          ),
+        )
+        .toBe(true);
+      await page.getByLabel(enCreate.photo.quizTitle).fill('Fake e2e photo quiz');
+      await gallery.setInputFiles(
+        ['one.jpg', 'two.jpg'].map((name) => ({
+          name,
+          mimeType: 'image/jpeg',
+          buffer: Buffer.from(E2E_PHOTO_JPEG_BASE64, 'base64'),
+        })),
+      );
+      const create = page.getByRole('button', { name: enCreate.photo.submit, exact: true });
+      await expect(create).toBeEnabled();
+      await create.click();
+
+      await expect(page).toHaveURL(/\/en\/create$/);
+      expect(mock.posted).toEqual([
+        expect.objectContaining({
+          title: 'Fake e2e photo quiz',
+          files: ['page-1.jpg', 'page-2.jpg'],
+          contentType: expect.stringContaining('multipart/form-data'),
+        }),
+      ]);
+      expect(page.url()).not.toContain('one.jpg');
+      const list = page.getByTestId('quiz-drafts-list');
+      await expect(
+        list.getByRole('heading', { level: 3, name: 'Fake e2e photo quiz' }),
+      ).toBeVisible({ timeout: 20_000 });
+    });
+  });
+
+  test('shows the hub as 2 x 2 cards at 1280 and 1440 and stacked at 375, copy clear of art and buttons', async ({
     page,
   }, testInfo) => {
     await withAccounts(testInfo, async ({ regular }) => {
       await mockTextDrafts(page);
       await login(page, regular);
       for (const [width, columns] of [
-        [1280, 3],
-        [1440, 3],
+        [1280, 2],
+        [1440, 2],
         [375, 1],
       ] as const) {
         await page.setViewportSize({ width, height: 900 });
@@ -170,16 +240,16 @@ test.describe('signed-in paste text (RIN-1542)', () => {
         const cards = page
           .getByRole('region', { name: enCreate.chooseMethod })
           .getByRole('heading', { level: 2 });
-        await expect(cards).toHaveCount(3);
+        await expect(cards).toHaveCount(4);
         const tops = await cards.evaluateAll((nodes) =>
           nodes.map((node) => Math.round(node.getBoundingClientRect().top)),
         );
-        expect(new Set(tops).size).toBe(4 - columns);
+        expect(new Set(tops).size).toBe(4 / columns);
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
         expect(overflow).toBeLessThanOrEqual(0);
-        expect(await cardSpacingProblems(page, columns === 3), `card spacing at ${width}`).toEqual(
+        expect(await cardSpacingProblems(page, columns === 2), `card spacing at ${width}`).toEqual(
           [],
         );
       }

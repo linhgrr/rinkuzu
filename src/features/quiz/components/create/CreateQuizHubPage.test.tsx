@@ -155,7 +155,7 @@ describe('CreateQuizHubPage', () => {
   it('pins every hero-card button to the card bottom so the row lines up (RIN-1578)', () => {
     render(<CreateQuizHubPage />);
 
-    for (const name of ['startManual', 'choosePdf', 'pasteText']) {
+    for (const name of ['startManual', 'choosePdf', 'pasteText', 'choosePhotos']) {
       const content = parentOf(parentOf(screen.getByRole('button', { name })));
       // Without h-full the content stops at its own height inside the stretched grid cell,
       // so mt-auto leaves a different gap under each button (22/48/74 px at 1440).
@@ -181,22 +181,30 @@ describe('CreateQuizHubPage', () => {
     expect(
       container.querySelector('img[src="/images/create-quiz/pdf-quiz-illustration.png"]'),
     ).toBeInTheDocument();
-    // Three method cards plus the one draft row.
-    expect(container.querySelectorAll('.card.p-0')).toHaveLength(4);
+    // Four method cards plus the one draft row.
+    expect(container.querySelectorAll('.card.p-0')).toHaveLength(5);
     expect((await axe(container)).violations).toEqual([]);
   });
 
-  // RIN-1542 (UI spec on RIN-1539 section 2): Manual, PDF, Paste text; 3 across from xl,
-  // 2 + 1 at md, stacked on phones. The text card has no illustration, so its copy is full width.
-  it('adds the Paste text card last, in a 1 / 2 / 3 column grid, linking to /create/text', () => {
+  // RIN-1542 (UI spec on RIN-1539 section 2): Manual, PDF, Paste text, then From photos
+  // (RIN-1794, UI spec RIN-1791 section 6): 2 x 2 from md, stacked on phones. The text and
+  // photo cards have no illustration, so their copy is full width.
+  it('adds the Paste text and photo cards, in a 1 / 2 column grid, linking to /create/text and /create/photo', () => {
     render(<CreateQuizHubPage />);
 
     const region = screen.getByRole('region', { name: 'chooseMethod' });
-    expect(region).toHaveClass('grid-cols-1', 'md:grid-cols-2', 'xl:grid-cols-3');
+    expect(region).toHaveClass('grid-cols-1', 'md:grid-cols-2');
+    // Four cards leave an orphan at 3 across, and xl illustrations squeezed the text (RIN-1791).
+    expect(region.className).not.toMatch(/xl:/);
     const titles = within(region)
       .getAllByRole('heading', { level: 2 })
       .map((heading) => heading.textContent);
-    expect(titles).toEqual(['manualMethodTitle', 'pdfMethodTitle', 'textMethodTitle']);
+    expect(titles).toEqual([
+      'manualMethodTitle',
+      'pdfMethodTitle',
+      'textMethodTitle',
+      'photoMethodTitle',
+    ]);
 
     const heading = within(region).getByRole('heading', { level: 2, name: 'textMethodTitle' });
     expect(parentOf(heading)).toHaveClass('w-full');
@@ -207,6 +215,19 @@ describe('CreateQuizHubPage', () => {
 
     fireEvent.click(within(region).getByRole('button', { name: 'pasteText' }));
     expect(routerPush).toHaveBeenCalledWith('/create/text');
+
+    const photoHeading = within(region).getByRole('heading', {
+      level: 2,
+      name: 'photoMethodTitle',
+    });
+    expect(parentOf(photoHeading)).toHaveClass('w-full');
+    const photoCard = photoHeading.closest('.card');
+    expect(photoCard).toHaveClass('border-line', 'from-neutral-100');
+    expect(photoCard?.querySelector('img')).toBeNull();
+    expect(within(region).getByText('photoMethodDescription')).toBeInTheDocument();
+
+    fireEvent.click(within(region).getByRole('button', { name: 'choosePhotos' }));
+    expect(routerPush).toHaveBeenCalledWith('/create/photo');
   });
 
   // RIN-754: the toast used to carry the server's own message.

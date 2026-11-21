@@ -219,6 +219,7 @@
     "body": "Tải một PDF (tối đa {pages} trang, {mb} MB) hoặc dán văn bản và làm quiz ngay, không cần tài khoản.",
     "cta": "Tải PDF lên",
     "orPasteText": "Hoặc dán văn bản",
+    "orTakePhotos": "Hoặc chụp ảnh",
     "accountTitle": "Đã có tài khoản?",
     "accountBody": "Đăng nhập để dùng giới hạn đầy đủ, chỉnh sửa câu hỏi và lưu quiz.",
     "signIn": "Đăng nhập",
@@ -227,6 +228,9 @@
   "textMethodTitle": "Dán văn bản",
   "textMethodDescription": "Dán ghi chú hoặc bài đọc và Rin tạo câu hỏi cá nhân hóa cho bạn.",
   "pasteText": "Dán văn bản",
+  "photoMethodTitle": "Từ ảnh chụp",
+  "photoMethodDescription": "Chụp trang sách hoặc ghi chú. Rin đọc chữ rồi viết câu hỏi cho bạn.",
+  "choosePhotos": "Chụp hoặc chọn ảnh",
   "text": {
     "title": "Tạo quiz từ văn bản",
     "subtitle": "Dán đoạn ghi chú hoặc bài đọc ({min, number} đến {max, number} ký tự). Rin viết câu hỏi trắc nghiệm cá nhân hóa theo nội dung đó, và bạn xem lại trước khi đăng.",
@@ -235,5 +239,18 @@
     "tryAgain": "Thử lại",
     "tooShort": "Văn bản quá ngắn. Cần ít nhất {min, number} ký tự.",
     "tooLong": "Văn bản dài quá {max, number} ký tự. Hãy rút gọn rồi thử lại."
+  },
+  "photo": {
+    "title": "Tạo quiz từ ảnh chụp sách, vở, slide",
+    "subtitle": "Chụp 1–5 trang. Rin đọc chữ trong ảnh và viết câu hỏi trắc nghiệm cá nhân hóa, bạn xem lại trước khi đăng.",
+    "quizTitle": "Tiêu đề quiz",
+    "submit": "Tạo quiz",
+    "tryAgain": "Thử lại",
+    "tooLittleText": "Chúng tôi chưa đọc đủ chữ. Hãy thử ảnh nét hơn, đủ sáng, hoặc dán văn bản.",
+    "pasteTextLink": "Dán văn bản thay thế",
+    "sendError": "Không gửi được ảnh. Kiểm tra kết nối rồi thử lại.",
+    "progressLabel": "{count} ảnh · {size} MB",
+    "unavailableTitle": "Tính năng tạo quiz từ ảnh đang tạm nghỉ",
+    "unavailableBody": "Hãy dán văn bản của bạn, Rin sẽ tạo quiz từ đó."
   }
 }

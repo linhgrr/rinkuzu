@@ -93,6 +93,15 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     },
   );
 
+  it.each([
+    ['en', 'Or take photos'],
+    ['vi', 'Hoặc chụp ảnh'],
+  ] as const)('offers the photo trial inside the trial card (%s, RIN-1794)', (locale, name) => {
+    renderHub(locale);
+
+    expect(screen.getByRole('link', { name })).toHaveAttribute('href', '/try/photo?entry=create');
+  });
+
   it('shows no drafts section and calls no account API', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     renderHub('vi');
@@ -148,7 +157,11 @@ describe('GuestCreateHubPage (RIN-1473)', () => {
     expect(within(account.textGroup).getByText(/Sign in for the full limits/)).toBeInTheDocument();
 
     const trialActions = within(trial.actions).getAllByRole('link');
-    expect(trialActions.map((a) => a.textContent)).toEqual(['Upload a PDF', 'Or paste text']);
+    expect(trialActions.map((a) => a.textContent)).toEqual([
+      'Upload a PDF',
+      'Or paste text',
+      'Or take photos',
+    ]);
     // From sm up the button and "Or paste text" share one row, so both cards' action rows
     // are about the same height and the gap above the account links stays small.
     expect(classes(trialActions[0]?.parentElement ?? null)).toEqual(

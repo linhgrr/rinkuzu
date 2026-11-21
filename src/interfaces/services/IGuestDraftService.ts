@@ -2,20 +2,12 @@ import type { components } from '@/generated/adaptive-api';
 import type {
   GuestDraftCompletion,
   GuestDraftEntry,
+  GuestDraftFileType,
   GuestDraftSource,
 } from '@/shared/constants/guest-draft';
 
-/**
- * The API's guest draft. `questions_ready` and `completion` come from RIN-1617 (API #71),
- * whose committed `openapi.json` predates them: drop the intersection once a re-vendored
- * contract carries them.
- */
-export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'] & {
-  /** Questions readable now: the first batch while `processing`, all once `completed`. */
-  questions_ready?: number;
-  /** `first_batch_only` when the full extraction failed and the first batch was kept. */
-  completion?: 'first_batch_only' | null;
-};
+/** The API's guest draft; the vendored contract carries `questions_ready`, `completion` and `page_count`. */
+export type UpstreamGuestDraft = components['schemas']['GuestQuizDraftData'];
 
 export type GuestDraftReservation =
   { ok: true } | { ok: false; scope: 'ip' | 'daily'; retryAfterSeconds: number };
@@ -30,13 +22,28 @@ export interface GuestDraftLimiter {
 /** Upstream result: the draft, or the API's HTTP status and error code when it refused. */
 export type UpstreamGuestDraftResult =
   | { ok: true; draft: UpstreamGuestDraft }
-  | { ok: false; status: number; code: string | null; meta: Record<string, unknown> | null };
+  | {
+      ok: false;
+      status: number;
+      code: string | null;
+      meta: Record<string, unknown> | null;
+      /** Set when the API never answered (timeout or network error): it may still be working. */
+      unreachable?: true;
+    };
 
 /** The API's guest-draft endpoints, called with the service token and no user. */
 export interface GuestDraftUpstream {
   create(pdf: Blob): Promise<UpstreamGuestDraftResult>;
+  /**
+   * Photos (RIN-1792): the API runs OCR before any draft exists, so a refusal such as
+   * `too_little_text` creates nothing. The photos are forwarded, never kept.
+   */
+  createFromImages(images: readonly Blob[]): Promise<UpstreamGuestDraftResult>;
   /** Pasted text (RIN-1538): no OCR, same draft shape, caps and TTL as a PDF draft. */
-  createFromText(text: string): Promise<UpstreamGuestDraftResult>;
+  createFromText(
+    text: string,
+    sourceFileType?: GuestDraftFileType,
+  ): Promise<UpstreamGuestDraftResult>;
   get(apiDraftId: string): Promise<UpstreamGuestDraftResult>;
   remove(apiDraftId: string): Promise<void>;
 }
@@ -46,10 +53,14 @@ export interface GuestDraftEventContext {
   locale: 'vi' | 'en';
   entry: GuestDraftEntry;
   source: GuestDraftSource;
+  /** Photo drafts only (RIN-1792): how many photos; null otherwise. */
+  pageCount?: number | null;
+  /** Set on a draft made from a Word or PowerPoint file (RIN-1786). */
+  fileType?: GuestDraftFileType | undefined;
 }
 
 /**
- * Server-side guest_draft_* events: locale, entry and source only, never content (file or
+ * Server-side guest_draft_* events: locale, entry, source and file type only, never content (file or
  * pasted text), IP or token.
  */
 export interface GuestDraftEvents {
@@ -78,6 +89,13 @@ export interface GuestDraftCreateInput extends GuestDraftCreateBase {
 /** The text is passed to the API and never stored, logged or sent to analytics here. */
 export interface GuestTextDraftCreateInput extends GuestDraftCreateBase {
   text: string;
+  /** Set when the browser extracted the text from a .docx or .pptx (RIN-1786). */
+  sourceFileType?: GuestDraftFileType | undefined;
+}
+
+/** The photos go to the API and nowhere else: never stored, logged or sent to analytics. */
+export interface GuestImageDraftCreateInput extends GuestDraftCreateBase {
+  images: readonly Blob[];
 }
 
 export interface GuestDraftView {
@@ -111,6 +129,8 @@ export interface IGuestDraftService {
   create(input: GuestDraftCreateInput): Promise<GuestDraftResult>;
   /** Same token check, per-IP and global caps and attempt record as `create` (RIN-1538). */
   createFromText(input: GuestTextDraftCreateInput): Promise<GuestDraftResult>;
+  /** Photos (RIN-1792): same token check, caps, attempt record and events. */
+  createFromImages(input: GuestImageDraftCreateInput): Promise<GuestDraftResult>;
   /** `ip` is the polling request's: a failed draft gives its per-IP slot back (AC8). */
   status(token: string, ip: string | null): Promise<GuestDraftResult>;
 }

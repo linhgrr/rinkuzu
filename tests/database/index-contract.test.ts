@@ -32,6 +32,7 @@ import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import Folder from '@/models/Folder';
 import { IndexNowPendingUrl, IndexNowThrottle } from '@/models/IndexNowQueue';
+import { UploadDailyCounter } from '@/models/UploadDailyCounter';
 import FolderQuiz from '@/models/FolderQuiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
@@ -69,6 +70,7 @@ const MODELS = {
   indexnowpendingurls: IndexNowPendingUrl,
   indexnowthrottles: IndexNowThrottle,
   internalrequestnonces: InternalRequestNonce,
+  uploaddailycounters: UploadDailyCounter,
   paymentattempts: PaymentAttempt,
   paymenttransactions: PaymentTransaction,
   paymentwebhookinboxes: PaymentWebhookInbox,

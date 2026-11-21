@@ -7,22 +7,33 @@
     "badge": "No account needed",
     "title": "PDF to quiz generator: turn your PDF into a quiz now",
     "subtitle": "Up to {pages} pages and {mb} MB. Rin writes up to 10 questions and you play them straight away, no editing.",
-    "dropzoneLabel": "PDF document",
+    "dropzoneLabel": "PDF, Word or PowerPoint file",
     "clickToUpload": "Click to upload",
     "dragAndDrop": "or drag and drop",
-    "limitHint": "PDF, up to {pages} pages and {mb} MB",
-    "dropHere": "Drop PDF here",
+    "limitHint": "PDF, Word or PowerPoint. PDF up to {pages} pages and {mb} MB, Word and PowerPoint up to {officeMb} MB",
+    "dropHere": "Drop your file here",
     "removeFile": "Remove file",
     "checking": "Checking your file…",
     "submit": "Create quiz",
     "tryAgain": "Try again",
     "privacy": "We keep your file for 24 hours, then delete it. Only you can open it.",
-    "higherLimits": "Need higher limits? Sign up free"
+    "higherLimits": "Need higher limits? Sign up free",
+    "truncatedNote": "We used the first {max, number} characters.",
+    "slidesTitle": "Make a multiple-choice quiz from PowerPoint slides",
+    "slidesSubtitle": "Upload a .pptx or Word file of up to {officeMb} MB. Rin reads the text and writes up to {questions} questions, and you play straight away. A PDF works too.",
+    "slidesLimitHint": "PowerPoint (.pptx) or Word (.docx) up to {officeMb} MB. PDF up to {pages} pages and {mb} MB"
   },
   "alerts": {
     "tooLarge": "This PDF is over the trial limit: up to {pages} pages and {mb} MB. Sign up free for the full limits.",
     "tooLargeLink": "Sign up free",
-    "notPdf": "Only PDF files are accepted.",
+    "notPdf": "Only PDF, Word or PowerPoint files are accepted.",
+    "officeTooLarge": "This file is over {officeMb} MB. Try a smaller file or the PDF version.",
+    "legacyFormat": "Old .doc and .ppt files can't be read. Save the file as .docx or .pptx, or export it as a PDF, then try again.",
+    "encrypted": "This file is password protected. Remove the password or export it as a PDF, then try again.",
+    "corrupt": "We couldn't open this file. Check that it isn't damaged, or export it as a PDF.",
+    "tooLittleText": "We couldn't find enough text in this file. Try the PDF version or paste the text.",
+    "pdfVersionLink": "Use the PDF version",
+    "pasteTextLink": "Paste the text",
     "uploadError": "We couldn't upload your file. Check your connection and try again."
   },
   "cap": {
@@ -72,6 +83,10 @@
     "title": "Free Text to Quiz Generator, No Account | RinKuzu",
     "description": "Free text to quiz generator: paste your notes or a reading, Rin writes up to 10 personalized multiple-choice questions and you play them right away. No account needed."
   },
+  "slidesMeta": {
+    "title": "Make a Multiple-Choice Quiz from PowerPoint Slides | RinKuzu",
+    "description": "Make a multiple-choice quiz from PowerPoint slides for free: upload a .pptx or Word file, Rin writes up to 10 personalized questions and you play them right away. No account needed."
+  },
   "text": {
     "badge": "No account needed",
     "title": "Text to quiz generator: paste your text, play now",
@@ -95,6 +110,12 @@
     "body": "This try doesn't count. Try again, or edit your text (very generic or very short text is harder to turn into questions).",
     "retry": "Try again",
     "chooseAnother": "Edit text"
+  },
+  "failedOffice": {
+    "title": "We couldn't make a quiz from this file",
+    "body": "This try doesn't count. Try again, or pick another file (slides with only pictures are harder to read).",
+    "retry": "Try again",
+    "chooseAnother": "Choose another file"
   },
   "seo": {
     "howTitle": "How it works",
@@ -145,6 +166,10 @@
     "crossLink": {
       "lead": "Only have notes, no PDF?",
       "label": "Paste text to make a quiz"
+    },
+    "slidesLink": {
+      "lead": "Studying from PowerPoint slides?",
+      "label": "Make a quiz from PowerPoint slides"
     }
   },
   "textSeo": {
@@ -190,6 +215,65 @@
       "expiry": {
         "q": "What happens to my quiz after {hours} hours?",
         "a": "If you have not signed up, the quiz and your text are deleted {hours} hours after you make them. Only you can open them until then."
+      },
+      "keep": {
+        "q": "How do I keep my quiz?",
+        "a": "Sign up free from the quiz page within {hours} hours. The quiz is saved to your library, where you can play it again."
+      }
+    },
+    "slidesLink": {
+      "lead": "Studying from PowerPoint slides?",
+      "label": "Make a quiz from PowerPoint slides"
+    }
+  },
+  "slidesSeo": {
+    "howTitle": "How it works",
+    "steps": {
+      "upload": {
+        "title": "Upload your slides",
+        "body": "Choose a PowerPoint (.pptx) or Word (.docx) file of up to {officeMb} MB. A PDF of your slides works too."
+      },
+      "generate": {
+        "title": "Rinkuzu writes the questions",
+        "body": "Rin reads your slide titles, text, speaker notes and tables and writes up to {questions} personalized multiple-choice questions, usually in about a minute."
+      },
+      "play": {
+        "title": "Play the quiz, sign up to save it",
+        "body": "Play the quiz straight away. Sign up free to keep it; otherwise it is deleted after {hours} hours."
+      }
+    },
+    "crossLink": {
+      "lead": "Is your material a PDF?",
+      "label": "Make a quiz from a PDF"
+    },
+    "textLink": {
+      "lead": "Only have notes as text?",
+      "label": "Paste text to make a quiz"
+    },
+    "limitsTitle": "Free trial limits",
+    "limits": {
+      "size": "Up to {officeMb} MB per PowerPoint or Word file",
+      "chars": "The first {max, number} characters of text are used",
+      "questions": "Up to {questions} questions per quiz",
+      "kept": "Kept for {hours} hours unless you sign up"
+    },
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "free": {
+        "q": "Is the PowerPoint to quiz generator free?",
+        "a": "Yes. Making and playing a quiz from your slides costs nothing. The number of no-account tries per day is limited, and signing up is free too."
+      },
+      "account": {
+        "q": "Do I need an account?",
+        "a": "No. Upload your file and play the quiz without signing up or giving an email address."
+      },
+      "read": {
+        "q": "What does Rin read from my slides?",
+        "a": "Slide titles, body text, speaker notes and tables are read. Pictures are not, so slides made only of images give fewer questions. Your browser reads the text and sends only that, not the file. Old .ppt files are not supported: save them as .pptx first."
+      },
+      "expiry": {
+        "q": "What happens to my quiz after {hours} hours?",
+        "a": "If you have not signed up, the quiz and the text taken from your slides are deleted {hours} hours after you make them. Only you can open them until then."
       },
       "keep": {
         "q": "How do I keep my quiz?",

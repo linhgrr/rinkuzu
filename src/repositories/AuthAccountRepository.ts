@@ -17,6 +17,8 @@ import type {
   VerifiedEmailAccount,
   IAuthSignInRepository,
   ISignupOriginRepository,
+  ISignupSourceRepository,
+  SignupSource,
   FailedLoginPolicy,
   ResolvedGoogleAccount,
   SignupOrigin,
@@ -62,7 +64,8 @@ export class AuthAccountRepository
     IAuthAccountRepository,
     IAuthSignInRepository,
     IAccountLocaleRepository,
-    ISignupOriginRepository
+    ISignupOriginRepository,
+    ISignupSourceRepository
 {
   async findByEmail(email: string): Promise<AuthAccountSecurityState | null> {
     await connectDB();
@@ -87,6 +90,7 @@ export class AuthAccountRepository
         ...(data.locale ? { locale: data.locale } : {}),
         signupLocale: data.signupOrigin.signupLocale,
         signupCountry: data.signupOrigin.signupCountry,
+        ...(data.signupSource ? { signupSource: toStoredSignupSource(data.signupSource) } : {}),
         emailVerificationTokenHash: data.verificationTokenHash,
         emailVerificationExpires: data.verificationExpires,
         ...(data.guestClaimHashes?.length ? { guestClaimHashes: data.guestClaimHashes } : {}),
@@ -449,4 +453,20 @@ export class AuthAccountRepository
       { $set: { signupLocale: origin.signupLocale, signupCountry: origin.signupCountry } },
     );
   }
+
+  /** Matches only an account with no signup source yet: set once, never overwritten. */
+  async recordSignupSourceIfMissing(accountId: string, source: SignupSource): Promise<void> {
+    if (!Types.ObjectId.isValid(accountId)) return;
+    await connectDB();
+    await User.updateOne(
+      { _id: new Types.ObjectId(accountId), signupSource: null },
+      { $set: { signupSource: toStoredSignupSource(source) } },
+    );
+  }
+}
+
+type StoredSignupSource = Omit<SignupSource, 'first_seen_at'> & { first_seen_at: Date };
+
+function toStoredSignupSource(source: SignupSource): StoredSignupSource {
+  return { ...source, first_seen_at: new Date(source.first_seen_at) };
 }

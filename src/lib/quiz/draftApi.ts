@@ -40,6 +40,7 @@ export async function createQuizDraft(input: CreateQuizDraftInputDto): Promise<Q
 /**
  * `POST /api/quiz-drafts/text` (RIN-1538): a draft from pasted text that lands in the normal
  * draft review. Refusals: 422 `text_too_short` and 413 `text_too_long` with `meta.limit_chars`.
+ * With `office` the text came from a Word or PowerPoint file read in the browser (RIN-1787).
  *
  * @public consumed by the /create paste-text option (RIN-1536 part C).
  */
@@ -54,6 +55,9 @@ export async function createTextQuizDraft(input: CreateTextQuizDraftInputDto): P
       description: input.description,
       prompt: input.prompt,
       submit_to_premium: input.submitToPremium ?? false,
+      ...(input.office
+        ? { source_file_type: input.office.fileType, upload_surface: input.office.surface }
+        : {}),
     }),
   });
   return QuizDraftMapper.toViewModel(draft);

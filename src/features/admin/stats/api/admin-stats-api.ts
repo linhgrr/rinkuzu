@@ -1,4 +1,5 @@
 import type {
+  AdminActivationBreakdownDto,
   AdminActivationStatsDto,
   AdminStatsDto,
   AdminActivityStatsListDto,
@@ -13,6 +14,7 @@ import {
 import { toStatsModalResultViewModel } from '@/features/admin/stats/mappers/stats-modal.mapper';
 import type {
   ActivationFunnelViewModel,
+  ActivationSourceRowViewModel,
   AdminGrowthPeriodViewModel,
   AdminGrowthTrendsViewModel,
   AdminStatsViewModel,
@@ -84,6 +86,21 @@ export async function fetchActivationFunnelViewModel(
         ];
       })
       .reverse(),
+    uploadWeeks: dto.uploads.weeks
+      .flatMap((upload) => {
+        const week = bounds.get(upload.isoWeek);
+        if (!week) return [];
+        return [
+          {
+            isoWeek: upload.isoWeek,
+            monday: week.start.slice(0, 10),
+            rejections: upload.uploadRejections,
+            officeDrafts: upload.officeDrafts,
+            inProgress: inProgress(week.start, week.end),
+          },
+        ];
+      })
+      .reverse(),
     weeks: dto.weeks
       .map((week) => ({
         isoWeek: week.isoWeek,
@@ -97,4 +114,39 @@ export async function fetchActivationFunnelViewModel(
       }))
       .reverse(),
   };
+}
+
+/** The unknown and other keys are catch-alls: they sort after the named sources of a week. */
+const LAST_SOURCES = ['unknown', 'other'];
+
+function sourceRank(key: string): number {
+  const index = LAST_SOURCES.indexOf(key);
+  return index === -1 ? 0 : index + 1;
+}
+
+/** Signups by source for the same 8 weeks, newest week first (RIN-1761). */
+export async function fetchActivationSourceRows(
+  signal?: AbortSignal,
+): Promise<ActivationSourceRowViewModel[]> {
+  const dto = await fetchApiData<AdminActivationBreakdownDto>(
+    '/api/admin/stats/activation?weeks=8&by=source',
+    { cache: 'no-store', ...(signal ? { signal } : {}) },
+  );
+  return [...dto.weeks].reverse().flatMap((week) =>
+    Object.entries(week.segments)
+      .filter(([, counts]) => counts.signups > 0)
+      .sort(
+        ([a, x], [b, y]) =>
+          sourceRank(a) - sourceRank(b) || y.signups - x.signups || a.localeCompare(b),
+      )
+      .map(([source, counts]) => ({
+        isoWeek: week.isoWeek,
+        monday: week.start.slice(0, 10),
+        source,
+        signups: counts.signups,
+        startedQuiz: counts.startedQuiz ?? 0,
+        activated: counts.activated,
+        inProgress: !week.complete,
+      })),
+  );
 }

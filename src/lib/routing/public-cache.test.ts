@@ -19,6 +19,8 @@ describe('signedOutTwinPath', () => {
     ['/vi/explore/', '/vi/signed-out/explore'],
     ['/vi/explore/toan-hoc', '/vi/signed-out/explore/toan-hoc'],
     ['/en/explore/toan-hoc', '/en/signed-out/explore/toan-hoc'],
+    ['/vi/premium-quizzes', '/vi/signed-out/premium-quizzes'],
+    ['/en/premium-quizzes/', '/en/signed-out/premium-quizzes'],
   ])('rewrites a signed-out GET of %s to %s', (pathname, twin) => {
     expect(signedOutTwinPath('GET', pathname, noCookies)).toBe(twin);
     expect(signedOutTwinPath('HEAD', pathname, noCookies)).toBe(twin);
@@ -133,6 +135,38 @@ describe('signedOutTwinPath for a quiz page (RIN-1647)', () => {
   });
 });
 
+describe('signedOutTwinPath for the premium catalog (RIN-1770)', () => {
+  it.each(['', '?', '?q=toan', '?page=2', '?q=a&page=3'])(
+    'rewrites /vi/premium-quizzes with the query %j (the client reads it)',
+    (search) => {
+      expect(signedOutTwinPath('GET', '/vi/premium-quizzes', [], search)).toBe(
+        '/vi/signed-out/premium-quizzes',
+      );
+    },
+  );
+
+  it('keeps the dynamic route with any session cookie, valid or not', () => {
+    expect(
+      signedOutTwinPath('GET', '/vi/premium-quizzes', ['__Secure-authjs.session-token.0']),
+    ).toBeNull();
+  });
+
+  it.each([
+    ['POST', '/vi/premium-quizzes'],
+    ['GET', '/de/premium-quizzes'],
+    ['GET', '/vi/premium-quizzes/a'],
+    ['GET', '/vi/premium-quizzes-x'],
+    ['GET', '/premium-quizzes'],
+  ])('leaves %s %s unchanged', (method, pathname) => {
+    expect(signedOutTwinPath(method, pathname, [])).toBeNull();
+  });
+
+  it('maps the internal twin path back to the public one', () => {
+    expect(publicPathForInternalTwin('/en/signed-out/premium-quizzes')).toBe('/en/premium-quizzes');
+    expect(publicPathname('/signed-out/premium-quizzes')).toBe('/premium-quizzes');
+  });
+});
+
 describe('cdnCacheControlFor (RIN-1679)', () => {
   const base = { method: 'GET', cookieNames: [] as string[], status: 200, setsCookie: false };
   const decide = (over: Partial<Parameters<typeof cdnCacheControlFor>[0]> & { pathname: string }) =>
@@ -154,9 +188,12 @@ describe('cdnCacheControlFor (RIN-1679)', () => {
     '/vi/try',
     '/vi/try/pdf',
     '/vi/try/text',
+    '/vi/try/slides',
     '/vi/explore',
     '/vi/explore/toan-hoc',
     '/vi/explore/',
+    '/vi/premium-quizzes',
+    '/en/premium-quizzes',
   ])('marks a cookie-less GET of %s public', (pathname) => {
     expect(decide({ pathname })).toBe(CDN_PUBLIC_CACHE_CONTROL);
     expect(decide({ pathname, method: 'HEAD' })).toBe(CDN_PUBLIC_CACHE_CONTROL);

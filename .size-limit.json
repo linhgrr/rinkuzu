@@ -19,7 +19,7 @@
     {
       "name": "guest-try-pdf",
       "limit": "340 KiB",
-      "patterns": ["^/\\[locale\\]/try/(?:pdf|text)$"]
+      "patterns": ["^/\\[locale\\]/try/(?:pdf|text|slides)$"]
     },
     {
       "name": "auth-recovery",
@@ -35,14 +35,14 @@
       "name": "dashboard-admin",
       "limit": "340 KiB",
       "patterns": [
-        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|checkout|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|feedback(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|premium-quizzes|profile(?:/.*)?|review|start|subscription|support(?:/.*)?|test-image-upload|users(?:/.*)?)$"
+        "^/\\[locale\\]/(?:admin(?:/.*)?|bookmarks|checkout|create(?:/.*)?|dashboard|draft(?:/.*)?|edit(?:/.*)?|feedback(?:/.*)?|history(?:/.*)?|my-quizzes(?:/.*)?|payment(?:/.*)?|(?:signed-out/)?premium-quizzes|profile(?:/.*)?|review|start|subscription|support(?:/.*)?|test-image-upload|users(?:/.*)?)$"
       ]
     },
     {
       "name": "quiz-adaptive",
       "limit": "345 KiB",
       "patterns": [
-        "^/\\[locale\\]/(?:adaptive(?:/.*)?|(?:signed-out/)?quiz(?:/.*)?|try/(?:pdf|text)/play)$"
+        "^/\\[locale\\]/(?:adaptive(?:/.*)?|(?:signed-out/)?quiz(?:/.*)?|try/(?:pdf|text|photo)/play)$"
       ]
     }
   ],

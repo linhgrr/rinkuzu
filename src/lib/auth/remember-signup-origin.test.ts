@@ -10,7 +10,11 @@ vi.mock('server-only', () => ({}));
 vi.mock('next/headers', () => ({ cookies: mocks.cookies, headers: mocks.headers }));
 vi.mock('@/lib/logger', () => ({ logger: { warn: mocks.warn } }));
 
-import { rememberGoogleSignupOrigin } from '@/lib/auth/remember-signup-origin';
+import { encodeFirstTouch } from '@/lib/attribution/first-touch';
+import {
+  rememberGoogleSignupOrigin,
+  rememberGoogleSignupSource,
+} from '@/lib/auth/remember-signup-origin';
 
 const ACCOUNT_ID = '507f191e810c19729de860ea';
 
@@ -73,6 +77,42 @@ describe('rememberGoogleSignupOrigin', () => {
     mocks.cookies.mockRejectedValue(new Error('outside a request scope'));
     await expect(rememberGoogleSignupOrigin(repository, ACCOUNT_ID)).resolves.toBeUndefined();
     expect(repository.recordSignupOriginIfMissing).not.toHaveBeenCalled();
+    expect(mocks.warn).toHaveBeenCalledOnce();
+  });
+});
+
+describe('rememberGoogleSignupSource', () => {
+  const repository = { recordSignupSourceIfMissing: vi.fn() };
+  const touch = {
+    utm_source: 'threads',
+    referrer_class: 'social' as const,
+    entry_path: '/vi',
+    first_seen_at: new Date().toISOString(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repository.recordSignupSourceIfMissing.mockResolvedValue(undefined);
+  });
+
+  it('stores the validated first-touch cookie', async () => {
+    request({}, { rk_ft: encodeFirstTouch(touch) });
+    await rememberGoogleSignupSource(repository, ACCOUNT_ID);
+    expect(repository.recordSignupSourceIfMissing).toHaveBeenCalledWith(ACCOUNT_ID, touch);
+  });
+
+  it('stores nothing for a missing or tampered cookie', async () => {
+    request({});
+    await rememberGoogleSignupSource(repository, ACCOUNT_ID);
+    request({}, { rk_ft: 'not-a-cookie!!' });
+    await rememberGoogleSignupSource(repository, ACCOUNT_ID);
+    expect(repository.recordSignupSourceIfMissing).not.toHaveBeenCalled();
+  });
+
+  it('logs and swallows a repository failure', async () => {
+    request({}, { rk_ft: encodeFirstTouch(touch) });
+    repository.recordSignupSourceIfMissing.mockRejectedValue(new Error('db down'));
+    await expect(rememberGoogleSignupSource(repository, ACCOUNT_ID)).resolves.toBeUndefined();
     expect(mocks.warn).toHaveBeenCalledOnce();
   });
 });

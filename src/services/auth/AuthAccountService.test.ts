@@ -223,6 +223,25 @@ describe('AuthAccountService', () => {
     );
   });
 
+  it('saves the first-touch source on the new account only (RIN-1762)', async () => {
+    const signupSource = {
+      referrer_class: 'direct' as const,
+      entry_path: '/vi',
+      first_seen_at: new Date().toISOString(),
+    };
+    repository.findByEmail.mockResolvedValue(null);
+    repository.createPending.mockResolvedValue(identity);
+    await service.register({ email: identity.email, password: 'password', signupSource }, context);
+    expect(repository.createPending).toHaveBeenCalledWith(
+      expect.objectContaining({ signupSource }),
+    );
+
+    repository.createPending.mockClear();
+    repository.findByEmail.mockResolvedValue({ ...identity, authProviders: ['credentials'] });
+    await service.register({ email: identity.email, password: 'password', signupSource }, context);
+    expect(repository.createPending).not.toHaveBeenCalled();
+  });
+
   it('forwards the sign-up callbackUrl to the verification email', async () => {
     repository.findByEmail.mockResolvedValue(null);
     repository.createPending.mockResolvedValue(identity);

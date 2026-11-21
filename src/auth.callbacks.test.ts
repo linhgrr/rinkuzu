@@ -17,6 +17,7 @@ const {
   findSessionUserMock,
   rememberSignInLocaleMock,
   rememberGoogleSignupOriginMock,
+  rememberGoogleSignupSourceMock,
   signInRepository,
   nextAuthConfig,
   mockEnv,
@@ -29,6 +30,7 @@ const {
     findSessionUserMock,
     rememberSignInLocaleMock: vi.fn(),
     rememberGoogleSignupOriginMock: vi.fn(),
+    rememberGoogleSignupSourceMock: vi.fn(),
     signInRepository: { findSessionUser: findSessionUserMock },
     nextAuthConfig,
     mockEnv: {
@@ -89,6 +91,7 @@ vi.mock('@/lib/auth/remember-sign-in-locale', () => ({
 }));
 vi.mock('@/lib/auth/remember-signup-origin', () => ({
   rememberGoogleSignupOrigin: rememberGoogleSignupOriginMock,
+  rememberGoogleSignupSource: rememberGoogleSignupSourceMock,
 }));
 
 vi.mock('@/lib/integrations/auth-audit', () => ({
@@ -186,6 +189,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
     findSessionUserMock.mockReset();
     rememberSignInLocaleMock.mockReset();
     rememberGoogleSignupOriginMock.mockReset();
+    rememberGoogleSignupSourceMock.mockReset();
   });
 
   it('rejects Google profiles without a nonempty sub', async () => {
@@ -248,6 +252,11 @@ describe('production Auth.js config (src/auth.ts)', () => {
       signInRepository,
       '507f191e810c19729de860ea',
     );
+    // RIN-1762: and its first-touch source.
+    expect(rememberGoogleSignupSourceMock).toHaveBeenCalledWith(
+      signInRepository,
+      '507f191e810c19729de860ea',
+    );
     // RIN-1268: the sign-in that created the account records its signup origin.
     expect(rememberGoogleSignupOriginMock).toHaveBeenCalledWith(
       signInRepository,
@@ -275,6 +284,7 @@ describe('production Auth.js config (src/auth.ts)', () => {
     });
 
     expect(rememberGoogleSignupOriginMock).not.toHaveBeenCalled();
+    expect(rememberGoogleSignupSourceMock).not.toHaveBeenCalled();
   });
 
   it('signIn requires dbUserId + authVersion for Google and accepts credentials', async () => {

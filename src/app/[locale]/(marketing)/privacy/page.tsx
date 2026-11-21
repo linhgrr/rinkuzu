@@ -37,6 +37,12 @@ const informationWeCollectSections = [
   },
 ];
 
+/** Consent-free first-touch capture (RIN-1761): campaign tags and the referrer type, never the full URL. */
+const SOURCE_NOTE_EN =
+  'We remember where a visit came from (campaign tags and the type of referring site, not the full URL) for 7 days in your browser, and save it with your account if you sign up.';
+const SOURCE_NOTE_VI =
+  'Chúng tôi ghi nhớ nguồn của một lượt truy cập (thẻ chiến dịch và loại trang giới thiệu, không phải đường dẫn đầy đủ) trong 7 ngày trên trình duyệt của bạn, và lưu cùng tài khoản nếu bạn đăng ký.';
+
 const usageItems = [
   'Providing and maintaining your RinKuzu account and personalized learning sessions',
   'Generating personalized quizzes from your uploaded PDF materials using Google Gemini AI',
@@ -167,6 +173,7 @@ function VietnamesePrivacyPage() {
         'Khi bạn tải PDF lên, chúng tôi xử lý nội dung tài liệu, văn bản trích xuất, tên tệp, số trang và thời điểm tải lên. Quiz tạo từ PDF của bạn được công khai theo Điều khoản mục 6; bản thân tệp PDF không được công khai. Bạn vẫn giữ quyền sở hữu tài liệu của mình.',
         'RinKuzu lưu câu trả lời, độ chính xác, thời gian làm bài, tiến độ theo khái niệm và gợi ý học tập để cá nhân hóa phiên luyện tập.',
         'Khi bạn đồng ý với cookie phân tích, chúng tôi có thể thu thập loại trình duyệt, thiết bị, trang đã xem, nguồn truy cập, sự kiện sản phẩm và nhật ký lỗi. Nội dung PDF, mật khẩu và nội dung câu trả lời không được gửi tới dịch vụ phân tích.',
+        SOURCE_NOTE_VI,
       ],
     },
     {
@@ -235,7 +242,7 @@ function VietnamesePrivacyPage() {
     <div className="mx-auto max-w-4xl space-y-8 px-6 py-12 text-neutral-700">
       <header>
         <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Chính sách quyền riêng tư</h1>
-        <p className="text-sm text-neutral-500">Cập nhật lần cuối: 9 tháng 11, 2026</p>
+        <p className="text-sm text-neutral-500">Cập nhật lần cuối: 15 tháng 11, 2026</p>
       </header>
       <p>
         Chính sách này giải thích cách Đại học Bách khoa Hà Nội, vận hành dưới tên RinKuzu, xử lý dữ
@@ -250,7 +257,22 @@ function VietnamesePrivacyPage() {
           </div>
         </PolicySection>
       ))}
-      <PolicySection title="12. Liên hệ">
+      <PolicySection id="outage-notifications" title="12. Thông báo khi RinKuzu tạm gián đoạn">
+        <div className="space-y-3">
+          <p>
+            Nếu RinKuzu tạm thời không truy cập được, bạn có thể để lại email trên trang thông báo
+            sự cố để được báo khi RinKuzu trở lại. Chúng tôi lưu email, ngôn ngữ, trang bạn đang mở
+            và thẻ chiến dịch trong đường dẫn (UTM, nếu có), chỉ để gửi bạn một email báo RinKuzu đã
+            trở lại.
+          </p>
+          <p>
+            Chúng tôi gửi đúng một email khi RinKuzu hoạt động lại, không thêm địa chỉ của bạn vào
+            danh sách nào khác, và xoá các thông tin này 30 ngày sau email đó. Quản trị viên chỉ
+            thấy số lượt đăng ký, không thấy địa chỉ email.
+          </p>
+        </div>
+      </PolicySection>
+      <PolicySection title="13. Liên hệ">
         <p>
           Gửi yêu cầu về dữ liệu tới <EmailLink address="privacy@rinkuzu.app" /> hoặc xem{' '}
           <Link href="/cookies" className="text-brand-trust hover:underline">
@@ -263,9 +285,17 @@ function VietnamesePrivacyPage() {
   );
 }
 
-function PolicySection({ title, children }: { title: string; children: React.ReactNode }) {
+function PolicySection({
+  id,
+  title,
+  children,
+}: {
+  id?: string;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section>
+    <section id={id}>
       <h2 className="mb-3 text-xl font-semibold text-neutral-900">{title}</h2>
       {children}
     </section>
@@ -311,6 +341,7 @@ function InformationWeCollectSection() {
             </Link>
             . You may disable non-essential cookies through your browser settings.
           </p>
+          <p className="mt-3">{SOURCE_NOTE_EN}</p>
         </div>
       </div>
     </PolicySection>
@@ -369,7 +400,7 @@ function ContactDetailsSection() {
 
 function ContactUsSection() {
   return (
-    <PolicySection title="15. Contact Us">
+    <PolicySection title="16. Contact Us">
       <p>
         If you have questions, concerns, or requests regarding this Privacy Policy or our data
         practices, please contact us:
@@ -495,6 +526,22 @@ function PrivacyPolicyContent() {
         </p>
       </PolicySection>
 
+      <PolicySection id="outage-notifications" title="15. Outage Notifications">
+        <div className="space-y-3">
+          <p>
+            If RinKuzu is briefly unavailable, you can leave your email on the status page to hear
+            when it is back. We store your email, your language, the page you came from and any
+            campaign tags in the link (UTM), only to send you one &ldquo;we&rsquo;re back&rdquo;
+            email.
+          </p>
+          <p>
+            We send that one email when the site returns, add your address to no other list, and
+            delete these details 30 days after that email. Admins see only the number of sign-ups,
+            never the addresses.
+          </p>
+        </div>
+      </PolicySection>
+
       <ContactUsSection />
     </div>
   );
@@ -508,7 +555,7 @@ export default async function PrivacyPage({ params }: Props) {
     <section className="mx-auto max-w-4xl space-y-10 px-6 py-16">
       <header>
         <h1 className="mb-2 text-3xl font-semibold text-neutral-900">Privacy Policy</h1>
-        <p className="text-sm text-neutral-500">Last updated: November 9, 2026</p>
+        <p className="text-sm text-neutral-500">Last updated: November 15, 2026</p>
       </header>
 
       <p className="leading-relaxed text-neutral-700">

@@ -17,6 +17,8 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/try/pdf',
   // Guest pasted-text tool; `/try/text/play` stays `noindex` and out of the sitemap (RIN-1540).
   '/try/text',
+  // Guest PowerPoint and Word tool; `/try/text/play` carries its drafts and stays `noindex` (RIN-1788).
+  '/try/slides',
   // Blog post and author routes come from content/blog (getBlogSitemapRoutes, RIN-406).
 ] as const;
 
@@ -43,7 +45,7 @@ export const PRIVATE_ROUTE_PREFIXES = [
 /**
  * Public pages with nothing to index: crawlers rendering them only burns
  * Function CPU (RIN-1644). They stay reachable for learners and keep their
- * `noindex` metadata. `/try/pdf`, `/try/text` and `/quiz/<slug>` stay allowed.
+ * `noindex` metadata. `/try/pdf`, `/try/text`, `/try/slides` and `/quiz/<slug>` stay allowed.
  */
 export const NON_INDEXABLE_CRAWL_PREFIXES = [
   '/try/pdf/play',

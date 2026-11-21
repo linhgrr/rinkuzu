@@ -38,6 +38,28 @@ export const createTextQuizDraftRequestSchema = z.strictObject({
   category_id: objectIdSchema.nullable().optional(),
   prompt: z.string().max(2000).nullable().optional(),
   submit_to_premium: z.boolean().optional(),
+  /** Set when the browser extracted the text from a Word or PowerPoint file (RIN-1787). */
+  source_file_type: z.enum(['docx', 'pptx']).optional(),
+  /** Which create page that was, for the daily office counter; never forwarded to the API. */
+  upload_surface: z.enum(['create_pdf', 'create_pdf_mobile']).optional(),
+});
+
+/** Where an office-file text draft was picked (RIN-1787). */
+type OfficeDraftSurface = 'create_pdf' | 'create_pdf_mobile';
+
+/**
+ * Text fields of the multipart `POST /api/quiz-drafts/image` (RIN-1792): the same fields as
+ * the text draft minus `text`, as form strings. Bounds mirror the API's form.
+ */
+export const createImageQuizDraftFieldsSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  category_id: objectIdSchema.optional(),
+  prompt: z.string().max(2000).optional(),
+  submit_to_premium: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
 });
 
 export interface CreateTextQuizDraftInputDto {
@@ -47,6 +69,8 @@ export interface CreateTextQuizDraftInputDto {
   description?: string;
   prompt?: string;
   submitToPremium?: boolean;
+  /** A text read from a .docx or .pptx in the browser (RIN-1787); the file is never uploaded. */
+  office?: { fileType: 'docx' | 'pptx'; surface: OfficeDraftSurface };
 }
 
 export interface CreateManualQuizDraftInputDto {

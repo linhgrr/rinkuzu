@@ -28,6 +28,15 @@ vi.mock('@/i18n/navigation', () => ({
 vi.mock('@/features/auth/components/GoogleAuthButton', () => ({
   GoogleAuthButton: ({ label }: { label: string }) => <span>{label}</span>,
 }));
+const { reportUploadRejectionMock, reportDropzoneRejectionMock } = vi.hoisted(() => ({
+  reportUploadRejectionMock: vi.fn(),
+  reportDropzoneRejectionMock: vi.fn(),
+}));
+// RIN-1785: refusals are counted with the surface they happened on.
+vi.mock('@/lib/upload-rejection-client', () => ({
+  reportUploadRejection: reportUploadRejectionMock,
+  reportDropzoneRejection: reportDropzoneRejectionMock,
+}));
 vi.mock('@/lib/pdf', () => ({ getPdfPageCount }));
 vi.mock('@/features/guest-draft/api/guest-draft-api', async (importActual) => ({
   ...(await importActual<typeof import('@/features/guest-draft/api/guest-draft-api')>()),
@@ -89,7 +98,9 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Tạo câu hỏi trắc nghiệm từ PDF, làm ngay',
     );
-    expect(screen.getByText('PDF, tối đa 10 trang và 4 MB')).toBeInTheDocument();
+    expect(
+      screen.getByText(/PDF tối đa 10 trang và 4 MB, Word và PowerPoint tối đa 20 MB/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tạo quiz' })).toBeDisabled();
   });
 
@@ -124,12 +135,20 @@ describe('GuestPdfUploadPage (RIN-1448)', () => {
     await choose(pdf('big.pdf', 4 * 1024 * 1024 + 1));
     expect(await screen.findByRole('alert')).toHaveTextContent('over the trial limit');
     expect(getPdfPageCount).not.toHaveBeenCalled();
+    expect(reportUploadRejectionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'too_large', surface: 'try_pdf' }),
+    );
   });
 
   it('refuses a file that is not a PDF', async () => {
     renderPage('vi');
     await choose(pdf('photo.png', 10, 'image/png'));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chỉ nhận tệp PDF.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Chỉ nhận tệp PDF, Word hoặc PowerPoint.',
+    );
+    expect(reportUploadRejectionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'wrong_type', surface: 'try_pdf' }),
+    );
   });
 
   it('shows the sign-up card, not an error, when a guest cap is hit', async () => {

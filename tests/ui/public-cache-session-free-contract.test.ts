@@ -59,6 +59,7 @@ describe('cached signed-out twins stay session-free (RIN-1646)', () => {
     expect(names).toContain('src/app/[locale]/(public-cache)/signed-out/explore/page.tsx');
     expect(names).toContain('src/app/[locale]/(app)/explore/[topic]/page.tsx');
     expect(names).toContain('src/app/[locale]/(app)/explore/TopicHubLinks.tsx');
+    expect(names).toContain('src/app/[locale]/(public-cache)/signed-out/premium-quizzes/page.tsx');
     expect(names).toContain('src/app/[locale]/(public-cache)/signed-out/quiz/[slug]/page.tsx');
     expect(names).toContain('src/app/[locale]/(app)/quiz/[slug]/quiz-page-view.tsx');
     expect(names).toContain('src/app/[locale]/(app)/quiz/[slug]/quiz-metadata.ts');

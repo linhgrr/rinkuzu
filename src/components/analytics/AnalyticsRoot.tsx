@@ -11,6 +11,7 @@ import {
   subscribeToAnalyticsConsent,
   trackAnalyticsPageView,
 } from '@/lib/analytics/client';
+import { captureFirstTouch } from '@/lib/attribution/first-touch';
 
 export function AnalyticsRoot() {
   const pathname = usePathname();
@@ -20,6 +21,13 @@ export function AnalyticsRoot() {
     getAnalyticsConsent,
     () => null,
   );
+
+  // First touch for the signup source (RIN-1762): a first-party cookie the
+  // server reads when it creates the account. Not behind consent; nothing is
+  // sent anywhere, and it runs once per full page load.
+  useEffect(() => {
+    captureFirstTouch(document, window.location);
+  }, []);
 
   useEffect(() => {
     if (consent === 'granted') void initializeAnalytics();

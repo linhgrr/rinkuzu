@@ -27,7 +27,9 @@
       "blogPosts": "Top 10 public blog post slugs (?post=, with entry=blog) by activated signups of the week whose first qualifying attempt came from that post, most first, ties by slug. A blog entry without a valid post counts in activatedByEntry.blog only.",
       "guestCompleted": "guestFunnel.weeks[]: guest attempts taken (submitted) in the UTC ISO week, still-unclaimed ones with a claim token plus claimed ones, excluding attempts claimed into an excluded account. Counted per attempt, not per learner.",
       "guestClaimed7d": "guestFunnel.weeks[]: of guestCompleted, the attempts claimed into an account within 7 days of being taken. Claims land in the week the attempt was taken, so the recent weeks are partial.",
-      "reviewOptInFromGuest": "guestFunnel.weeks[]: 2-day review opt-in consent events with source guest_result_review (recorded when a guest claims an attempt whose result card ticked it), by event week, excluding excluded accounts. A learner already opted in records no new event."
+      "reviewOptInFromGuest": "guestFunnel.weeks[]: 2-day review opt-in consent events with source guest_result_review (recorded when a guest claims an attempt whose result card ticked it), by event week, excluding excluded accounts. A learner already opted in records no new event.",
+      "uploadRejections": "uploads.weeks[]: files an upload surface refused, by the UTC ISO week of the refusal, as ext x reason counts: the top 10 pairs, most first (ties by ext, reason), then one other x other row for the rest. ext is the lower-case file extension (1-8 letters or digits, else other); reason is wrong_type, too_large, legacy_format, encrypted, corrupt, too_little_text, too_many_pages or unreadable. Counted per file dropped, not per learner; no file name, content, IP or user is stored. Refusals before RIN-1785 shipped are not counted.",
+      "officeDrafts": "uploads.weeks[]: text drafts made from an office file (source_file_type set), by UTC ISO week, as surface x ext counts. Counted per draft, not per learner; nothing about the learner is stored."
     },
     "sources": {
       "adaptive": "ok"
@@ -165,6 +167,12 @@
           "guestClaimed7d": 0,
           "reviewOptInFromGuest": 0
         }
+      ]
+    },
+    "uploads": {
+      "weeks": [
+        { "isoWeek": "2026-W44", "uploadRejections": [], "officeDrafts": [] },
+        { "isoWeek": "2026-W45", "uploadRejections": [], "officeDrafts": [] }
       ]
     }
   }

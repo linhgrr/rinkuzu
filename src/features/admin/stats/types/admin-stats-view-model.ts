@@ -137,6 +137,17 @@ export interface ActivationEmailWeekViewModel {
   inProgress: boolean;
 }
 
+/** One week of refused uploads and office drafts: counts by ext, reason or surface (RIN-1785). */
+export interface UploadWeekViewModel {
+  isoWeek: string;
+  /** Monday of the week, `YYYY-MM-DD` (UTC). */
+  monday: string;
+  rejections: { ext: string; reason: string; count: number }[];
+  officeDrafts: { surface: string; ext: string; count: number }[];
+  /** The week that contains `generatedAt`. */
+  inProgress: boolean;
+}
+
 export interface ActivationFunnelViewModel {
   /** False when the adaptive API did not answer: every count is quiz-only. */
   adaptiveAvailable: boolean;
@@ -144,4 +155,20 @@ export interface ActivationFunnelViewModel {
   weeks: ActivationFunnelWeekViewModel[];
   /** Same weeks by send week, newest first. */
   emailWeeks: ActivationEmailWeekViewModel[];
+  /** Same weeks, refused uploads and office drafts, newest first (RIN-1785). */
+  uploadWeeks: UploadWeekViewModel[];
+}
+
+/** One source's counts inside one signup week of the source breakdown (RIN-1761). */
+export interface ActivationSourceRowViewModel {
+  isoWeek: string;
+  /** Monday of the week, `YYYY-MM-DD` (UTC). */
+  monday: string;
+  /** A channel key such as `google`, or `unknown` / `other`. */
+  source: string;
+  signups: number;
+  startedQuiz: number;
+  activated: number;
+  /** The week is not complete yet. */
+  inProgress: boolean;
 }

@@ -23,7 +23,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 
 /** What the gallery picker offers; the camera input takes any image (UI spec RIN-1791). */
-export const QUIZ_PHOTO_GALLERY_ACCEPT =
+const QUIZ_PHOTO_GALLERY_ACCEPT =
   'image/jpeg,image/png,image/heic,image/heif,image/webp,.heic,.heif';
 
 const MB = 1024 * 1024;
@@ -355,7 +355,7 @@ function PhotoList({ state, actions }: { state: QuizPhotosState; actions: Picker
   );
 }
 
-export interface QuizPhotoSubmit {
+interface QuizPhotoSubmit {
   label: string;
   loading: boolean;
   onClick: () => void;

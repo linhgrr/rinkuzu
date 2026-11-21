@@ -65,7 +65,7 @@ function moved(photos: readonly QuizPhoto[], id: string, delta: -1 | 1): QuizPho
   return next;
 }
 
-export function readyBytes(photos: readonly QuizPhoto[]): number {
+function readyBytes(photos: readonly QuizPhoto[]): number {
   return photos.reduce((sum, photo) => sum + (photo.status === 'ready' ? photo.bytes : 0), 0);
 }
 

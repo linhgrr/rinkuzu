@@ -126,6 +126,53 @@ export async function createGuestTextDraft({
   return toProgress(dto);
 }
 
+interface CreateGuestImageDraftInput {
+  /** The prepared JPEGs (RIN-1790), in page order. */
+  images: readonly Blob[];
+  token: string;
+  locale: 'vi' | 'en';
+  entry: GuestDraftEntry;
+}
+
+/**
+ * Why the server refused a photo draft (RIN-1793): a guest cap is `cap`; 422
+ * `too_little_text` (the text recognition found under 200 characters, nothing was created
+ * and no cap was used); 503 is the kill switch or an outage, `service_unavailable`.
+ */
+export function classifyGuestImageDraftError(error: unknown): GuestDraftRefusal {
+  if (!(error instanceof ApiResponseError)) return 'upload_error';
+  if (error.status === 429 && metaReason(error.meta)['reason'] === GUEST_DRAFT_LIMIT_REASON) {
+    return 'cap';
+  }
+  if (error.status === 422 && error.code === 'too_little_text') return 'too_little_text';
+  if (error.status === 503) return 'service_unavailable';
+  return 'upload_error';
+}
+
+/**
+ * `POST /api/guest-drafts/image` (RIN-1792): 1-5 prepared JPEGs as multipart `images`, same
+ * token header, locale, entry and caps as the other create calls. The route reads the text
+ * in the photos before it creates the draft, so this call can take up to ~20 s. The photos
+ * are sent once and never stored by the page.
+ */
+export async function createGuestImageDraft({
+  images,
+  token,
+  locale,
+  entry,
+}: CreateGuestImageDraftInput): Promise<GuestDraftProgress> {
+  const body = new FormData();
+  images.forEach((image, index) => body.append('images', image, `page-${index + 1}.jpg`));
+  body.append('locale', locale);
+  body.append('entry', entry);
+  const dto = await fetchApiData<GuestDraftStatusDto>('/api/guest-drafts/image', {
+    method: 'POST',
+    headers: { [GUEST_DRAFT_TOKEN_HEADER]: token },
+    body,
+  });
+  return toProgress(dto);
+}
+
 /** `POST /api/guest-drafts/status`: the token in the body, never in a URL. */
 export async function fetchGuestDraftProgress(token: string): Promise<GuestDraftProgress> {
   const dto = await fetchApiData<GuestDraftStatusDto>('/api/guest-drafts/status', {

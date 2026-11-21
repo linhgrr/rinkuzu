@@ -20,6 +20,20 @@ interface GuestDraftSourceProps {
 const NOTICE_LINK_CLASS =
   'inline-flex min-h-11 items-center font-medium text-orange-800 underline hover:text-orange-900';
 
+/** Where "Make it again" goes, per source. */
+const MAKE_AGAIN_ROUTE: Record<GuestDraftSource, string> = {
+  pdf: ROUTES.TRY_PDF,
+  text: ROUTES.TRY_TEXT,
+  image: ROUTES.TRY_PHOTO,
+};
+
+const NOTICE_KEY = { pdf: 'notice', text: 'noticeText', image: 'noticePhoto' } as const;
+const EXPIRED_KEY = {
+  pdf: 'expiredBody',
+  text: 'expiredBodyText',
+  image: 'expiredBodyPhoto',
+} as const;
+
 interface GuestDraftNoticeProps extends GuestDraftSourceProps {
   /**
    * The rest of a first-batch draft (RIN-1620): `pending` adds "More questions are being
@@ -33,7 +47,7 @@ export function GuestDraftNotice({ source = 'pdf', more = 'none' }: GuestDraftNo
   const t = useTranslations('guestDraft.play');
   return (
     <p className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-2 text-sm text-neutral-700">
-      {t.rich(source === 'text' ? 'noticeText' : 'notice', {
+      {t.rich(NOTICE_KEY[source], {
         link: (chunks) => (
           <Link href={ROUTES.REGISTER} className={NOTICE_LINK_CLASS}>
             {chunks}
@@ -66,14 +80,9 @@ export function GuestDraftExpiredCard({ source = 'pdf' }: GuestDraftSourceProps)
       <Card variant="bordered" className="w-full max-w-md p-6 text-center">
         <HiOutlineClock className="mx-auto mb-3 size-8 text-neutral-400" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-neutral-950">{t('expiredTitle')}</h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          {source === 'text' ? t('expiredBodyText') : t('expiredBody')}
-        </p>
+        <p className="mt-1 text-sm text-neutral-600">{t(EXPIRED_KEY[source])}</p>
         <div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row">
-          <Link
-            href={source === 'text' ? ROUTES.TRY_TEXT : ROUTES.TRY_PDF}
-            className="btn btn-primary"
-          >
+          <Link href={MAKE_AGAIN_ROUTE[source]} className="btn btn-primary">
             {t('makeAgain')}
           </Link>
           {signedIn ? (

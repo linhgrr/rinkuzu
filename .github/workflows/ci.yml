@@ -74,7 +74,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Lint workflows
-        uses: devops-actions/actionlint@467e2ce19b2310e93c9ffa0b50fe31f86b5a7f23
+        uses: devops-actions/actionlint@216abcda9203ffeaeb953db1b151c94e1927c5bf
 
   policy:
     name: Fail-closed policy
